@@ -912,12 +912,11 @@ void TrackView::editBiasValue(float amount)
 LRESULT TrackView::onKeyDown(UINT keyCode, UINT /*flags*/)
 {
 	SyncDocument *doc = getDocument();
-	if (NULL == doc) return FALSE;
-	
-	if (!editString.empty())
-	{
-		switch(keyCode)
-		{
+	if (!doc)
+		return FALSE;
+
+	if (!editString.empty()) {
+		switch (keyCode) {
 		case VK_UP:
 		case VK_DOWN:
 		case VK_LEFT:
@@ -930,10 +929,8 @@ LRESULT TrackView::onKeyDown(UINT keyCode, UINT /*flags*/)
 		}
 	}
 	
-	if (editString.empty())
-	{
-		switch (keyCode)
-		{
+	if (editString.empty()) {
+		switch (keyCode) {
 		case VK_LEFT:
 			if (GetKeyState(VK_CONTROL) < 0) {
 				if (0 < editTrack)
@@ -962,10 +959,8 @@ LRESULT TrackView::onKeyDown(UINT keyCode, UINT /*flags*/)
 		}
 	}
 
-	if (editString.empty() && doc->clientPaused)
-	{
-		switch (keyCode)
-		{
+	if (editString.empty() && doc->clientPaused) {
+		switch (keyCode) {
 		case VK_UP:
 			if (GetKeyState(VK_CONTROL) < 0)
 			{
@@ -1020,8 +1015,7 @@ LRESULT TrackView::onKeyDown(UINT keyCode, UINT /*flags*/)
 		}
 	}
 	
-	switch (keyCode)
-	{
+	switch (keyCode) {
 	case VK_RETURN: editEnterValue(); break;
 	case VK_DELETE: editDelete(); break;
 	
