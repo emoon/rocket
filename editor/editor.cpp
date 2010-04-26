@@ -599,7 +599,7 @@ void processCommand(NetworkSocket &sock)
 
 		case SET_ROW:
 			sock.recv((char*)&newRow, sizeof(int), 0);
-			trackView->setEditRow(newRow);
+			trackView->setEditRow(newRow, false);
 			break;
 		}
 	}

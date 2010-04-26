@@ -48,10 +48,10 @@ public:
 	void editBiasValue(float amount);
 	void editToggleInterpolationType();
 	
-	void setEditRow(int newEditRow);
+	void setEditRow(int newEditRow, bool selecting, bool autoscroll = true);
 	int  getEditRow() const { return editRow; }
 	
-	void setEditTrack(int newEditTrack, bool autoscroll = true);
+	void setEditTrack(int newEditTrack, bool selecting, bool autoscroll = true);
 	int  getEditTrack() const { return editTrack; }
 	
 	void selectAll()
@@ -165,6 +165,7 @@ private:
 	int getScreenY(int row) const;
 	int getScreenX(size_t track) const;
 	int getTrackFromX(int x) const;
+	int getRowFromY(int y) const;
 
 	size_t getTrackCount() const
 	{
@@ -205,7 +206,7 @@ private:
 	HWND hwnd;
 	
 	UINT clipboardFormat;
-	int anchorTrack;
+	int anchorTrack, anchorRow;
 };
 
 ATOM registerTrackViewWindowClass(HINSTANCE hInstance);

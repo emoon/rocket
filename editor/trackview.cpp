@@ -125,6 +125,11 @@ int TrackView::getTrackFromX(int x) const
 	return divfloor(x + scrollPosX - leftMarginWidth, trackWidth);
 }
 
+int TrackView::getRowFromY(int y) const
+{
+	return divfloor(y + scrollPosY - topMarginHeight, rowHeight);
+}
+
 
 LRESULT TrackView::onCreate()
 {
@@ -593,7 +598,7 @@ void TrackView::setScrollPos(int newScrollPosX, int newScrollPosY)
 	setupScrollBars();
 }
 
-void TrackView::setEditRow(int newEditRow)
+void TrackView::setEditRow(int newEditRow, bool selecting, bool autoscroll)
 {
 	SyncDocument *doc = getDocument();
 	if (NULL == doc) return;
@@ -606,8 +611,7 @@ void TrackView::setEditRow(int newEditRow)
 	
 	if (oldEditRow != editRow)
 	{
-		if (GetKeyState(VK_SHIFT) < 0)
-		{
+		if (selecting) {
 			selectStopRow = editRow;
 			invalidateRange(selectStartTrack, selectStopTrack, oldEditRow, editRow);
 		}
@@ -627,11 +631,12 @@ void TrackView::setEditRow(int newEditRow)
 	
 	invalidateRow(oldEditRow);
 	invalidateRow(editRow);
-	
-	setScrollPos(scrollPosX, (editRow * rowHeight) - ((windowHeight - topMarginHeight) / 2) + rowHeight / 2);
+
+	if (autoscroll)
+		setScrollPos(scrollPosX, (editRow * rowHeight) - ((windowHeight - topMarginHeight) / 2) + rowHeight / 2);
 }
 
-void TrackView::setEditTrack(int newEditTrack, bool autoscroll)
+void TrackView::setEditTrack(int newEditTrack, bool selecting, bool autoscroll)
 {
 	if (0 == getTrackCount()) return;
 	
@@ -644,8 +649,7 @@ void TrackView::setEditTrack(int newEditTrack, bool autoscroll)
 	
 	if (oldEditTrack != editTrack)
 	{
-		if (GetKeyState(VK_SHIFT) < 0)
-		{
+		if (selecting) {
 			selectStopTrack = editTrack;
 			invalidateRange(oldEditTrack, editTrack, selectStartRow, selectStopRow);
 		}
@@ -687,7 +691,7 @@ void TrackView::setRows(size_t rows)
 {
 	document->setRows(rows);
 	InvalidateRect(getWin(), NULL, FALSE);
-	setEditRow(min(editRow, int(rows) - 1));
+	setEditRow(min(editRow, int(rows) - 1), false);
 }
 
 
@@ -696,28 +700,28 @@ LRESULT TrackView::onVScroll(UINT sbCode, int /*newPos*/)
 	switch (sbCode)
 	{
 	case SB_TOP:
-		setEditRow(0);
+		setEditRow(0, false);
 		break;
 	
 	case SB_LINEUP:
-		setEditRow(editRow - 1);
+		setEditRow(editRow - 1, false);
 		break;
 	
 	case SB_LINEDOWN:
-		setEditRow(editRow + 1);
+		setEditRow(editRow + 1, false);
 		break;
 	
 	case SB_PAGEUP:
-		setEditRow(editRow - windowRows / 2);
+		setEditRow(editRow - windowRows / 2, false);
 		break;
 	
 	case SB_PAGEDOWN:
-		setEditRow(editRow + windowRows / 2);
+		setEditRow(editRow + windowRows / 2, false);
 		break;
 	
 	case SB_THUMBPOSITION:
 	case SB_THUMBTRACK:
-		setEditRow(getScrollPos(hwnd, SB_VERT));
+		setEditRow(getScrollPos(hwnd, SB_VERT), false);
 		break;
 	}
 	
@@ -729,32 +733,32 @@ LRESULT TrackView::onHScroll(UINT sbCode, int /*newPos*/)
 	switch (sbCode)
 	{
 	case SB_LEFT:
-		setEditTrack(0);
+		setEditTrack(0, false);
 		break;
 	
 	case SB_RIGHT:
-		setEditTrack(int(getTrackCount()) - 1);
+		setEditTrack(int(getTrackCount()) - 1, false);
 		break;
 	
 	case SB_LINELEFT:
-		setEditTrack(editTrack - 1);
+		setEditTrack(editTrack - 1, false);
 		break;
 	
 	case SB_LINERIGHT:
-		setEditTrack(editTrack + 1);
+		setEditTrack(editTrack + 1, false);
 		break;
 	
 	case SB_PAGELEFT:
-		setEditTrack(editTrack - windowTracks);
+		setEditTrack(editTrack - windowTracks, false);
 		break;
 	
 	case SB_PAGEDOWN:
-		setEditTrack(editTrack + windowTracks);
+		setEditTrack(editTrack + windowTracks, false);
 		break;
 	
 	case SB_THUMBPOSITION:
 	case SB_THUMBTRACK:
-		setEditTrack(getScrollPos(hwnd, SB_HORZ));
+		setEditTrack(getScrollPos(hwnd, SB_HORZ), false);
 		break;
 	}
 	
@@ -915,6 +919,8 @@ LRESULT TrackView::onKeyDown(UINT keyCode, UINT /*flags*/)
 	if (!doc)
 		return FALSE;
 
+	bool shiftDown = GetKeyState(VK_SHIFT) < 0;
+
 	if (!editString.empty()) {
 		switch (keyCode) {
 		case VK_UP:
@@ -939,7 +945,7 @@ LRESULT TrackView::onKeyDown(UINT keyCode, UINT /*flags*/)
 					MessageBeep(-1);
 			}
 			if (0 != getTrackCount())
-				setEditTrack(editTrack - 1);
+				setEditTrack(editTrack - 1, shiftDown);
 			else
 				MessageBeep(-1);
 			break;
@@ -952,7 +958,7 @@ LRESULT TrackView::onKeyDown(UINT keyCode, UINT /*flags*/)
 					MessageBeep(-1);
 			}
 			if (0 != getTrackCount())
-				setEditTrack(editTrack + 1);
+				setEditTrack(editTrack + 1, shiftDown);
 			else
 				MessageBeep(-1);
 			break;
@@ -963,54 +969,45 @@ LRESULT TrackView::onKeyDown(UINT keyCode, UINT /*flags*/)
 		switch (keyCode) {
 		case VK_UP:
 			if (GetKeyState(VK_CONTROL) < 0)
-			{
-				float bias = 1.0f;
-				if (GetKeyState(VK_SHIFT) < 0) bias = 0.1f;
-				if (int(getTrackCount()) > editTrack) editBiasValue(bias);
-				else MessageBeep(-1);
-			}
-			else setEditRow(editRow - 1);
+				editBiasValue(shiftDown ? 0.1f : 1.0f);
+			else
+				setEditRow(editRow - 1, shiftDown);
 			break;
 		
 		case VK_DOWN:
 			if (GetKeyState(VK_CONTROL) < 0)
-			{
-				float bias = 1.0f;
-				if (GetKeyState(VK_SHIFT) < 0) bias = 0.1f;
-				if (int(getTrackCount()) > editTrack) editBiasValue(-bias);
-				else MessageBeep(-1);
-			}
-			else setEditRow(editRow + 1);
+				editBiasValue(shiftDown ? -0.1f : -1.0f);
+			else
+				setEditRow(editRow + 1, shiftDown);
 			break;
 		
 		case VK_PRIOR:
 			if (GetKeyState(VK_CONTROL) < 0)
-			{
-				float bias = 10.0f;
-				if (GetKeyState(VK_SHIFT) < 0) bias = 100.0f;
-				editBiasValue(bias);
-			}
-			else setEditRow(editRow - 0x10);
+				editBiasValue(shiftDown ? 100.0f : 10.0f);
+			else
+				setEditRow(editRow - 0x10, shiftDown);
 			break;
 		
 		case VK_NEXT:
 			if (GetKeyState(VK_CONTROL) < 0)
-			{
-				float bias = 10.0f;
-				if (GetKeyState(VK_SHIFT) < 0) bias = 100.0f;
-				editBiasValue(-bias);
-			}
-			else setEditRow(editRow + 0x10);
+				editBiasValue(shiftDown ? -100.0f : -10.0f);
+			else
+				setEditRow(editRow + 0x10, shiftDown);
 			break;
 		
 		case VK_HOME:
-			if (GetKeyState(VK_CONTROL) < 0) setEditTrack(0);
-			else setEditRow(0);
+			if (GetKeyState(VK_CONTROL) < 0)
+				setEditTrack(0, shiftDown);
+			else
+				setEditRow(0, shiftDown);
 			break;
 		
 		case VK_END:
-			if (GetKeyState(VK_CONTROL) < 0) setEditTrack(int(getTrackCount()) - 1);
-			else setEditRow(int(getRows()) - 1);
+			if (GetKeyState(VK_CONTROL) < 0)
+				setEditTrack(int(getTrackCount()) - 1,
+				    shiftDown);
+			else
+				setEditRow(int(getRows()) - 1, shiftDown);
 			break;
 		}
 	}
@@ -1102,7 +1099,7 @@ LRESULT TrackView::onSize(int width, int height)
 	windowRows   = (height - topMarginHeight) / rowHeight;
 	windowTracks = (width  - leftMarginWidth) / trackWidth;
 	
-	setEditRow(editRow);
+	setEditRow(editRow, false);
 	setupScrollBars();
 	return FALSE;
 }
@@ -1125,19 +1122,30 @@ LRESULT TrackView::onSetCursor(HWND win, UINT hitTest, UINT message)
 LRESULT TrackView::onLButtonDown(UINT flags, POINTS pos)
 {
 	int track = getTrackFromX(pos.x);
-	if (pos.y < topMarginHeight &&
-	    track >= 0 && track < int(getTrackCount())) {
+	if (track >= 0 && track < int(getTrackCount())) {
+		if (pos.y > topMarginHeight) {
+			int row = getRowFromY(pos.y);
+			if (row < 0 || row >= int(getRows()))
+				return FALSE;
+			selectStartTrack = selectStopTrack = track;
+			selectStartRow = selectStopRow = row;
+
+			setEditRow(row, false);
+			anchorRow = row;
+		} else
+			anchorRow = -1;
 		setEditTrack(track, false);
-		SetCapture(hwnd);
 		anchorTrack = track;
+		SetCapture(hwnd);
 	}
+
 	return FALSE;
 }
 
 LRESULT TrackView::onLButtonUp(UINT flags, POINTS pos)
 {
 	ReleaseCapture();
-	setEditTrack(editTrack);
+	setEditTrack(editTrack, false);
 	return FALSE;
 }
 
@@ -1151,18 +1159,26 @@ LRESULT TrackView::onMouseMove(UINT flags, POINTS pos)
 		if (!doc || posTrack < 0 || posTrack >= trackCount)
 			return FALSE;
 
-		if (posTrack > anchorTrack) {
-			for (int i = anchorTrack; i < posTrack; ++i)
-				doc->swapTrackOrder(i, i + 1);
-			anchorTrack = posTrack;
-			setEditTrack(posTrack);
-			InvalidateRect(hwnd, NULL, FALSE);
-		} else if (posTrack < anchorTrack) {
-			for (int i = anchorTrack; i > posTrack; --i)
-				doc->swapTrackOrder(i, i - 1);
-			anchorTrack = posTrack;
-			setEditTrack(posTrack);
-			InvalidateRect(hwnd, NULL, FALSE);
+		if (anchorRow < 0) {
+			/* dragging track */
+			if (posTrack > anchorTrack) {
+				for (int i = anchorTrack; i < posTrack; ++i)
+					doc->swapTrackOrder(i, i + 1);
+				anchorTrack = posTrack;
+				setEditTrack(posTrack, false);
+				InvalidateRect(hwnd, NULL, FALSE);
+			} else if (posTrack < anchorTrack) {
+				for (int i = anchorTrack; i > posTrack; --i)
+					doc->swapTrackOrder(i, i - 1);
+				anchorTrack = posTrack;
+				setEditTrack(posTrack, false);
+				InvalidateRect(hwnd, NULL, FALSE);
+			}
+		} else {
+			/* selecting */
+			setEditTrack(posTrack, true);
+			setEditRow(min(max(getRowFromY(pos.y), 0),
+			    int(getRows()) - 1), true);
 		}
 	}
 	return FALSE;
