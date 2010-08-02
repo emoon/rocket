@@ -135,6 +135,17 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,72,6,50,14
 END
 
+IDD_CONFIG DIALOGEX 0, 0, 160, 73
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Config"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,48,52,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,103,52,50,14
+    EDITTEXT        IDC_PORT,79,18,72,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Network Port",IDC_STATIC,"Static",SS_SIMPLE | WS_GROUP,28,20,43,8
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -158,6 +169,14 @@ BEGIN
         RIGHTMARGIN, 122
         TOPMARGIN, 7
         BOTTOMMARGIN, 20
+    END
+
+    IDD_CONFIG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 153
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 66
     END
 END
 #endif    // APSTUDIO_INVOKED

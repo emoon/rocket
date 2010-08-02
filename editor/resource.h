@@ -6,10 +6,12 @@
 #define IDR_MENU                        102
 #define IDD_SETROWS                     103
 #define IDD_BIASSELECTION               104
+#define IDD_CONFIG                      105
 
 #define IDC_EDIT                        1002
 #define IDC_SETROWS_EDIT                1002
 #define IDC_BIASSELECTION_EDIT          1003
+#define IDC_PORT                        1004
 
 #define ID_FILE                         40001
 #define ID_FILE_EXIT                    40002
@@ -34,9 +36,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        104
+#define _APS_NEXT_RESOURCE_VALUE        106
 #define _APS_NEXT_COMMAND_VALUE         40026
-#define _APS_NEXT_CONTROL_VALUE         1004
+#define _APS_NEXT_CONTROL_VALUE         1009
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
