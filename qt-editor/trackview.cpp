@@ -6,90 +6,94 @@
 #include <QtGui/QStatusBar>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QScrollBar>
+#include <QtGui/QHeaderView>
 
-TrackView::TrackView(QWidget *parent) :
-	QAbstractScrollArea(parent),
+TrackViewInner::TrackViewInner(QWidget *parent) :
+	QWidget(parent),
 	font("Fixedsys"),
 	currRow(0),
 	currCol(0)
 {
-	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-
-	verticalScrollBar()->setPageStep(1);
-	verticalScrollBar()->setRange(0, 100);
-	setViewportMargins(16 * 4, 16, 0, 0);
+	QFontMetrics fm(font);
+	setFixedWidth(fm.width(' ') * 8 * 3);
+	setFixedHeight(fm.lineSpacing() * 32);
 }
 
-void TrackView::scrollContentsBy(int dx, int dy)
+TrackView::TrackView(QWidget *parent) :
+	QScrollArea(parent)
 {
-	viewport()->scroll(dx, dy);
+	inner = new TrackViewInner(this);
+	setWidget(inner);
+	setAlignment(Qt::AlignCenter);
+}
+
+
+void TrackViewInner::setRow(int row)
+{
+	row = qMax(row, 0);
+	if (currRow != row) {
+		currRow = row;
+		update();
+	} else
+		QApplication::beep();
+}
+
+void TrackViewInner::setCol(int col)
+{
+	col = qMax(col, 0);
+	if (currCol != col) {
+		currCol = col;
+		update();
+	} else
+		QApplication::beep();
 }
 
 void TrackView::keyPressEvent(QKeyEvent *event)
 {
 	switch (event->key()) {
 	case Qt::Key_Up:
-		if (currRow > 0) {
-			currRow--;
-			viewport()->update();
-		} else
-			QApplication::beep();
+		inner->setRow(inner->getRow() - 1);
 		break;
 
 	case Qt::Key_Down:
-		currRow++;
-		viewport()->update();
+		inner->setRow(inner->getRow() + 1);
 		break;
 
 	case Qt::Key_PageUp:
-		if (currRow > 0) {
-			currRow = qMax(0, currRow - 16);
-			viewport()->update();
-		} else
-			QApplication::beep();
+		inner->setRow(inner->getRow() - 16);
 		break;
 
 	case Qt::Key_PageDown:
-		currRow = currRow + 16;
-		viewport()->update();
+		inner->setRow(inner->getRow() + 16);
 		break;
 
 	case Qt::Key_Left:
-		if (currCol > 0) {
-			currCol--;
-			viewport()->update();
-		} else
-			QApplication::beep();
+		inner->setCol(inner->getCol() - 1);
 		break;
 
 	case Qt::Key_Right:
-		currCol++;
-		viewport()->update();
+		inner->setCol(inner->getCol() + 1);
 		break;
 	}
 }
 
-void TrackView::paintEvent(QPaintEvent *event)
+void TrackViewInner::paintEvent(QPaintEvent *event)
 {
-	QPainter painter(viewport());
+	QPainter painter(this);
 
 	painter.fillRect(0, 0, width(), height(), palette().background());
 
 	painter.setFont(font);
 
-	int scrollX = -horizontalScrollBar()->value();
-	int scrollY = -verticalScrollBar()->value();
-
 	for (int c = 0; c < 3; ++c) {
 
 		QRect rect;
-		rect.setLeft(scrollX + c * painter.fontMetrics().width(' ') * 8);
-		rect.setRight(scrollX + (c + 1) * painter.fontMetrics().width(' ') * 8);
+		rect.setLeft(c * painter.fontMetrics().width(' ') * 8);
+		rect.setRight((c + 1) * painter.fontMetrics().width(' ') * 8);
 
 		for (int r = 0; r < 32; ++r) {
-			rect.setTop(scrollY + r * painter.fontMetrics().lineSpacing());
-			rect.setBottom(scrollY + (r + 1) * painter.fontMetrics().lineSpacing());
+			rect.setTop(r * painter.fontMetrics().lineSpacing());
+			rect.setBottom((r + 1) * painter.fontMetrics().lineSpacing());
 
 			if (c == currCol && r == currRow)
 				painter.fillRect(rect, palette().highlight());
