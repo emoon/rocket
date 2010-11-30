@@ -3,7 +3,6 @@
 
 SyncDocument::~SyncDocument()
 {
-	sync_data_deinit(this);
 	clearUndoStack();
 	clearRedoStack();
 }
@@ -35,8 +34,13 @@ bool SyncDocument::load(const std::wstring &fileName)
 			std::string name = attribs->getNamedItem("name")->Gettext();
 
 			// look up track-name, create it if it doesn't exist
-			int trackIndex = sync_find_track(this, name.c_str());
-			if (0 > trackIndex) trackIndex = int(createTrack(name));
+			size_t trackIndex;
+			for (trackIndex = 0; trackIndex < tracks.size(); ++trackIndex)
+				if (name == tracks[trackIndex]->name)
+					break;
+
+			if (trackIndex == tracks.size())
+				trackIndex = int(createTrack(name));
 
 			MSXML2::IXMLDOMNodeListPtr rowNodes = trackNode->GetchildNodes();
 			for (int i = 0; i < rowNodes->Getlength(); ++i)
@@ -50,11 +54,11 @@ bool SyncDocument::load(const std::wstring &fileName)
 					std::string valueString = rowAttribs->getNamedItem("value")->Gettext();
 					std::string interpolationString = rowAttribs->getNamedItem("interpolation")->Gettext();
 
-					track_key k;
-					k.row = atoi(rowString.c_str());
+					KeyFrame k;
+					int row = atoi(rowString.c_str());
 					k.value = float(atof(valueString.c_str()));
-					k.type = key_type(atoi(interpolationString.c_str()));
-					multiCmd->addCommand(new InsertCommand(int(trackIndex), k));
+					k.type = KeyFrame::Type(atoi(interpolationString.c_str()));
+					multiCmd->addCommand(new InsertCommand(int(trackIndex), row, k));
 				}
 			}
 		}
@@ -86,19 +90,20 @@ bool SyncDocument::save(const std::wstring &fileName)
 		_snprintf(temp, 256, "%d", getRows());
 		rootNode->setAttribute("rows", temp);
 
-		for (size_t i = 0; i < num_tracks; ++i) {
-			const sync_track *t = tracks[i];
+		for (size_t i = 0; i < tracks.size(); ++i) {
+			const SyncTrack *t = tracks[i];
 
 			MSXML2::IXMLDOMElementPtr trackElem = doc->createElement("track");
-			trackElem->setAttribute("name", t->name);
+			trackElem->setAttribute("name", t->name.c_str());
 
 			rootNode->appendChild(doc->createTextNode("\n\t"));
 			rootNode->appendChild(trackElem);
 
-			for (int i = 0; i < (int)t->num_keys; ++i) {
-				size_t row = t->keys[i].row;
-				float value = t->keys[i].value;
-				char interpolationType = char(t->keys[i].type);
+			std::map<int, KeyFrame>::const_iterator it;
+			for (it = t->keys.begin(); it != t->keys.end(); ++it) {
+				size_t row = it->first;
+				float value = it->second.value;
+				char interpolationType = char(it->second.type);
 
 				MSXML2::IXMLDOMElementPtr keyElem = doc->createElement("key");
 				
@@ -114,10 +119,10 @@ bool SyncDocument::save(const std::wstring &fileName)
 				trackElem->appendChild(doc->createTextNode("\n\t\t"));
 				trackElem->appendChild(keyElem);
 			}
-			if (t->num_keys)
+			if (t->keys.size())
 				trackElem->appendChild(doc->createTextNode("\n\t"));
 		}
-		if (0 != num_tracks)
+		if (tracks.size())
 			rootNode->appendChild(doc->createTextNode("\n"));
 		
 		doc->save(fileName.c_str());

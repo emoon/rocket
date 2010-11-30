@@ -196,10 +196,11 @@ void fileNew()
 {
 	// document.purgeUnusedTracks();
 	SyncDocument::MultiCommand *multiCmd = new SyncDocument::MultiCommand();
-	for (size_t i = 0; i < document.num_tracks; ++i) {
-		sync_track *t = document.tracks[i];
-		for (size_t j = 0; j < t->num_keys; ++j)
-			multiCmd->addCommand(new SyncDocument::DeleteCommand(i, t->keys[j].row));
+	for (size_t i = 0; i < document.getTrackCount(); ++i) {
+		const SyncTrack *t = document.getTrack(i);
+		std::map<int, KeyFrame>::const_iterator it;
+		for (it = t->keys.begin(); it != t->keys.end(); ++it)
+			multiCmd->addCommand(new SyncDocument::DeleteCommand(i, it->first));
 	}
 	document.exec(multiCmd);
 
@@ -489,20 +490,42 @@ static LRESULT CALLBACK mainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
 	case WM_CURRVALDIRTY:
 		{
 			char temp[256];
-			if (document.num_tracks > 0) {
-				const sync_track *t = document.tracks[document.getTrackIndexFromPos(trackView->getEditTrack())];
+			if (document.getTrackCount() > 0) {
+				const SyncTrack *t = document.getTrack(document.getTrackIndexFromPos(trackView->getEditTrack()));
 				int row = trackView->getEditRow();
-				int idx = key_idx_floor(t, row);
-				snprintf(temp, 256, "%f", sync_get_val(t, row));
+
+				std::map<int, KeyFrame>::const_iterator upper = t->keys.upper_bound(row);
+				std::map<int, KeyFrame>::const_iterator lower = upper;
+				if (lower != t->keys.end())
+					lower--;
+
 				const char *str = "---";
-				if (idx >= 0) {
-					switch (t->keys[idx].type) {
-					case KEY_STEP:   str = "step"; break;
-					case KEY_LINEAR: str = "linear"; break;
-					case KEY_SMOOTH: str = "smooth"; break;
-					case KEY_RAMP:   str = "ramp"; break;
+				double val = 0.0;
+				if (upper != t->keys.end() && lower != t->keys.end()) {
+					double t = double(row - lower->first) / (upper->first - lower->first);
+					switch (lower->second.type) {
+					case KeyFrame::TYPE_STEP:
+						str = "step";
+						val = lower->second.value;
+						break;
+
+					case KeyFrame::TYPE_LINEAR:
+						str = "linear";
+						val = lower->second.value + (upper->second.value - lower->second.value) * t;
+						break;
+
+					case KeyFrame::TYPE_SMOOTH:
+						str = "smooth";
+						val = lower->second.value + (upper->second.value - lower->second.value) * t * t * (3 - 2 * t);
+						break;
+
+					case KeyFrame::TYPE_RAMP:
+						str = "ramp";
+						val = lower->second.value + (upper->second.value - lower->second.value) * t * t;
+						break;
 					}
 				}
+				snprintf(temp, 256, "%f", val);
 				SendMessage(statusBarWin, SB_SETTEXT, 4, (LPARAM)str);
 			} else
 				snprintf(temp, 256, "---");
@@ -566,7 +589,8 @@ void processCommand(NetworkSocket &sock)
 {
 	int strLen, serverIndex, newRow;
 	std::string trackName;
-	const sync_track *t;
+	const SyncTrack *t;
+	std::map<int, KeyFrame>::const_iterator it;
 	unsigned char cmd = 0;
 	if (sock.recv((char*)&cmd, 1, 0)) {
 		switch (cmd) {
@@ -582,8 +606,13 @@ void processCommand(NetworkSocket &sock)
 				return;
 
 			// find track
-			serverIndex = sync_find_track(&document,
-			    trackName.c_str());
+			serverIndex = -1;
+			for (size_t i = 0; i < document.getTrackCount(); ++i)
+				if (trackName == document.getTrack(i)->name) {
+					serverIndex = i;
+					break;
+				}
+
 			if (0 > serverIndex)
 				serverIndex =
 				    int(document.createTrack(trackName));
@@ -592,10 +621,9 @@ void processCommand(NetworkSocket &sock)
 			document.clientRemap[serverIndex] = clientIndex++;
 
 			// send key-frames
-			t = document.tracks[serverIndex];
-			for (int i = 0; i < (int)t->num_keys; ++i)
-				document.sendSetKeyCommand(int(serverIndex),
-				    t->keys[i]);
+			t = document.getTrack(serverIndex);
+			for (it = t->keys.begin(); it != t->keys.end(); ++it)
+				document.sendSetKeyCommand(int(serverIndex), it->first, it->second);
 
 			InvalidateRect(trackViewWin, NULL, FALSE);
 			break;

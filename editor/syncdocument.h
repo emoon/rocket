@@ -4,10 +4,7 @@
 
 #pragma once
 
-extern "C" {
-#include "../sync/data.h"
-}
-
+#include "../sync/base.h"
 #include <stack>
 #include <list>
 #include <vector>
@@ -15,11 +12,17 @@ extern "C" {
 #include <string>
 #include <cassert>
 
-class NetworkSocket
-{
+class NetworkSocket {
 public:
-	NetworkSocket() : socket(INVALID_SOCKET) {}
-	explicit NetworkSocket(SOCKET socket) : socket(socket) {}
+	NetworkSocket() :
+	    socket(INVALID_SOCKET)
+	{
+	}
+
+	explicit NetworkSocket(SOCKET socket) :
+	    socket(socket)
+	{
+	}
 
 	bool connected() const
 	{
@@ -67,30 +70,51 @@ private:
 	SOCKET socket;
 };
 
-class SyncDocument : public sync_data
-{
+struct KeyFrame {
+	float value;
+	enum Type {
+		TYPE_STEP,
+		TYPE_LINEAR,
+		TYPE_SMOOTH,
+		TYPE_RAMP,
+		TYPE_COUNT
+	} type;
+};
+
+struct SyncTrack {
+	SyncTrack(const std::string &name) :
+	    name(name)
+	{
+	}
+
+	std::string name;
+	std::map<int, KeyFrame> keys;
+};
+
+class SyncDocument {
 public:
 	SyncDocument() : clientPaused(true), rows(128), savePointDelta(0), savePointUnreachable(true)
 	{
-		this->tracks = NULL;
-		this->num_tracks = 0;
 	}
 
 	~SyncDocument();
 
 	size_t createTrack(const std::string &name)
 	{
-		size_t index = sync_create_track(this, name.c_str());
+		size_t index = tracks.size();
+		tracks.push_back(new SyncTrack(name));
 		trackOrder.push_back(index);
 		return index;
 	}
-	
-	void sendSetKeyCommand(uint32_t track, const struct track_key &key)
+
+	void sendSetKeyCommand(uint32_t track, uint32_t row, const KeyFrame &key)
 	{
-		if (!clientSocket.connected()) return;
-		if (clientRemap.count(track) == 0) return;
+		if (!clientSocket.connected())
+			return;
+		if (!clientRemap.count(track))
+			return;
 		track = htonl(clientRemap[track]);
-		uint32_t row = htonl(key.row);
+		row = htonl(row);
 
 		union {
 			float f;
@@ -99,224 +123,245 @@ public:
 		v.f = key.value;
 		v.i = htonl(v.i);
 
-		assert(key.type < KEY_TYPE_COUNT);
+		assert(key.type < KeyFrame::TYPE_COUNT);
 
 		unsigned char cmd = SET_KEY;
-		clientSocket.send((char*)&cmd, 1, 0);
-		clientSocket.send((char*)&track, sizeof(track), 0);
-		clientSocket.send((char*)&row, sizeof(row), 0);
-		clientSocket.send((char*)&v.i, sizeof(v.i), 0);
-		clientSocket.send((char*)&key.type, 1, 0);
+		clientSocket.send((char *)&cmd, 1, 0);
+		clientSocket.send((char *)&track, sizeof(track), 0);
+		clientSocket.send((char *)&row, sizeof(row), 0);
+		clientSocket.send((char *)&v.i, sizeof(v.i), 0);
+		clientSocket.send((char *)&key.type, 1, 0);
 	}
-	
+
 	void sendDeleteKeyCommand(int track, int row)
 	{
-		if (!clientSocket.connected()) return;
-		if (clientRemap.count(track) == 0) return;
+		if (!clientSocket.connected())
+			return;
+		if (!clientRemap.count(track))
+			return;
 
 		track = htonl(int(clientRemap[track]));
 		row = htonl(row);
 
 		unsigned char cmd = DELETE_KEY;
-		clientSocket.send((char*)&cmd, 1, 0);
-		clientSocket.send((char*)&track, sizeof(int), 0);
-		clientSocket.send((char*)&row,   sizeof(int), 0);
+		clientSocket.send((char *)&cmd, 1, 0);
+		clientSocket.send((char *)&track, sizeof(int), 0);
+		clientSocket.send((char *)&row,   sizeof(int), 0);
 	}
-	
+
 	void sendSetRowCommand(int row)
 	{
-		if (!clientSocket.connected()) return;
+		if (!clientSocket.connected())
+			return;
 		unsigned char cmd = SET_ROW;
 		row = htonl(row);
-		clientSocket.send((char*)&cmd, 1, 0);
-		clientSocket.send((char*)&row, sizeof(int), 0);
+		clientSocket.send((char *)&cmd, 1, 0);
+		clientSocket.send((char *)&row, sizeof(int), 0);
 	}
-	
+
 	void sendPauseCommand(bool pause)
 	{
-		if (!clientSocket.connected()) return;
+		if (!clientSocket.connected())
+			return;
 		unsigned char cmd = PAUSE;
-		clientSocket.send((char*)&cmd, 1, 0);
+		clientSocket.send((char *)&cmd, 1, 0);
 		unsigned char flag = pause;
-		clientSocket.send((char*)&flag, 1, 0);
+		clientSocket.send((char *)&flag, 1, 0);
 		clientPaused = pause;
 	}
 	
 	void sendSaveCommand()
 	{
-		if (!clientSocket.connected()) return;
+		if (!clientSocket.connected())
+			return;
 		unsigned char cmd = SAVE_TRACKS;
-		clientSocket.send((char*)&cmd, 1, 0);
+		clientSocket.send((char *)&cmd, 1, 0);
 	}
-	
-	class Command
-	{
+
+	class Command {
 	public:
-		virtual ~Command() {}
+		virtual ~Command()
+		{
+		}
 		virtual void exec(SyncDocument *data) = 0;
 		virtual void undo(SyncDocument *data) = 0;
 	};
-	
-	class InsertCommand : public Command
-	{
+
+	class InsertCommand : public Command {
 	public:
-		InsertCommand(int track, const track_key &key) : track(track), key(key) {}
-		~InsertCommand() {}
-		
-		void exec(SyncDocument *data)
+		InsertCommand(int track, int row, const KeyFrame &key) :
+		    track(track),
+		    row(row),
+		    key(key)
 		{
-			sync_track *t = data->tracks[track];
-			assert(!is_key_frame(t, key.row));
-			if (sync_set_key(t, &key))
-				throw std::bad_alloc("sync_set_key");
-			data->sendSetKeyCommand(track, key); // update clients
-		}
-		
-		void undo(SyncDocument *data)
-		{
-			sync_track *t = data->tracks[track];
-			assert(is_key_frame(t, key.row));
-			if (sync_del_key(t, key.row))
-				throw std::bad_alloc("sync_del_key");
-			data->sendDeleteKeyCommand(track, key.row); // update clients
 		}
 
-	private:
-		int track;
-		track_key key;
-	};
-	
-	class DeleteCommand : public Command
-	{
-	public:
-		DeleteCommand(int track, int row) : track(track), row(row) {}
-		~DeleteCommand() {}
-		
+		~InsertCommand()
+		{
+		}
+
 		void exec(SyncDocument *data)
 		{
-			sync_track *t = data->tracks[track];
-			int idx = sync_find_key(t, row);
-			assert(idx >= 0);
-			oldKey = t->keys[idx];
-			if (sync_del_key(t, row))
-				throw std::bad_alloc("sync_del_key");
-			data->sendDeleteKeyCommand(track, row); // update clients
+			SyncTrack *t = data->tracks[track];
+			assert(!t->keys.count(row));
+			t->keys[row] = key;
+			data->sendSetKeyCommand(track, row, key); // update clients
 		}
-		
+
 		void undo(SyncDocument *data)
 		{
-			sync_track *t = data->tracks[track];
-			assert(!is_key_frame(t, row));
-			if (sync_set_key(t, &oldKey))
-				throw std::bad_alloc("sync_set_key");
-			data->sendSetKeyCommand(track, oldKey); // update clients
+			SyncTrack *t = data->tracks[track];
+			assert(t->keys.count(row));
+			t->keys.erase(row);
+			data->sendDeleteKeyCommand(track, row); // update clients
 		}
 
 	private:
 		int track, row;
-		struct track_key oldKey;
+		KeyFrame key;
 	};
-
 	
-	class EditCommand : public Command
-	{
+	class DeleteCommand : public Command {
 	public:
-		EditCommand(int track, const track_key &key) : track(track), key(key) {}
-		~EditCommand() {}
+		DeleteCommand(int track, int row) :
+		    track(track), row(row)
+		{
+		}
+
+		~DeleteCommand()
+		{
+		}
 
 		void exec(SyncDocument *data)
 		{
-			sync_track *t = data->tracks[track];
-			int idx = sync_find_key(t, key.row);
-			assert(idx >= 0);
-			oldKey = t->keys[idx];
-			if (sync_set_key(t, &key))
-				throw std::bad_alloc("sync_set_key");
-			data->sendSetKeyCommand(track, key); // update clients
+			SyncTrack *t = data->tracks[track];
+			assert(t->keys.count(row));
+			oldKey = t->keys[row];
+			t->keys.erase(row);
+			data->sendDeleteKeyCommand(track, row); // update clients
 		}
 
 		void undo(SyncDocument *data)
 		{
-			sync_track *t = data->tracks[track];
-			assert(is_key_frame(t, key.row));
-			if (sync_set_key(t, &oldKey))
-				throw std::bad_alloc("sync_set_key");
-			data->sendSetKeyCommand(track, oldKey); // update clients
+			SyncTrack *t = data->tracks[track];
+			assert(!t->keys.count(row));
+			t->keys[row] = oldKey;
+			data->sendSetKeyCommand(track, row, oldKey); // update clients
 		}
-		
+
 	private:
-		int track;
-		track_key oldKey, key;
+		int track, row;
+		KeyFrame oldKey;
 	};
+
 	
-	class MultiCommand : public Command
-	{
+	class EditCommand : public Command {
+	public:
+		EditCommand(int track, int row, const KeyFrame &key) :
+		    track(track),
+		    row(row),
+		    key(key)
+		{
+		}
+
+		~EditCommand()
+		{
+		}
+
+		void exec(SyncDocument *data)
+		{
+			SyncTrack *t = data->tracks[track];
+			assert(t->keys.count(row));
+			oldKey = t->keys[row];
+			t->keys[row] = key;
+			data->sendSetKeyCommand(track, row, key); // update clients
+		}
+
+		void undo(SyncDocument *data)
+		{
+			SyncTrack *t = data->tracks[track];
+			assert(t->keys.count(row));
+			t->keys[row] = oldKey;
+			data->sendSetKeyCommand(track, row, oldKey); // update clients
+		}
+
+	private:
+		int track, row;
+		KeyFrame oldKey, key;
+	};
+
+	class MultiCommand : public Command {
 	public:
 		~MultiCommand()
 		{
 			std::list<Command*>::iterator it;
 			for (it = commands.begin(); it != commands.end(); ++it)
-			{
 				delete *it;
-			}
 			commands.clear();
 		}
-		
+
 		void addCommand(Command *cmd)
 		{
 			commands.push_back(cmd);
 		}
-		
-		size_t getSize() const { return commands.size(); }
-		
+
+		size_t getSize() const
+		{
+			return commands.size();
+		}
+
 		void exec(SyncDocument *data)
 		{
 			std::list<Command*>::iterator it;
-			for (it = commands.begin(); it != commands.end(); ++it) (*it)->exec(data);
+			for (it = commands.begin(); it != commands.end(); ++it)
+				(*it)->exec(data);
 		}
-		
+
 		void undo(SyncDocument *data)
 		{
 			std::list<Command*>::reverse_iterator it;
-			for (it = commands.rbegin(); it != commands.rend(); ++it) (*it)->undo(data);
+			for (it = commands.rbegin(); it != commands.rend(); ++it)
+				(*it)->undo(data);
 		}
-		
+
 	private:
 		std::list<Command*> commands;
 	};
-	
+
 	void exec(Command *cmd)
 	{
 		undoStack.push(cmd);
 		cmd->exec(this);
 		clearRedoStack();
 
-		if (savePointDelta < 0) savePointUnreachable = true;
+		if (savePointDelta < 0)
+			savePointUnreachable = true;
 		savePointDelta++;
 	}
 	
 	bool undo()
 	{
-		if (undoStack.size() == 0) return false;
-		
+		if (!undoStack.size())
+			return false;
+
 		Command *cmd = undoStack.top();
 		undoStack.pop();
-		
+
 		redoStack.push(cmd);
 		cmd->undo(this);
-		
 		savePointDelta--;
-		
+
 		return true;
 	}
 	
 	bool redo()
 	{
-		if (redoStack.size() == 0) return false;
-		
+		if (!redoStack.size())
+			return false;
+
 		Command *cmd = redoStack.top();
 		redoStack.pop();
-		
+
 		undoStack.push(cmd);
 		cmd->exec(this);
 
@@ -345,13 +390,12 @@ public:
 		}
 	}
 	
-	Command *getSetKeyFrameCommand(int track, const track_key &key)
+	Command *getSetKeyFrameCommand(int track, int row, const KeyFrame &key)
 	{
-		sync_track *t = tracks[track];
-		SyncDocument::Command *cmd;
-		if (is_key_frame(t, key.row)) cmd = new EditCommand(track, key);
-		else                          cmd = new InsertCommand(track, key);
-		return cmd;
+		SyncTrack *t = tracks[track];
+		return t->keys.count(row) ?
+		    (Command *)new EditCommand(track, row, key) :
+		    (Command *)new InsertCommand(track, row, key);
 	}
 
 	size_t getTrackOrderCount() const
@@ -387,8 +431,13 @@ public:
 
 	size_t getRows() const { return rows; }
 	void setRows(size_t rows) { this->rows = rows; }
-	
+
+	size_t getTrackCount() const { return tracks.size(); }
+	SyncTrack *getTrack(size_t idx) { return tracks[idx]; }
+	const SyncTrack *getTrack(size_t idx) const { return tracks[idx]; }
+
 private:
+	std::vector<SyncTrack *> tracks;
 	std::vector<size_t> trackOrder;
 	size_t rows;
 	
@@ -397,5 +446,4 @@ private:
 	std::stack<Command*> redoStack;
 	int savePointDelta;        // how many undos must be done to get to the last saved state
 	bool savePointUnreachable; // is the save-point reachable?
-
 };
