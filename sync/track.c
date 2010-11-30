@@ -13,24 +13,9 @@
 #include "track.h"
 #include "base.h"
 
-static float key_linear(const struct track_key k[2], double row)
+float eval_cubic(const float c[4], double t)
 {
-	double t = (row - k[0].row) / (k[1].row - k[0].row);
-	return (float)(k[0].value + (k[1].value - k[0].value) * t);
-}
-
-static float key_smooth(const struct track_key k[2], double row)
-{
-	double t = (row - k[0].row) / (k[1].row - k[0].row);
-	t = t * t * (3 - 2 * t);
-	return (float)(k[0].value + (k[1].value - k[0].value) * t);
-}
-
-static float key_ramp(const struct track_key k[2], double row)
-{
-	double t = (row - k[0].row) / (k[1].row - k[0].row);
-	t = pow(t, 2.0);
-	return (float)(k[0].value + (k[1].value - k[0].value) * t);
+	return (float)(c[0] + c[1] * t + c[2] * t * t + c[3] * t * t * t);
 }
 
 float sync_get_val(const struct sync_track *t, double row)
@@ -46,24 +31,11 @@ float sync_get_val(const struct sync_track *t, double row)
 
 	/* at the edges, return the first/last value */
 	if (idx < 0)
-		return t->keys[0].value;
+		return t->keys[0].coeff[0];
 	if (idx > (int)t->num_keys - 2)
-		return t->keys[t->num_keys - 1].value;
+		return t->keys[t->num_keys - 1].coeff[0];
 
-	/* interpolate according to key-type */
-	switch (t->keys[idx].type) {
-	case KEY_STEP:
-		return t->keys[idx].value;
-	case KEY_LINEAR:
-		return key_linear(t->keys + idx, row);
-	case KEY_SMOOTH:
-		return key_smooth(t->keys + idx, row);
-	case KEY_RAMP:
-		return key_ramp(t->keys + idx, row);
-	default:
-		assert(0);
-		return 0.0f;
-	}
+	return eval_cubic(t->keys[idx].coeff, row - t->keys[idx].row);
 }
 
 int sync_find_key(const struct sync_track *t, int row)

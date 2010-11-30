@@ -107,31 +107,7 @@ public:
 		return index;
 	}
 
-	void sendSetKeyCommand(uint32_t track, uint32_t row, const KeyFrame &key)
-	{
-		if (!clientSocket.connected())
-			return;
-		if (!clientRemap.count(track))
-			return;
-		track = htonl(clientRemap[track]);
-		row = htonl(row);
-
-		union {
-			float f;
-			uint32_t i;
-		} v;
-		v.f = key.value;
-		v.i = htonl(v.i);
-
-		assert(key.type < KeyFrame::TYPE_COUNT);
-
-		unsigned char cmd = SET_KEY;
-		clientSocket.send((char *)&cmd, 1, 0);
-		clientSocket.send((char *)&track, sizeof(track), 0);
-		clientSocket.send((char *)&row, sizeof(row), 0);
-		clientSocket.send((char *)&v.i, sizeof(v.i), 0);
-		clientSocket.send((char *)&key.type, 1, 0);
-	}
+	void sendSetKeyCommand(uint32_t track, int row);
 
 	void sendDeleteKeyCommand(int track, int row)
 	{
@@ -169,7 +145,7 @@ public:
 		clientSocket.send((char *)&flag, 1, 0);
 		clientPaused = pause;
 	}
-	
+
 	void sendSaveCommand()
 	{
 		if (!clientSocket.connected())
@@ -205,7 +181,7 @@ public:
 			SyncTrack *t = data->tracks[track];
 			assert(!t->keys.count(row));
 			t->keys[row] = key;
-			data->sendSetKeyCommand(track, row, key); // update clients
+			data->sendSetKeyCommand(track, row); // update clients
 		}
 
 		void undo(SyncDocument *data)
@@ -246,7 +222,7 @@ public:
 			SyncTrack *t = data->tracks[track];
 			assert(!t->keys.count(row));
 			t->keys[row] = oldKey;
-			data->sendSetKeyCommand(track, row, oldKey); // update clients
+			data->sendSetKeyCommand(track, row); // update clients
 		}
 
 	private:
@@ -274,7 +250,7 @@ public:
 			assert(t->keys.count(row));
 			oldKey = t->keys[row];
 			t->keys[row] = key;
-			data->sendSetKeyCommand(track, row, key); // update clients
+			data->sendSetKeyCommand(track, row); // update clients
 		}
 
 		void undo(SyncDocument *data)
@@ -282,7 +258,7 @@ public:
 			SyncTrack *t = data->tracks[track];
 			assert(t->keys.count(row));
 			t->keys[row] = oldKey;
-			data->sendSetKeyCommand(track, row, oldKey); // update clients
+			data->sendSetKeyCommand(track, row); // update clients
 		}
 
 	private:

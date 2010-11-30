@@ -140,12 +140,8 @@ static int save_track(const struct sync_track *t, const char *path)
 		return -1;
 
 	fwrite(&t->num_keys, sizeof(size_t), 1, fp);
-	for (i = 0; i < (int)t->num_keys; ++i) {
-		char type = (char)t->keys[i].type;
-		fwrite(&t->keys[i].row, sizeof(int), 1, fp);
-		fwrite(&t->keys[i].value, sizeof(float), 1, fp);
-		fwrite(&type, sizeof(char), 1, fp);
-	}
+	for (i = 0; i < (int)t->num_keys; ++i)
+		fwrite(&t->keys[i].coeff, sizeof(float), 4, fp);
 
 	fclose(fp);
 	return 0;
@@ -180,29 +176,31 @@ static int get_track_data(struct sync_device *d, struct sync_track *t)
 
 static int handle_set_key_cmd(SOCKET sock, struct sync_data *data)
 {
+	int i;
 	uint32_t track, row;
 	union {
 		float f;
 		uint32_t i;
-	} v;
+	} v[4];
 	struct track_key key;
-	unsigned char type;
 
 	if (xrecv(sock, (char *)&track, sizeof(track), 0) ||
 	    xrecv(sock, (char *)&row, sizeof(row), 0) ||
-	    xrecv(sock, (char *)&v.i, sizeof(v.i), 0) ||
-	    xrecv(sock, (char *)&type, 1, 0))
+	    xrecv(sock, (char *)&v[0].i, sizeof(v[0].i), 0) ||
+	    xrecv(sock, (char *)&v[1].i, sizeof(v[1].i), 0) ||
+	    xrecv(sock, (char *)&v[2].i, sizeof(v[2].i), 0) ||
+	    xrecv(sock, (char *)&v[3].i, sizeof(v[3].i), 0))
 		return -1;
 
 	track = ntohl(track);
-	v.i = ntohl(v.i);
+	for (i = 0; i < 4; ++i)
+		v[i].i = ntohl(v[i].i);
 
 	key.row = ntohl(row);
-	key.value = v.f;
+	for (i = 0; i < 4; ++i)
+		key.coeff[i] = v[i].f;
 
-	assert(type < KEY_TYPE_COUNT);
 	assert(track < data->num_tracks);
-	key.type = (enum key_type)type;
 	return sync_set_key(data->tracks[track], &key);
 }
 

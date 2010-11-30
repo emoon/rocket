@@ -7,6 +7,83 @@ SyncDocument::~SyncDocument()
 	clearRedoStack();
 }
 
+void SyncDocument::sendSetKeyCommand(uint32_t track, int row)
+{
+	if (!clientSocket.connected())
+		return;
+	if (!clientRemap.count(track))
+		return;
+
+	SyncTrack *t = tracks[track];
+	track = htonl(clientRemap[track]);
+
+	std::map<int, KeyFrame>::const_iterator it = t->keys.find(row);
+	assert(it != t->keys.end());
+
+	for (int i = 0; i < 2; ++i) {
+		union {
+			float f;
+			uint32_t i;
+		} v[4];
+
+		v[0].f = it->second.value;
+
+		std::map<int, KeyFrame>::const_iterator next = it;
+		next++;
+
+		float mag = 0.0f;
+		int len = 1;
+		if (next != t->keys.end()) {
+			mag = next->second.value - it->second.value;
+			len = next->first - it->first;
+		}
+
+		switch (it->second.type) {
+		case KeyFrame::TYPE_STEP:
+			v[1].f = 0.0f;
+			v[2].f = 0.0f;
+			v[3].f = 0.0f;
+			break;
+		case KeyFrame::TYPE_LINEAR:
+			v[1].f = mag / len;
+			v[2].f = 0.0f;
+			v[3].f = 0.0f;
+			break;
+		case KeyFrame::TYPE_SMOOTH:
+			v[1].f =  0.0f;
+			v[2].f =  3 * mag / (len * len);
+			v[3].f = -2 * mag / (len * len * len);
+			break;
+		case KeyFrame::TYPE_RAMP:
+			v[1].f = 0.0f;
+			v[2].f = mag / (len * len);
+			v[3].f = 0.0f;
+			break;
+		default:
+			assert(false);
+		}
+
+		for (int j = 0; j < 4; ++j)
+			v[j].i = htonl(v[j].i);
+
+		assert(it->second.type < KeyFrame::TYPE_COUNT);
+
+		unsigned char cmd = SET_KEY;
+		uint32_t nrow = htonl((uint32_t)it->first);
+
+		clientSocket.send((char *)&cmd, 1, 0);
+		clientSocket.send((char *)&track, sizeof(track), 0);
+		clientSocket.send((char *)&nrow, sizeof(nrow), 0);
+		clientSocket.send((char *)&v[0].i, sizeof(v[0].i), 0);
+		clientSocket.send((char *)&v[1].i, sizeof(v[1].i), 0);
+		clientSocket.send((char *)&v[2].i, sizeof(v[2].i), 0);
+		clientSocket.send((char *)&v[3].i, sizeof(v[3].i), 0);
+
+		if (--it == t->keys.end())
+			break;
+	}
+}
+
 #import <msxml3.dll> named_guids
 
 bool SyncDocument::load(const std::wstring &fileName)

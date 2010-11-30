@@ -9,18 +9,9 @@
 #include <stdlib.h>
 #include "base.h"
 
-enum key_type {
-	KEY_STEP,   /* stay constant */
-	KEY_LINEAR, /* lerp to the next value */
-	KEY_SMOOTH, /* smooth curve to the next value */
-	KEY_RAMP,
-	KEY_TYPE_COUNT
-};
-
 struct track_key {
 	int row;
-	float value;
-	enum key_type type;
+	float coeff[4];
 };
 
 struct sync_track {

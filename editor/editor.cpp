@@ -623,7 +623,7 @@ void processCommand(NetworkSocket &sock)
 			// send key-frames
 			t = document.getTrack(serverIndex);
 			for (it = t->keys.begin(); it != t->keys.end(); ++it)
-				document.sendSetKeyCommand(int(serverIndex), it->first, it->second);
+				document.sendSetKeyCommand(int(serverIndex), it->first);
 
 			InvalidateRect(trackViewWin, NULL, FALSE);
 			break;
