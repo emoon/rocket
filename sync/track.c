@@ -13,14 +13,15 @@
 #include "track.h"
 #include "base.h"
 
-float eval_cubic(const float c[4], double t)
+float eval_cubic(const float c[4], double t, float mag)
 {
-	return (float)(c[0] + c[1] * t + c[2] * t * t + c[3] * t * t * t);
+	return (float)(c[0] + (c[1] * t + c[2] * t * t + c[3] * t * t * t) * mag);
 }
 
 float sync_get_val(const struct sync_track *t, double row)
 {
-	int idx, irow;
+	int idx, irow, len;
+	float mag;
 
 	/* If we have no keys at all, return a constant 0 */
 	if (!t->num_keys)
@@ -35,7 +36,9 @@ float sync_get_val(const struct sync_track *t, double row)
 	if (idx > (int)t->num_keys - 2)
 		return t->keys[t->num_keys - 1].coeff[0];
 
-	return eval_cubic(t->keys[idx].coeff, row - t->keys[idx].row);
+	mag = t->keys[idx + 1].coeff[0] - t->keys[idx].coeff[0];
+	len = t->keys[idx + 1].row - t->keys[idx].row;
+	return eval_cubic(t->keys[idx].coeff, (row - t->keys[idx].row) / len, mag);
 }
 
 int sync_find_key(const struct sync_track *t, int row)

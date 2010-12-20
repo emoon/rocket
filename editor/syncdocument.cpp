@@ -28,16 +28,6 @@ void SyncDocument::sendSetKeyCommand(uint32_t track, int row)
 
 		v[0].f = it->second.value;
 
-		std::map<int, KeyFrame>::const_iterator next = it;
-		next++;
-
-		float mag = 0.0f;
-		int len = 1;
-		if (next != t->keys.end()) {
-			mag = next->second.value - it->second.value;
-			len = next->first - it->first;
-		}
-
 		switch (it->second.type) {
 		case KeyFrame::TYPE_STEP:
 			v[1].f = 0.0f;
@@ -45,18 +35,18 @@ void SyncDocument::sendSetKeyCommand(uint32_t track, int row)
 			v[3].f = 0.0f;
 			break;
 		case KeyFrame::TYPE_LINEAR:
-			v[1].f = mag / len;
+			v[1].f = 1.0f;
 			v[2].f = 0.0f;
 			v[3].f = 0.0f;
 			break;
 		case KeyFrame::TYPE_SMOOTH:
 			v[1].f =  0.0f;
-			v[2].f =  3 * mag / (len * len);
-			v[3].f = -2 * mag / (len * len * len);
+			v[2].f =  3.0f;
+			v[3].f = -2.0f;
 			break;
 		case KeyFrame::TYPE_RAMP:
 			v[1].f = 0.0f;
-			v[2].f = mag / (len * len);
+			v[2].f = 1.0f;
 			v[3].f = 0.0f;
 			break;
 		default:
