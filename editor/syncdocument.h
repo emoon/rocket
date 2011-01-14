@@ -20,8 +20,10 @@ extern "C" {
 class SyncDocument : public sync_data {
 public:
 	SyncDocument() :
-	    rows(128), savePointDelta(0), savePointUnreachable(false)
+	    rows(128), savePointDelta(0), savePointUnreachable(false),
+	    currTrackGroup(0)
 	{
+		createTrackGroup("default");
 		this->tracks = NULL;
 		this->num_tracks = 0;
 	}
@@ -31,8 +33,40 @@ public:
 	size_t createTrack(const std::string &name)
 	{
 		size_t index = sync_create_track(this, name.c_str());
-		trackOrder.push_back(index);
+		trackGroups[0].tracks.push_back(index);
 		return index;
+	}
+
+	size_t createTrackGroup(const std::string &name)
+	{
+		trackGroups.push_back(TrackGroup(name));
+		return trackGroups.size() - 1;
+	}
+
+	void setTrackGroup(size_t group)
+	{
+		assert(group < trackGroups.size());
+		currTrackGroup = group;
+	}
+
+	size_t getTrackGroups() const
+	{
+		return trackGroups.size();
+	}
+
+	size_t getTrackGroup() const
+	{
+		return currTrackGroup;
+	}
+
+	bool addTrackToTrackGroup(size_t track, size_t trackGroup)
+	{
+		for (size_t i = 0; i < trackGroups[trackGroup].tracks.size(); ++i)
+			if (trackGroups[trackGroup].tracks[i] == track)
+				return false;
+
+		trackGroups[trackGroup].tracks.push_back(track);
+		return true;
 	}
 
 	class Command
@@ -242,27 +276,30 @@ public:
 
 	size_t getTrackOrderCount() const
 	{
-		return trackOrder.size();
+		assert(currTrackGroup < trackGroups.size());
+		return trackGroups[currTrackGroup].tracks.size();
 	}
 	
 	size_t getTrackIndexFromPos(size_t track) const
 	{
-		assert(track < trackOrder.size());
-		return trackOrder[track];
+		assert(currTrackGroup < trackGroups.size());
+		assert(track < trackGroups[currTrackGroup].tracks.size());
+		return trackGroups[currTrackGroup].tracks[track];
 	}
 
 	void swapTrackOrder(size_t t1, size_t t2)
 	{
-		assert(t1 < trackOrder.size());
-		assert(t2 < trackOrder.size());
-		std::swap(trackOrder[t1], trackOrder[t2]);
+		assert(currTrackGroup < trackGroups.size());
+		assert(t1 < trackGroups[currTrackGroup].tracks.size());
+		assert(t2 < trackGroups[currTrackGroup].tracks.size());
+		std::swap(trackGroups[currTrackGroup].tracks[t1], trackGroups[currTrackGroup].tracks[t2]);
 	}
 
 	static SyncDocument *load(const std::wstring &fileName);
 	bool save(const std::wstring &fileName);
 
 	bool modified() const
-	{
+ 	{
 		if (savePointUnreachable) return true;
 		return 0 != savePointDelta;
 	}
@@ -313,6 +350,13 @@ public:
 private:
 	std::set<int> rowBookmarks;
 	std::vector<size_t> trackOrder;
+	struct TrackGroup {
+		TrackGroup(const std::string &name) : name(name) {}
+		std::string name;
+		std::vector<size_t> tracks;
+	};
+	std::vector<TrackGroup> trackGroups;
+	size_t currTrackGroup;
 	size_t rows;
 
 	// undo / redo functionality
