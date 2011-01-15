@@ -221,7 +221,7 @@ void TrackView::paintTracks(HDC hdc, RECT rcTracks)
 	if (!doc)
 		return;
 
-	char temp[256];
+	char buf[256];
 	
 	int firstRow = editRow - windowRows / 2 - 1;
 	int lastRow  = editRow + windowRows / 2 + 1;
@@ -256,10 +256,10 @@ void TrackView::paintTracks(HDC hdc, RECT rcTracks)
 /*		if ((row % 4) == 0) SetTextColor(hdc, GetSysColor(COLOR_BTNTEXT));
 		else                SetTextColor(hdc, GetSysColor(COLOR_GRAYTEXT)); */
 		
-		snprintf(temp, 256, "%0*Xh", 5, row);
+		snprintf(buf, sizeof(buf), "%0*Xh", 5, row);
 		TextOut(hdc,
 			leftMargin.left, leftMargin.top,
-			temp, int(strlen(temp))
+			buf, int(strlen(buf))
 		);
 	}
 	
@@ -336,19 +336,19 @@ void TrackView::paintTracks(HDC hdc, RECT rcTracks)
 			}
 			/* format the text */
 			if (drawEditString)
-				snprintf(temp, 256, editString.c_str());
+				snprintf(buf, sizeof(buf), editString.c_str());
 			else if (idx < 0)
-				snprintf(temp, 256, "  ---");
+				snprintf(buf, sizeof(buf), "  ---");
 			else {
 				float val = t->keys[idx].value;
-				snprintf(temp, 256, "% .2f", val);
+				snprintf(buf, sizeof(buf), "% .2f", val);
 			}
 
 			COLORREF oldCol;
 			if (selected) oldCol = SetTextColor(hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
 			TextOut(hdc,
 				patternDataRect.left, patternDataRect.top,
-				temp, int(strlen(temp))
+				buf, int(strlen(buf))
 			);
 			if (selected) SetTextColor(hdc, oldCol);
 		}
