@@ -157,8 +157,9 @@ void TrackView::paintTopMargin(HDC hdc, RECT rcTracks)
 	RECT fillRect;
 	RECT topLeftMargin;
 	const SyncDocument *doc = getDocument();
-	if (NULL == doc) return;
-	
+	if (!doc)
+		return;
+
 	topLeftMargin.top = 0;
 	topLeftMargin.bottom = topMarginHeight;
 	topLeftMargin.left = 0;
@@ -217,8 +218,9 @@ void TrackView::paintTopMargin(HDC hdc, RECT rcTracks)
 void TrackView::paintTracks(HDC hdc, RECT rcTracks)
 {
 	const SyncDocument *doc = getDocument();
-	if (NULL == doc) return;
-	
+	if (!doc)
+		return;
+
 	char temp[256];
 	
 	int firstRow = editRow - windowRows / 2 - 1;
@@ -390,8 +392,9 @@ struct CopyEntry
 void TrackView::editCopy()
 {
 	const SyncDocument *doc = getDocument();
-	if (NULL == doc) return;
-	
+	if (!doc)
+		return;
+
 	if (0 == getTrackCount()) {
 		MessageBeep(~0U);
 		return;
@@ -461,8 +464,9 @@ void TrackView::editCut()
 void TrackView::editPaste()
 {
 	SyncDocument *doc = getDocument();
-	if (NULL == doc) return;
-	
+	if (!doc)
+		return;
+
 	if (0 == getTrackCount()) {
 		MessageBeep(~0U);
 		return;
@@ -594,8 +598,9 @@ void TrackView::setScrollPos(int newScrollPosX, int newScrollPosY)
 void TrackView::setEditRow(int newEditRow)
 {
 	SyncDocument *doc = getDocument();
-	if (NULL == doc) return;
-	
+	if (!doc)
+		return;
+
 	int oldEditRow = editRow;
 	editRow = newEditRow;
 	
@@ -681,7 +686,10 @@ static int getScrollPos(HWND hwnd, int bar)
 
 void TrackView::setRows(size_t rows)
 {
-	document->setRows(rows);
+	SyncDocument *doc = getDocument();
+	assert(doc);
+
+	doc->setRows(rows);
 	InvalidateRect(getWin(), NULL, FALSE);
 	setEditRow(min(editRow, int(rows) - 1));
 }
@@ -760,8 +768,9 @@ LRESULT TrackView::onHScroll(UINT sbCode, int /*newPos*/)
 void TrackView::editEnterValue()
 {
 	SyncDocument *doc = getDocument();
-	if (NULL == doc) return;
-	
+	if (!doc)
+		return;
+
 	if (int(editString.size()) > 0 && editTrack < int(getTrackCount()))
 	{
 		size_t trackIndex = doc->getTrackIndexFromPos(editTrack);
@@ -789,8 +798,9 @@ void TrackView::editEnterValue()
 void TrackView::editToggleInterpolationType()
 {
 	SyncDocument *doc = getDocument();
-	if (NULL == doc) return;
-	
+	if (!doc)
+		return;
+
 	if (editTrack < int(getTrackCount())) {
 		size_t trackIndex = doc->getTrackIndexFromPos(editTrack);
 		const sync_track *t = doc->tracks[trackIndex];
@@ -821,8 +831,9 @@ void TrackView::editToggleInterpolationType()
 void TrackView::editDelete()
 {
 	SyncDocument *doc = getDocument();
-	if (NULL == doc) return;
-	
+	if (!doc)
+		return;
+
 	int selectLeft  = min(selectStartTrack, selectStopTrack);
 	int selectRight = max(selectStartTrack, selectStopTrack);
 	int selectTop    = min(selectStartRow, selectStopRow);
@@ -860,8 +871,9 @@ void TrackView::editDelete()
 void TrackView::editBiasValue(float amount)
 {
 	SyncDocument *doc = getDocument();
-	if (NULL == doc) return;
-	
+	if (!doc)
+		return;
+
 	int selectLeft  = min(selectStartTrack, selectStopTrack);
 	int selectRight = max(selectStartTrack, selectStopTrack);
 	int selectTop    = min(selectStartRow, selectStopRow);
@@ -907,8 +919,9 @@ void TrackView::editBiasValue(float amount)
 LRESULT TrackView::onKeyDown(UINT keyCode, UINT /*flags*/)
 {
 	SyncDocument *doc = getDocument();
-	if (NULL == doc) return FALSE;
-	
+	if (!doc)
+		return FALSE;
+
 	if (!editString.empty())
 	{
 		switch(keyCode)
@@ -1170,8 +1183,9 @@ LRESULT TrackView::onMouseMove(UINT /*flags*/, POINTS pos)
 
 LRESULT TrackView::windowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	SyncDocument *doc = getDocument();
 	assert(hwnd == this->hwnd);
-	
+
 	switch(msg)
 	{
 	case WM_CREATE:  return onCreate();
@@ -1200,17 +1214,23 @@ LRESULT TrackView::windowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	
 	case WM_UNDO:
-		if (NULL == getDocument()) return FALSE;
-		if (!getDocument()->undo())
+		if (!doc)
+			return FALSE;
+
+		if (!doc->undo())
 			MessageBeep(~0U);
+
 		// unfortunately, we don't know how much to invalidate... so we'll just invalidate it all.
 		InvalidateRect(hwnd, NULL, FALSE);
 		break;
 	
 	case WM_REDO:
-		if (NULL == getDocument()) return FALSE;
-		if (!getDocument()->redo())
+		if (!doc)
+			return FALSE;
+
+		if (!doc->redo())
 			MessageBeep(~0U);
+
 		// unfortunately, we don't know how much to invalidate... so we'll just invalidate it all.
 		InvalidateRect(hwnd, NULL, FALSE);
 		break;
