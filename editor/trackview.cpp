@@ -199,7 +199,10 @@ void TrackView::paintTopMargin(HDC hdc, RECT rcTracks)
 			SetTextColor(hdc, GetSysColor(COLOR_GRAYTEXT));
 		else
 			SetTextColor(hdc, GetSysColor(COLOR_WINDOWTEXT));
-		TextOut(hdc, fillRect.left, 0, t->name, int(strlen(t->name)));
+
+		WCHAR tmp[100];
+		int len = MultiByteToWideChar(CP_UTF8, 0, t->name, strlen(t->name), tmp, sizeof(tmp));
+		TextOutW(hdc, fillRect.left, 0, tmp, len);
 	}
 	
 	RECT topRightMargin;
