@@ -1,9 +1,9 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DotRocket", "DotRocket\DotRocket.vcxproj", "{C982166A-686F-4BAD-9370-62DADC1DCCD0}"
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DotRocket", "DotRocket\DotRocket.vcproj", "{C982166A-686F-4BAD-9370-62DADC1DCCD0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DotRocketClient", "DotRocketClient\DotRocketClient.vcxproj", "{711C0884-4DCF-47AA-87D6-B643F15A6727}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DotRocketClient", "DotRocketClient\DotRocketClient.vcproj", "{711C0884-4DCF-47AA-87D6-B643F15A6727}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
