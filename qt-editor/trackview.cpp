@@ -42,9 +42,7 @@ QVariant TrackModel::data(const QModelIndex &index, int role) const
 	case Qt::DisplayRole:
 		if (datacontent.contains(index))
 			return datacontent[index];
-		if (index.row() % 4 != 0)
-			return QVariant();
-		return str.setNum(float(index.row()) / 16);
+		return QVariant();
 
 	case Qt::BackgroundRole:
 		if (index.row() % 4 == 0 && index.column() % 2 == 0)
