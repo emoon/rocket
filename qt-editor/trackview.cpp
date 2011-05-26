@@ -94,8 +94,13 @@ TrackView::TrackView(QWidget *parent) : QTableView(parent)
 {
 	setModel(new TrackModel());
 
-	verticalHeader()->setDefaultSectionSize(18);
-	horizontalHeader()->setDefaultSectionSize(horizontalHeader()->defaultSectionSize() - 30);
+	QFontMetrics fm(font());
+
+	/* The padding of 4 in "lineSpacing() + 4" has been found by
+	 * trial-and-error. Do not lower it, but increasing it is fine.
+	 */
+	verticalHeader()->setDefaultSectionSize(fm.lineSpacing() + 4);
+	horizontalHeader()->setDefaultSectionSize(fm.averageCharWidth() * 16);
 
 	verticalHeader()->setResizeMode(QHeaderView::Fixed);
 }
