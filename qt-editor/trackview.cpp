@@ -76,8 +76,8 @@ bool TrackModel::setData(const QModelIndex &index, const QVariant &value, int ro
 
 
 QVariant TrackModel::headerData(int section,
-	Qt::Orientation orientation,
-	int role) const
+    Qt::Orientation orientation,
+    int role) const
 {
 /*	if (role == Qt::SizeHintRole)
 		return QSize(1, 1); */
@@ -90,8 +90,7 @@ QVariant TrackModel::headerData(int section,
 	return QVariant();
 }
 
-TrackView::TrackView(QWidget *parent) :
-	QTableView(parent)
+TrackView::TrackView(QWidget *parent) : QTableView(parent)
 {
 	this->setModel(new TrackModel());
 

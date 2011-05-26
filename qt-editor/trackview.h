@@ -4,8 +4,7 @@
 #include <QtGui/QTableView>
 #include <QMap>
 
-class TrackModel : public QAbstractTableModel
-{
+class TrackModel : public QAbstractTableModel {
 	Q_OBJECT
 
 public:
