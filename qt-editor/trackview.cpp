@@ -92,10 +92,10 @@ QVariant TrackModel::headerData(int section,
 
 TrackView::TrackView(QWidget *parent) : QTableView(parent)
 {
-	this->setModel(new TrackModel());
+	setModel(new TrackModel());
 
-	this->verticalHeader()->setDefaultSectionSize(18);
-	this->horizontalHeader()->setDefaultSectionSize(this->horizontalHeader()->defaultSectionSize() - 30);
+	verticalHeader()->setDefaultSectionSize(18);
+	horizontalHeader()->setDefaultSectionSize(horizontalHeader()->defaultSectionSize() - 30);
 
-	this->verticalHeader()->setResizeMode(QHeaderView::Fixed);
+	verticalHeader()->setResizeMode(QHeaderView::Fixed);
 }
