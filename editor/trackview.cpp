@@ -62,8 +62,9 @@ TrackView::TrackView() :
 	lerpPen   = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
 	cosinePen = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
 	rampPen   = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
-	
+
 	editBrush = CreateSolidBrush(RGB(255, 255, 0)); // yellow
+	bookmarkBrush = CreateSolidBrush(RGB(128, 128, 255)); // red
 
 	handCursor = LoadCursor(NULL, IDC_HAND);
 
@@ -81,6 +82,7 @@ TrackView::~TrackView()
 	DeleteObject(cosinePen);
 	DeleteObject(rampPen);
 	DeleteObject(editBrush);
+	DeleteObject(bookmarkBrush);
 	DeleteObject(rowPen);
 	DeleteObject(rowSelectPen);
 	if (document)
@@ -240,12 +242,16 @@ void TrackView::paintTracks(HDC hdc, RECT rcTracks)
 		leftMargin.bottom = leftMargin.top + rowHeight;
 		
 		if (!RectVisible(hdc, &leftMargin)) continue;
-		
+
 		HBRUSH fillBrush;
-		if (row == editRow) fillBrush = editBrush;
-		else fillBrush = GetSysColorBrush(COLOR_3DFACE);
+		if (row == editRow)
+			fillBrush = editBrush;
+		else if (doc->isRowBookmark(row))
+			fillBrush = bookmarkBrush;
+		else
+			fillBrush = GetSysColorBrush(COLOR_3DFACE);
 		FillRect(hdc, &leftMargin, fillBrush);
-		
+
 		DrawEdge(hdc, &leftMargin, BDR_RAISEDINNER | BDR_RAISEDOUTER, BF_RIGHT | BF_BOTTOM | BF_TOP);
 		if ((row % 8) == 0)      SetTextColor(hdc, RGB(0, 0, 0));
 		else if ((row % 4) == 0) SetTextColor(hdc, RGB(64, 64, 64));
@@ -1217,7 +1223,14 @@ LRESULT TrackView::windowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		// unfortunately, we don't know how much to invalidate... so we'll just invalidate it all.
 		InvalidateRect(hwnd, NULL, FALSE);
 		break;
-	
+
+	case WM_BOOKMARK:
+		if (!getDocument())
+			return FALSE;
+		getDocument()->toggleRowBookmark(getEditRow());
+		invalidateRow(getEditRow());
+		break;
+
 	default:
 		return DefWindowProc(hwnd, msg, wParam, lParam);
 	}

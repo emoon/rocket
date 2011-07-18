@@ -12,6 +12,7 @@
 #define WM_ROWCHANGED   (WM_USER + 0x40 + 4)
 #define WM_TRACKCHANGED (WM_USER + 0x40 + 5)
 #define WM_CURRVALDIRTY (WM_USER + 0x40 + 6)
+#define WM_BOOKMARK     (WM_USER + 0x40 + 7)
 
 class TrackView
 {
@@ -189,7 +190,7 @@ private:
 	HBRUSH bgBaseBrush, bgDarkBrush;
 	HBRUSH selectBaseBrush, selectDarkBrush;
 	HPEN rowPen, rowSelectPen;
-	HBRUSH editBrush;
+	HBRUSH editBrush, bookmarkBrush;
 	HPEN lerpPen, cosinePen, rampPen;
 	HCURSOR handCursor;
 	

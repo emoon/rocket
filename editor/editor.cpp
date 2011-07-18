@@ -442,7 +442,8 @@ static LRESULT CALLBACK mainWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
 		case ID_EDIT_COPY:  SendMessage(trackViewWin, WM_COPY,  0, 0); break;
 		case ID_EDIT_CUT:   SendMessage(trackViewWin, WM_CUT,   0, 0); break;
 		case ID_EDIT_PASTE: SendMessage(trackViewWin, WM_PASTE, 0, 0); break;
-		
+		case ID_EDIT_BOOKMARK: SendMessage(trackViewWin, WM_BOOKMARK, 0, 0); break;
+
 		case ID_EDIT_SETROWS:
 			{
 				size_t rows = trackView->getRows();
