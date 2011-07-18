@@ -79,6 +79,8 @@ Shift+Ctrl+Up/Down        Quick-bias by +/- 0.1
 Ctrl+Up/Down              Quick-bias by +/- 1
 Ctrl+PgUp/PgDn            Quick-bias by +/- 10
 Shift+Ctrl+PgUp/PgDn      Quick-bias by +/- 100
+Ctrl+K                    Toggle row-bookmark
+Shift+PgUp/PgDn           Move to prev/next bookmark
 
 Bugs and feed-back
 ------------------
