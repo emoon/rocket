@@ -66,9 +66,9 @@ bool TrackModel::setData(const QModelIndex &index, const QVariant &value, int ro
 	value.toFloat(&ok);
 
 	if (!ok)
-		return false;
-
-	datacontent[index] = value.toFloat();
+		datacontent.remove(index);
+	else
+		datacontent[index] = value.toFloat();
 
 	dataChanged(index, index);
 	return true;
