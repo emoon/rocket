@@ -73,8 +73,6 @@ QVariant TrackModel::headerData(int section,
     Qt::Orientation orientation,
     int role) const
 {
-/*	if (role == Qt::SizeHintRole)
-		return QSize(1, 1); */
 	if (role == Qt::DisplayRole) {
 		if (orientation == Qt::Horizontal)
 			return QVariant(QString("header %1").arg(section));
