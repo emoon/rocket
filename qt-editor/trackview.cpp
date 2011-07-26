@@ -1,13 +1,7 @@
 #include "trackview.h"
-
-#include <QtGui/QApplication>
 #include <QtGui/QPainter>
-#include <QtGui/QMenuBar>
-#include <QtGui/QStatusBar>
 #include <QtGui/QKeyEvent>
-#include <QtGui/QScrollBar>
 #include <QtGui/QHeaderView>
-
 
 TrackModel::TrackModel(QObject *parent)
  : QAbstractTableModel(parent)
