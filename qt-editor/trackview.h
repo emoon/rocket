@@ -27,6 +27,10 @@ class TrackView : public QTableView {
 
 public:
 	TrackView(QWidget *parent = 0);
+	void scrollTo(const QModelIndex &index, ScrollHint hint)
+	{
+		QTableView::scrollTo(index, QAbstractItemView::PositionAtCenter);
+	}
 
 protected:
 };

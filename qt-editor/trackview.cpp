@@ -93,6 +93,9 @@ TrackView::TrackView(QWidget *parent) : QTableView(parent)
 	 */
 	verticalHeader()->setDefaultSectionSize(fm.lineSpacing() + 4);
 	horizontalHeader()->setDefaultSectionSize(fm.averageCharWidth() * 16);
-
 	verticalHeader()->setResizeMode(QHeaderView::Fixed);
+
+	// setup scrolling
+	setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+	setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 }
