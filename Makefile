@@ -20,9 +20,9 @@ else
 endif
 
 SYNC_OBJS = \
-	sync/data.o \
-	sync/device.o \
-	sync/track.o
+	lib/data.o \
+	lib/device.o \
+	lib/track.o
 
 all: lib/librocket.a
 
@@ -32,7 +32,7 @@ bin/example_bass$X: LDLIBS += -Lexample_bass/lib -lbass
 bin/example_bass$X: LDLIBS += $(OPENGL_LIBS) $(SDL_LIBS)
 
 clean:
-	$(RM) -rf $(SYNC_OBJS) lib bin
+	$(RM) -rf $(SYNC_OBJS) lib/librocket.a bin
 
 lib/librocket.a: $(SYNC_OBJS)
 	@mkdir -p lib
