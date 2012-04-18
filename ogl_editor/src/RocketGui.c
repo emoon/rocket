@@ -475,6 +475,35 @@ bool RocketGui_buttonImage(const char* filename)
 	return false;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool RocketGui_button(const char* text)
+{
+	RocketControlInfo* control;
+	uint32_t controlId = 0;
+
+	control = RocketGui_textLabel(text);
+	controlId = s_controlId - 1; 
+
+	if (controlId == ~0)
+		return false;
+
+	control = &g_controls[controlId];
+
+	if (RocketGui_regionHit(control))
+	{
+		g_rocketGuiState.hotItem = controlId;
+    	if (g_rocketGuiState.activeItem == 0 && g_rocketGuiState.mouseDown)
+      		g_rocketGuiState.activeItem = controlId;
+
+   		//highlightControl(control);
+	}
+
+	if (g_rocketGuiState.mouseDown == 0 && g_rocketGuiState.hotItem == controlId && g_rocketGuiState.activeItem == controlId)
+		return true;
+
+	return false;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

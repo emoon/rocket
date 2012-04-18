@@ -45,6 +45,15 @@ void Editor_guiUpdate()
 
 	RocketGui_beginHorizontalStackPanelXY(2, 2);
 
+	if (RocketGui_button("PressMeNow!"))
+	{
+		RocketGui_textLabel("Pressed!");
+	}
+	else
+	{
+		RocketGui_textLabel("No Press0r!");
+	}
+
 	RocketGui_textLabel("Test");
 	RocketGui_textLabel("Test2");
 	RocketGui_textLabel("Test");
