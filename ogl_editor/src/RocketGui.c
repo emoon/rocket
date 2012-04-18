@@ -490,8 +490,6 @@ void RocketGui_end()
 			g_rocketGuiState.activeItem = -1;
 	}
 
-	GFXBackend_draw();
-
-	//RocketWindow_refresh();
+	GFXBackend_drawControls(&g_controls, s_controlId);
 }
 

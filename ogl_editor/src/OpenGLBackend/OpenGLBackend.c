@@ -1,11 +1,12 @@
-#include "Core/Types.h"
-#include "../GFXBackend.h"
-#include "../MicroknightFont.h"
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "Core/Types.h"
+#include "../RocketGui.h"
+#include "../GFXBackend.h"
+#include "../MicroknightFont.h"
 
 unsigned int s_fontTexture;
 
@@ -45,16 +46,6 @@ void GFXBackend_updateViewPort(int width, int height)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void GFXBackend_draw()
-{
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // prepare for primitive drawing
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    glFlush();
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -64,7 +55,7 @@ void GFXBackend_destroy()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void GFXBackend_drawTextHorizontal(int x, int y, const char* text)
+static void drawTextHorizontal(int x, int y, const char* text)
 {
 	const int charOffset = 32;
 	char c = *text++;
@@ -98,6 +89,7 @@ void GFXBackend_drawTextHorizontal(int x, int y, const char* text)
 	}
 
 	glEnd();
+ 	glDisable(GL_TEXTURE_2D);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,15 +183,55 @@ static void quad(int x, int y, int width, int height)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void drawRow(int x, int rowOffset)
+void GFXBackend_drawControls(void* data, int controlCount)
 {
-	glBegin(GL_QUADS);
-	quad(x, rowOffset, 8, 1);
-	quad(x + 10, rowOffset, 8, 1);
-	quad(x + 20, rowOffset, 8, 1);
-	glEnd();
+	RocketControlInfo* controls = (RocketControlInfo*)data;
+
+	glClear(GL_COLOR_BUFFER_BIT);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+	for (uint i = 0; i < controlCount; ++i)
+	{
+		const RocketControlInfo* control = &controls[i]; 
+
+		switch (controls[i].type)
+		{
+			case DRAWTYPE_NONE :
+				break;
+
+			case DRAWTYPE_SLIDER :
+			{
+				break;
+			}
+
+			case DRAWTYPE_FILL :
+			{
+				uint32_t color = control->color;
+				glBegin(GL_QUADS);
+				glColor4f(((color >> 16) & 0xff) * 1.0f / 255.0f, 
+						  ((color >> 8) & 0xff) * 1.0f / 255.0f,
+						  ((color >> 0) & 0xff) * 1.0f / 255.0f,
+						  ((color >> 24) & 0xff) * 1.0f / 255.0f);
+				quad(control->x, control->y, control->width, control->height);
+				glEnd();
+				break;
+			}
+
+			case DRAWTYPE_TEXT :
+			{
+				drawTextHorizontal(control->x, control->y, control->text);
+				break;
+			}
+
+			case DRAWTYPE_IMAGE :
+			{
+				break;	
+			}
+		}
+	}
+
+    glFlush();
 }
-
-
-
 

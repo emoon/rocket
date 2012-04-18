@@ -49,6 +49,8 @@ void Editor_guiUpdate()
 	RocketGui_textLabel("Test2");
 	RocketGui_textLabel("Test");
 
+	RocketGui_fill(0xff0203ff, 10, 10, 100, 100);
+
 	RocketGui_end();
 }
 
