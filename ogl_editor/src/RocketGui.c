@@ -89,14 +89,19 @@ struct LoadedImages
 
 static bool RocketGui_regionHit(const RocketControlInfo* control)
 {
+	printf("mouse %d %d\n", g_rocketGuiState.mousex, g_rocketGuiState.mousey);
+	printf("control %d %d %d %d\n", control->x, control->y, control->width, control->height);
+
 	if (g_rocketGuiState.mousex < control->x ||
 		g_rocketGuiState.mousey < control->y ||
 		g_rocketGuiState.mousex >= control->x + control->width ||
 		g_rocketGuiState.mousey >= control->y + control->height)
 	{
+		printf("false\n");
 		return false;
 	}
 
+	printf("true\n");
 	return true;
 }
 
