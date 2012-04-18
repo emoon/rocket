@@ -1,7 +1,7 @@
 //
 
 #import "RocketView.h"
-#include <OpenGLRenderer/OpenGLRenderer.h> 
+#include "../GFXBackend.h" 
 
 extern void Editor_init();
 extern void Editor_guiUpdate();

@@ -1,5 +1,5 @@
-#include "OpenGLRenderer.h"
 #include "Core/Types.h"
+#include "../GFXBackend.h"
 #include "../MicroknightFont.h"
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>

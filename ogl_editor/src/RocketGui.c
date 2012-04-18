@@ -1,6 +1,6 @@
 #include "RocketGui.h"
 #include "MicroknightFont.h"
-#include <OpenGLRenderer/OpenGLRenderer.h>
+#include "GFXBackend.h"
 #include <string.h>
 #include <stdio.h>
 
