@@ -1,0 +1,3 @@
+[submodule "ogl_editor/emgui"]
+	path = ogl_editor/emgui
+	url = https://emoon@github.com/emoon/emgui.git
