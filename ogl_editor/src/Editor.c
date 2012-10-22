@@ -1,5 +1,5 @@
-#include "RocketGui.h"
 #include <string.h>
+#include <Emgui.h>
 
 typedef struct RETrack
 {
@@ -17,12 +17,17 @@ typedef struct Editor
 	int currentRow;
 } Editor;
 
-static Editor s_editor;
+//static Editor s_editor;
+
+void Editor_create()
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Editor_init()
 {
+	/*
 	memset(&s_editor, 0, sizeof(Editor));
 
 	s_editor.tracks[0].name = strdup("DemoTrack");
@@ -35,14 +40,16 @@ void Editor_init()
 	s_editor.windowHeight = 600;
 
 	RocketGui_init();
+	*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_guiUpdate()
+void Editor_update()
 {
-	RocketGui_begin();
+	Emgui_begin();
 
+	/*
 	RocketGui_beginHorizontalStackPanelXY(2, 2);
 
 	if (RocketGui_button("PressMeNow!"))
@@ -59,7 +66,22 @@ void Editor_guiUpdate()
 	RocketGui_textLabel("Test");
 
 	RocketGui_fill(0xff0203ff, 10, 10, 100, 100);
+	*/
 
-	RocketGui_end();
+	Emgui_end();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Editor_keyDown(int keyCode)
+{
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Editor_destroy()
+{
+
 }
 

@@ -1,6 +1,7 @@
 #import "RocketView.h"
 #include "../Editor.h"
-#include <emgui/emgui.h> 
+#include <Emgui.h> 
+#include <GFXBackend.h> 
 
 @implementation RocketView
 
@@ -122,7 +123,7 @@
 	Emgui_setMousePos((int)location.x, (int)originalFrame.size.height - (int)location.y);
 	Emgui_setMouseLmb(1);
 	
-	Editor_guiUpdate();
+	Editor_update();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -136,7 +137,7 @@
 
 -(void) dealloc 
 {
-	Example_destroy();
+	Editor_destroy();
 	EMGFXBackend_destroy();
     [super dealloc];
 }

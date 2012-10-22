@@ -25,6 +25,38 @@ StaticLibrary {
 }
 
 StaticLibrary {
+	Name = "emgui",
+
+	Env = {
+		CPPPATH = { ".", "../../emgui/src", "../../../../emgui/src" },
+		PROGOPTS = {
+			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
+		},
+
+		CPPDEFS = {
+			{ "EMGUI_MACOSX", Config = "macosx-*-*" },
+			{ "EMGUI_WINDOWS"; Config = { "win32-*-*", "win64-*-*" } },
+		},
+
+		CCOPTS = {
+			{ "-Werror", "-pedantic-errors", "-Wall"; Config = "macosx-clang-*" },
+		},
+	},
+
+	Sources = { 
+		FGlob {
+			Dir = "../emgui/src",
+			Extensions = { ".c" },
+			Filters = {
+				{ Pattern = "macosx"; Config = "macosx-*-*" },
+				{ Pattern = "windows"; Config = { "win32-*-*", "win64-*-*" } },
+			},
+		},
+	},
+}
+
+
+StaticLibrary {
 	Name = "sync",
 
 	Sources = { 
@@ -40,13 +72,13 @@ Program {
 	Name = "editor",
 
 	Env = {
-		CPPPATH = { ".", "ogl_editor/src" },
+		CPPPATH = { ".", "ogl_editor/src", "../emgui/src", "../../../../../emgui/src"  },
 		PROGOPTS = {
 			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
 		},
 
 		CPPDEFS = {
-			{ "ROCKETGUI_MACOSX", Config = "macosx-*-*" },
+			{ "EMGUI_MACOSX", Config = "macosx-*-*" },
 			{ "ROCKETGUI_WIN32"; Config = { "win32-*-*", "win64-*-*" } },
 		},
 
@@ -55,7 +87,7 @@ Program {
 		},
 	},
 
-	Depends = { "sync", "mxml" },
+	Depends = { "sync", "mxml", "emgui" },
 
 	Frameworks = { "Cocoa", "OpenGL"  },
 
