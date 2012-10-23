@@ -70,10 +70,10 @@
 		}
 	}
 
-	Editor_keyDown(keyCode);
-	Editor_update();
+	if (!Editor_keyDown(keyCode))
+    	[super keyDown:theEvent];
 
-    //[super keyDown:theEvent];
+	Editor_update();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

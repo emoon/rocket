@@ -216,14 +216,17 @@ void Editor_update()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_keyDown(int key)
+bool Editor_keyDown(int key)
 {
+	bool handled_key = true;
+
 	//printf("callBack %d\n", key);
 
 	switch (key)
 	{
 		case EMGUI_ARROW_DOWN : start_pos++; break;
 		case EMGUI_ARROW_UP : start_pos--; break;
+		default : handled_key = false; break;
 	}
 
 	if (start_pos < -19)
@@ -238,7 +241,11 @@ void Editor_keyDown(int key)
 
 		if (offset > s_testChannel.maxRange)
 			s_testChannel.maxRange = offset;
+
+		return true;
 	}
+
+	return handled_key;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

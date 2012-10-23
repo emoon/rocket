@@ -1,0 +1,9 @@
+<tracks rows="128">
+	<track name="intro_image">
+		<key row="32" value="3.000000" interpolation="0"/>
+		<key row="96" value="5.000000" interpolation="0"/>
+		<key row="104" value="5.000000" interpolation="0"/>
+		<key row="112" value="12346.000000" interpolation="0"/>
+		<key row="115" value="12.000000" interpolation="0"/>
+	</track>
+</tracks>
