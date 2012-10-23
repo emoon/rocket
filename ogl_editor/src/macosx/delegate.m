@@ -1,19 +1,23 @@
 
 #import "delegate.h"
+#include "../Editor.h"
 
 @implementation MinimalAppAppDelegate
 
 @synthesize window;
 @synthesize button;
 
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-	// Insert code here to initialize your application
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (void)applicationDidFinishLaunching:(NSNotification *)aNotification 
+{
 }
 
-- (IBAction) buttonClicked:(id)sender {
-	NSRunAlertPanel(@"Hello, world",
-					@"Hello",
-					@"OK", nil, nil);
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (IBAction) buttonClicked:(id)sender 
+{
+	Editor_menuEvent((int)((NSButton*)sender).tag);
 }
 
 @end

@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "Dialog.h"
+#include "Editor.h"
 
 typedef struct RETrack
 {
@@ -238,6 +240,31 @@ void Editor_keyDown(int key)
 
 		if (offset > s_testChannel.maxRange)
 			s_testChannel.maxRange = offset;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onOpen()
+{
+	char path[512];
+
+	if (!Dialog_open(path))
+		return;
+
+	printf("%s\n", path);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Editor_menuEvent(int menuItem)
+{
+	switch (menuItem)
+	{
+		//case EDITOR_MENU_NEW : onNew(); break;
+		case EDITOR_MENU_OPEN : onOpen(); break;
+		//case EDITOR_MENU_SAVE : onSave(); break;
+		//case EDITOR_MENU_SAVE_AS : onSaveAs(); break;
 	}
 }
 
