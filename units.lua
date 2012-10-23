@@ -2,7 +2,7 @@ StaticLibrary {
 	Name = "mxml",
 
 	Env = {
-		CPPPATH = { "." },
+		CPPPATH = { ".", "ogl_rocket/src/External/mxml" },
 		PROGOPTS = {
 			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
 		},
@@ -72,7 +72,9 @@ Program {
 	Name = "editor",
 
 	Env = {
-		CPPPATH = { ".", "ogl_editor/src", "../emgui/src", "../../../../../emgui/src"  },
+		CPPPATH = { ".", "ogl_editor/src", 
+						 "../emgui/src", "../../../../../emgui/src",
+					     "ogl_editor/External/mxml" },
 		PROGOPTS = {
 			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
 		},
