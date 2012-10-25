@@ -7,6 +7,13 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+-(void) updateEditor
+{
+	Editor_timedUpdate();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 - (id)initWithFrame:(NSRect)frame 
 {
     self = [super initWithFrame:frame];
@@ -18,6 +25,12 @@
 
 	EMGFXBackend_create();
 	Editor_create();
+
+	const float framerate = 60;
+	const float frequency = 1.0f/framerate;
+	[NSTimer scheduledTimerWithTimeInterval:frequency
+		target:self selector:@selector(updateEditor)
+		userInfo:nil repeats:YES];
 
 	return self;
 }

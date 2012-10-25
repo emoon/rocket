@@ -5,7 +5,7 @@
 #include <string.h>
 #include "Dialog.h"
 #include "Editor.h"
-#include "External/mxml/mxml.h"
+#include "LoadSave.h"
 
 typedef struct RETrack
 {
@@ -253,85 +253,20 @@ bool Editor_keyDown(int key)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void parseXml(mxml_node_t* rootNode)
+void Editor_timedUpdate()
 {
-	// find the tracks element
 	
-	mxml_node_t* node = mxmlFindElement(rootNode, rootNode, "tracks", NULL, NULL, MXML_NO_DESCEND);
 
-	if (!node)
-	{
-		node = mxmlFindElement(rootNode, rootNode, "tracks", NULL, NULL, MXML_DESCEND_FIRST);
 
-		if (!node)
-		{
-			// TODO: Report back that we couldn't find tracks in xml file
-			// Dialog_showError(...)
-		
-			printf("No tracks found\n");
-
-			return;
-		}
-	}
-
-	// Traverse the tracks node data
-
-	while (1)
-	{
-		node = mxmlWalkNext(node, rootNode, MXML_DESCEND);
-
-		if (!node)
-			break;
-
-		switch (mxmlGetType(node))
-		{
-			case MXML_ELEMENT:
-			{
-				const char* element_name = mxmlGetElement(node);
-
-				if (!strcmp("track", element_name))
-				{
-					// TODO: Create the new track/channel here
-
-					printf("Creating track/channel with name %s\n", mxmlElementGetAttr(node, "name")); 
-				}
-				else if (!strcmp("key", element_name))
-				{
-					const char* row = mxmlElementGetAttr(node, "row"); 
-					const char* value = mxmlElementGetAttr(node, "value"); 
-					const char* interpolation = mxmlElementGetAttr(node, "interpolation"); 
-
-					printf("Adding key: row %s | value %s | interpolation %s\n", row, value, interpolation);
-				}
-			}
-
-			default: break;
-		}
-	}
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void onOpen()
 {
-	FILE* fp;
-	mxml_node_t* tree;
-	char path[512];
-
-	if (!Dialog_open(path))
-		return;
-
-	if (!(fp = fopen(path, "r")))
-		return;
-
-	if (!(tree = mxmlLoadFile(NULL, fp, MXML_TEXT_CALLBACK)))
-	{
-		fclose(fp);
-		return;
-	}
-
-	parseXml(tree);
-	mxmlDelete(tree);
+	LoadSave_loadRocketXMLDialog();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
