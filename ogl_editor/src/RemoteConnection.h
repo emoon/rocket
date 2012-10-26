@@ -4,15 +4,24 @@
 
 struct track_key;
 
-bool ClientSocket_isPaused();
-bool ClientSocket_connected();
-void ClientSocket_disconnect();
-bool ClientSocket_recv(char* buffer, size_t length, int flags);
-bool ClientSocket_send(const char* buffer, size_t length, int flags);
-bool ClientSocket_pollRead();
-void ClientSocket_sendSetKeyCommand(const char* trackName, const struct track_key* key);
-void ClientSocket_sendDeleteKeyCommand(const char* trackName, int row);
-void ClientSocket_sendSetRowCommand(int row);
-void ClientSocket_sendPauseCommand(bool pause);
-void ClientSocket_sendSaveCommand();
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Listen for incoming connections
+
+bool RemoteConnection_createListner();
+void RemoteConnection_updateListner();
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Talk with the demo stuff
+
+bool RemoteConnection_isPaused();
+bool RemoteConnection_connected();
+void RemoteConnection_disconnect();
+bool RemoteConnection_recv(char* buffer, size_t length, int flags);
+bool RemoteConnection_send(const char* buffer, size_t length, int flags);
+bool RemoteConnection_pollRead();
+void RemoteConnection_sendSetKeyCommand(const char* trackName, const struct track_key* key);
+void RemoteConnection_sendDeleteKeyCommand(const char* trackName, int row);
+void RemoteConnection_sendSetRowCommand(int row);
+void RemoteConnection_sendPauseCommand(bool pause);
+void RemoteConnection_sendSaveCommand();
 

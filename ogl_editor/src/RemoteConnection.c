@@ -1,4 +1,4 @@
-#include "ClientSocket.h"
+#include "RemoteConnection.h"
 #include <string.h>
 
 #if defined(_MSC_VER)
@@ -19,16 +19,19 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 #endif
 
 #include "../../sync/base.h"
 #include "../../sync/track.h"
+#include "rlog.h"
 
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
 #endif
 
 int s_socket = INVALID_SOCKET;
+int s_serverSocket = INVALID_SOCKET; 
 static bool s_paused = false;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,14 +89,114 @@ int findTrack(const char* name)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ClientSocket_connected()
+bool RemoteConnection_createListner()
+{
+	s_serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+	if (s_serverSocket == INVALID_SOCKET)
+		return false;
+
+	struct sockaddr_in sin;
+	memset(&sin, 0, sizeof sin);
+
+	sin.sin_family = AF_INET;
+	sin.sin_addr.s_addr = INADDR_ANY;
+	sin.sin_port = htons(1338);
+
+	if (-1 == bind(s_serverSocket, (struct sockaddr *)&sin, sizeof(sin)))
+	{
+		rlog(R_ERROR, "Unable to create server socket\n");
+		return false;
+	}
+
+	while (listen(s_serverSocket, SOMAXCONN) == -1)
+		;
+
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool RemoteConnection_connected()
 {
 	return INVALID_SOCKET != s_socket;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ClientSocket_disconnect()
+static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host)
+{
+	struct sockaddr_in hostTemp;
+	char recievedGreeting[128];
+	const char* expectedGreeting = CLIENT_GREET;
+	const char* greeting = SERVER_GREET;
+	unsigned int hostSize = sizeof(struct sockaddr_in);
+
+	SOCKET clientSocket = accept(serverSocket, (struct sockaddr*)&hostTemp, &hostSize);
+
+	if (INVALID_SOCKET == clientSocket) 
+		return INVALID_SOCKET;
+
+	recv(clientSocket, recievedGreeting, (int)strlen(expectedGreeting), 0);
+
+	if (strncmp(expectedGreeting, recievedGreeting, strlen(expectedGreeting)) != 0)
+	{
+		closesocket(clientSocket);
+		return INVALID_SOCKET;
+	}
+
+	send(clientSocket, greeting, (int)strlen(greeting), 0);
+
+	if (NULL != host) 
+		*host = hostTemp;
+
+	return clientSocket;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RemoteConnection_updateListner()
+{
+	fd_set fds;
+	struct timeval timeout;
+	SOCKET clientSocket;
+	struct sockaddr_in client;
+
+	if (!RemoteConnection_connected())
+		return;
+
+	FD_ZERO(&fds);
+	FD_SET(s_serverSocket, &fds);
+
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
+
+	// look for new clients
+	
+	if (select(0, &fds, NULL, NULL, &timeout) > 0)
+	{
+		rlog(R_INFO, "Accepting...\n");
+		clientSocket = clientConnect(s_serverSocket, &client);
+
+		if (INVALID_SOCKET != clientSocket)
+		{
+			rlog(R_INFO, "Connected to %s\n", inet_ntoa(client.sin_addr));
+			s_socket = clientSocket; 
+
+			RemoteConnection_sendPauseCommand(true);
+			//RemoteConnection_sendSetRowCommand(trackView->getEditRow());
+
+		}
+		else 
+		{
+			rlog(R_INFO, "Not connected\n");
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RemoteConnection_disconnect()
 {
 #if defined(_WIN32)
 	closesocket(s_socket);
@@ -108,16 +211,16 @@ void ClientSocket_disconnect()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ClientSocket_recv(char* buffer, size_t length, int flags)
+bool RemoteConnection_recv(char* buffer, size_t length, int flags)
 {
 	int ret;
 
-	if (!ClientSocket_connected())
+	if (!RemoteConnection_connected())
 		return false;
 
 	if ((ret = recv(s_socket, buffer, (int)length, flags)) != (int)length)
 	{
-		ClientSocket_disconnect();
+		RemoteConnection_disconnect();
 		return false;
 	}
 
@@ -126,16 +229,16 @@ bool ClientSocket_recv(char* buffer, size_t length, int flags)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ClientSocket_send(const char* buffer, size_t length, int flags)
+bool RemoteConnection_send(const char* buffer, size_t length, int flags)
 {
 	int ret;
 
-	if (!ClientSocket_connected())
+	if (!RemoteConnection_connected())
 		return false;
 
 	if ((ret = send(s_socket, buffer, (int)length, flags)) != (int)length)
 	{
-		ClientSocket_disconnect();
+		RemoteConnection_disconnect();
 		return false;
 	}
 
@@ -144,9 +247,9 @@ bool ClientSocket_send(const char* buffer, size_t length, int flags)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ClientSocket_pollRead()
+bool RemoteConnection_pollRead()
 {
-	if (!ClientSocket_connected())
+	if (!RemoteConnection_connected())
 		return false;
 
 	return !!socket_poll(s_socket);
@@ -154,7 +257,7 @@ bool ClientSocket_pollRead()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ClientSocket_sendSetKeyCommand(const char* trackName, const struct track_key* key)
+void RemoteConnection_sendSetKeyCommand(const char* trackName, const struct track_key* key)
 {
 	uint32_t track, row;
 	uint8_t cmd = SET_KEY;
@@ -167,7 +270,7 @@ void ClientSocket_sendSetKeyCommand(const char* trackName, const struct track_ke
 
 	track_id = findTrack(trackName);
 
-	if (!ClientSocket_connected() || track_id == -1)
+	if (!RemoteConnection_connected() || track_id == -1)
 		return;
 
 	track = htonl((uint32_t)track_id);
@@ -178,76 +281,76 @@ void ClientSocket_sendSetKeyCommand(const char* trackName, const struct track_ke
 
 	assert(key->type < KEY_TYPE_COUNT);
 
-	ClientSocket_send((char *)&cmd, 1, 0);
-	ClientSocket_send((char *)&track, sizeof(track), 0);
-	ClientSocket_send((char *)&row, sizeof(row), 0);
-	ClientSocket_send((char *)&v.i, sizeof(v.i), 0);
-	ClientSocket_send((char *)&key->type, 1, 0);
+	RemoteConnection_send((char *)&cmd, 1, 0);
+	RemoteConnection_send((char *)&track, sizeof(track), 0);
+	RemoteConnection_send((char *)&row, sizeof(row), 0);
+	RemoteConnection_send((char *)&v.i, sizeof(v.i), 0);
+	RemoteConnection_send((char *)&key->type, 1, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ClientSocket_sendDeleteKeyCommand(const char* trackName, int row)
+void RemoteConnection_sendDeleteKeyCommand(const char* trackName, int row)
 {
 	uint32_t track;
 	unsigned char cmd = DELETE_KEY;
 	int track_id = findTrack(trackName);
 
-	if (!ClientSocket_connected() || track_id == -1)
+	if (!RemoteConnection_connected() || track_id == -1)
 		return;
 
 	track = htonl((uint32_t)track_id);
 	row = htonl(row);
 
-	ClientSocket_send((char *)&cmd, 1, 0);
-	ClientSocket_send((char *)&track, sizeof(int), 0);
-	ClientSocket_send((char *)&row,   sizeof(int), 0);
+	RemoteConnection_send((char *)&cmd, 1, 0);
+	RemoteConnection_send((char *)&track, sizeof(int), 0);
+	RemoteConnection_send((char *)&row,   sizeof(int), 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ClientSocket_sendSetRowCommand(int row)
+void RemoteConnection_sendSetRowCommand(int row)
 {
 	unsigned char cmd = SET_ROW;
 
-	if (!ClientSocket_connected())
+	if (!RemoteConnection_connected())
 		return;
 
 	row = htonl(row);
-	ClientSocket_send((char *)&cmd, 1, 0);
-	ClientSocket_send((char *)&row, sizeof(int), 0);
+	RemoteConnection_send((char *)&cmd, 1, 0);
+	RemoteConnection_send((char *)&row, sizeof(int), 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ClientSocket_sendPauseCommand(bool pause)
+void RemoteConnection_sendPauseCommand(bool pause)
 {
 	unsigned char cmd = PAUSE, flag = pause;
 
-	if (!ClientSocket_connected())
+	if (!RemoteConnection_connected())
 		return;
 
-	ClientSocket_send((char *)&cmd, 1, 0);
-	ClientSocket_send((char *)&flag, 1, 0);
+	RemoteConnection_send((char *)&cmd, 1, 0);
+	RemoteConnection_send((char *)&flag, 1, 0);
 
 	s_paused = pause;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ClientSocket_sendSaveCommand()
+void RemoteConnection_sendSaveCommand()
 {
 	unsigned char cmd = SAVE_TRACKS;
 
-	if (!ClientSocket_connected())
+	if (!RemoteConnection_connected())
 		return;
 
-	ClientSocket_send((char *)&cmd, 1, 0);
+	RemoteConnection_send((char *)&cmd, 1, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ClientSocket_isPaused()
+bool RemoteConnection_isPaused()
 {
 	return s_paused;
 }
