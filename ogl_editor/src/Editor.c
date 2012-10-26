@@ -6,7 +6,10 @@
 #include "Editor.h"
 #include "LoadSave.h"
 #include "TrackView.h"
+#include "rlog.h"
 #include "RemoteConnection.h"
+#include "../../sync/sync.h"
+#include "../../sync/base.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -78,9 +81,72 @@ bool Editor_keyDown(int key)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void processCommands()
+{
+	//SyncDocument *doc = trackView->getDocument();
+	int strLen, newRow;
+	//const struct sync_track* t;
+	unsigned char cmd = 0;
+
+	if (RemoteConnection_recv((char*)&cmd, 1, 0)) 
+	{
+		switch (cmd) 
+		{
+			case GET_TRACK:
+			{
+				char trackName[4096];
+
+				memset(trackName, 0, sizeof(trackName));
+
+				RemoteConnection_recv((char *)&strLen, sizeof(int), 0);
+				strLen = ntohl(strLen);
+
+				if (!RemoteConnection_connected())
+					return;
+
+				if (!RemoteConnection_recv(trackName, strLen, 0))
+					return;
+
+				rlog(R_INFO, "Got trackname %s (%d) from demo\n", trackName, strLen);
+
+				// find track
+				/*
+				serverIndex = sync_find_track(doc, trackName.c_str());
+				if (0 > serverIndex)
+					serverIndex = int(doc->createTrack(trackName));
+
+				// setup remap
+				doc->clientSocket.clientTracks[trackName] = clientIndex++;
+
+				// send key-frames
+				t = doc->tracks[serverIndex];
+				for (int i = 0; i < (int)t->num_keys; ++i)
+					doc->clientSocket.sendSetKeyCommand(trackName, t->keys[i]);
+
+				InvalidateRect(trackViewWin, NULL, FALSE);
+				*/
+				break;
+			}
+
+
+			case SET_ROW:
+			{
+				RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
+				//trackView->setEditRow(ntohl(newRow));
+				break;
+			}
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Editor_timedUpdate()
 {
 	RemoteConnection_updateListner();
+
+	while (RemoteConnection_pollRead())
+		processCommands();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

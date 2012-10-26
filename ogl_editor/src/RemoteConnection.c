@@ -199,7 +199,6 @@ void RemoteConnection_updateListner()
 	
 	//if (select(0, &fds, NULL, NULL, &timeout) > 0)
 	{
-		rlog(R_INFO, "Trying to accept...\n");
 		clientSocket = clientConnect(s_serverSocket, &client);
 
 		if (INVALID_SOCKET != clientSocket)
@@ -213,7 +212,7 @@ void RemoteConnection_updateListner()
 		}
 		else 
 		{
-			rlog(R_INFO, "Not connected\n");
+			//
 		}
 	}
 }
