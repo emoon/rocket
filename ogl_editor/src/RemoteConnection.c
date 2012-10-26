@@ -30,6 +30,10 @@
 #define INVALID_SOCKET -1
 #endif
 
+#ifndef SOCKET_ERROR
+#define SOCKET_ERROR -1
+#endif
+
 int s_socket = INVALID_SOCKET;
 int s_serverSocket = INVALID_SOCKET; 
 static bool s_paused = false;
@@ -89,6 +93,22 @@ int findTrack(const char* name)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static bool setBlocking(int sock, bool blocking)
+{
+	u_long block = blocking ? 0 : 1;
+#if defined(_WIN32)
+	int error = ioctlsocket(sock, FIONBIO, &block);
+#else
+	int error = ioctl(sock, FIONBIO, &block);
+#endif
+	if (SOCKET_ERROR == error)
+		return false;
+
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 bool RemoteConnection_createListner()
 {
 	s_serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -111,6 +131,10 @@ bool RemoteConnection_createListner()
 
 	while (listen(s_serverSocket, SOMAXCONN) == -1)
 		;
+
+	setBlocking(s_serverSocket, false);
+
+	rlog(R_INFO, "Creaded listner\n");
 
 	return true;
 }
@@ -162,7 +186,7 @@ void RemoteConnection_updateListner()
 	SOCKET clientSocket;
 	struct sockaddr_in client;
 
-	if (!RemoteConnection_connected())
+	if (RemoteConnection_connected())
 		return;
 
 	FD_ZERO(&fds);
@@ -173,9 +197,9 @@ void RemoteConnection_updateListner()
 
 	// look for new clients
 	
-	if (select(0, &fds, NULL, NULL, &timeout) > 0)
+	//if (select(0, &fds, NULL, NULL, &timeout) > 0)
 	{
-		rlog(R_INFO, "Accepting...\n");
+		rlog(R_INFO, "Trying to accept...\n");
 		clientSocket = clientConnect(s_serverSocket, &client);
 
 		if (INVALID_SOCKET != clientSocket)
