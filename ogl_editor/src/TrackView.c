@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "../../sync/sync.h"
+#include "../../sync/data.h"
+#include "../../sync/track.h"
 
 const int font_size = 12;
 static int start_pos = -19;
@@ -43,13 +46,14 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
-static void renderChannel(Channel* channel, int startX, int startY, int startPos, int endPos)
+static void renderChannel(struct sync_track* track, int startX, int startY, int startPos, int endPos)
 {
 	uint x, y;
 
 	uint32_t color = Emgui_color32(40, 40, 40, 255);
 	Emgui_drawBorder(color, color, startX, startY, 64, 600);
+	Emgui_drawText(track->name, startX + 2, startY + 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+
 	int y_offset = (startY + font_size) + font_size/2;
 
 	if (startPos < 0)
@@ -68,24 +72,15 @@ static void renderChannel(Channel* channel, int startX, int startY, int startPos
 		int offset = startX + 6;
 
 		float value = 0.0f;
-		bool set = false;
+		int idx = sync_find_key(track, y);
 
-		if (y < channel->maxRange)
+		if (idx >= 0)
 		{
-			set = channel->set[y];
-			value = channel->values[y];
-		}
+			char temp[256];
+			value = track->keys[idx].value;
+			snprintf(temp, 256, "% .2f", value);
 
-		if (set)
-		{
-			char valueText[16];
-
-			if (value < 0.0f)
-				sprintf(valueText, "%0.8f", value);
-			else
-				sprintf(valueText, "%8.4f", value);
-
-			Emgui_drawText(valueText, offset, y_offset + (font_size / 2), Emgui_color32(255, 255, 255, 255));
+			Emgui_drawText(temp, offset, y_offset + (font_size / 2), Emgui_color32(255, 255, 255, 255));
 		}
 		else
 		{
@@ -114,21 +109,39 @@ static void renderChannel(Channel* channel, int startX, int startY, int startPos
 		y_offset += font_size;
 	}
 }
-*/
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackView_render()
+int doMax(int a, int b)
 {
-	//uint i = 0; //, channel_count = 10; 
+	if (b >= a)
+		return b;
+	else
+		return a;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void TrackView_render(const TrackViewInfo* viewInfo, struct sync_data* syncData)
+{
+	// TODO: Calculate how many channels we can draw given the width
+
+	uint i = 0; //, channel_count = 10; 
 
 	printRowNumbers(2, 42, 40, start_pos, font_size, 8);
 
+	if (syncData->num_tracks == 0)
+		return;
+
+	int num_tracks = syncData->num_tracks;
+
+	if (num_tracks > 4)
+		num_tracks = 4;
+
 	//i = 0;
 
-	//for (i = 0; i < channel_count; ++i)
-	//		renderChannel(&s_testChannel, 40 + (i * 64), 20, start_pos, start_pos + 40);
+	for (i = 0; i < num_tracks; ++i)
+		renderChannel(syncData->tracks[i], 40 + (i * 64), 20, start_pos, start_pos + 40);
 
 	uint32_t color = Emgui_color32(127, 127, 127, 56);
 

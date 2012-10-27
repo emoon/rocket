@@ -24,10 +24,18 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+typedef struct TrackInfo
+{
+	bool folded;
+} TrackInfo;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 typedef struct EditorData
 {
 	struct sync_data syncData; 
 	TrackViewInfo trackViewInfo;
+	TrackInfo trackInfo;
 	int trackOrder[8192];
 	int orderCount;
 
@@ -38,7 +46,6 @@ static EditorData s_editorData;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static uint64_t fontIds[2];
-int clientIndex = 0;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -65,7 +72,7 @@ void Editor_update()
 {
 	Emgui_begin();
 
-	TrackView_render(&s_editorData.trackViewInfo);
+	TrackView_render(&s_editorData.trackViewInfo, &s_editorData.syncData);
 
 	Emgui_end();
 }
@@ -139,17 +146,11 @@ static void processCommands()
 					serverIndex = createTrack(&s_editorData, trackName); 
 
 				// setup remap and send the keyframes to the demo
-				RemoteConnection_mapTrackName(trackName, clientIndex++);
+				RemoteConnection_mapTrackName(trackName);
 				RemoteConnection_sendKeyFrames(trackName, s_editorData.syncData.tracks[serverIndex]);
-
-				// send key-frames
-				//t = doc->tracks[serverIndex];
-				//for (i = 0; i < (int)t->num_keys; ++i)
-				//	doc->clientSocket.sendSetKeyCommand(trackName, t->keys[i]);
 
 				break;
 			}
-
 
 			case SET_ROW:
 			{

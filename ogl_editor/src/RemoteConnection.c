@@ -34,7 +34,7 @@
 #define SOCKET_ERROR -1
 #endif
 
-extern int clientIndex;
+static int s_clientIndex;
 int s_socket = INVALID_SOCKET;
 int s_serverSocket = INVALID_SOCKET; 
 static bool s_paused = false;
@@ -94,7 +94,7 @@ int findTrack(const char* name)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_mapTrackName(const char* name, int index)
+void RemoteConnection_mapTrackName(const char* name)
 {
 	int count = s_nameLookup.count;
 
@@ -102,7 +102,7 @@ void RemoteConnection_mapTrackName(const char* name, int index)
 		return;
 
 	s_nameLookup.hashes[count] = quickHash(name);
-	s_nameLookup.ids[count] = index;
+	s_nameLookup.ids[count] = s_clientIndex++;
 	s_nameLookup.count++;
 }
 
@@ -220,7 +220,7 @@ void RemoteConnection_updateListner()
 		{
 			rlog(R_INFO, "Connected to %s\n", inet_ntoa(client.sin_addr));
 			s_socket = clientSocket; 
-			clientIndex = 0;
+			s_clientIndex = 0;
 			RemoteConnection_sendPauseCommand(true);
 			//RemoteConnection_sendSetRowCommand(trackView->getEditRow());
 		}
