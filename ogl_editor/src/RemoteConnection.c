@@ -34,6 +34,7 @@
 #define SOCKET_ERROR -1
 #endif
 
+extern int clientIndex;
 int s_socket = INVALID_SOCKET;
 int s_serverSocket = INVALID_SOCKET; 
 static bool s_paused = false;
@@ -89,6 +90,20 @@ int findTrack(const char* name)
 	}
 
 	return -1;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RemoteConnection_mapTrackName(const char* name, int index)
+{
+	int count = s_nameLookup.count;
+
+	if (findTrack(name))
+		return;
+
+	s_nameLookup.hashes[count] = quickHash(name);
+	s_nameLookup.ids[count] = index;
+	s_nameLookup.count++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -205,10 +220,9 @@ void RemoteConnection_updateListner()
 		{
 			rlog(R_INFO, "Connected to %s\n", inet_ntoa(client.sin_addr));
 			s_socket = clientSocket; 
-
+			clientIndex = 0;
 			RemoteConnection_sendPauseCommand(true);
 			//RemoteConnection_sendSetRowCommand(trackView->getEditRow());
-
 		}
 		else 
 		{
@@ -280,7 +294,7 @@ bool RemoteConnection_pollRead()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_sendSetKeyCommand(const char* trackName, const struct track_key* key)
+static void sendSetKeyCommandIndex(uint32_t index, const struct track_key* key)
 {
 	uint32_t track, row;
 	uint8_t cmd = SET_KEY;
@@ -291,12 +305,7 @@ void RemoteConnection_sendSetKeyCommand(const char* trackName, const struct trac
 		uint32_t i;
 	} v;
 
-	track_id = findTrack(trackName);
-
-	if (!RemoteConnection_connected() || track_id == -1)
-		return;
-
-	track = htonl((uint32_t)track_id);
+	track = htonl(track_id);
 	row = htonl(key->row);
 
 	v.f = key->value;
@@ -309,6 +318,18 @@ void RemoteConnection_sendSetKeyCommand(const char* trackName, const struct trac
 	RemoteConnection_send((char *)&row, sizeof(row), 0);
 	RemoteConnection_send((char *)&v.i, sizeof(v.i), 0);
 	RemoteConnection_send((char *)&key->type, 1, 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RemoteConnection_sendSetKeyCommand(const char* trackName, const struct track_key* key)
+{
+	int track_id = findTrack(trackName);
+
+	if (!RemoteConnection_connected() || track_id == -1)
+		return;
+
+	sendSetKeyCommandIndex((uint32_t)track_id, key);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -376,5 +397,18 @@ void RemoteConnection_sendSaveCommand()
 bool RemoteConnection_isPaused()
 {
 	return s_paused;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RemoteConnection_sendKeyFrames(const char* name, struct sync_track* track)
+{
+	int i, track_id = findTrack(name);
+
+	if (!RemoteConnection_connected() || track_id == -1)
+		return;
+
+	for (i = 0; i < (int)track->num_keys; ++i)
+		sendSetKeyCommandIndex((uint32_t)track_id, &track->keys[i]);
 }
 
