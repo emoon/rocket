@@ -97,6 +97,17 @@ bool Editor_keyDown(int key)
 		return true;
 	}
 
+	if (key == ' ')
+	{
+		// TODO: Don't start playing if we are in edit mode (but space shouldn't be added in edit mode but we still
+		// shouldn't start playing if we do
+
+		bool paused = !RemoteConnection_isPaused();
+		RemoteConnection_sendPauseCommand(paused);
+
+		return true;
+	}
+
 	return handled_key;
 }
 
@@ -155,7 +166,7 @@ static void processCommands()
 			case SET_ROW:
 			{
 				RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
-				//trackView->setEditRow(ntohl(newRow));
+				s_editorData.trackViewInfo.rowPos = htonl(newRow);
 				break;
 			}
 		}
@@ -170,6 +181,11 @@ void Editor_timedUpdate()
 
 	while (RemoteConnection_pollRead())
 		processCommands();
+
+	if (!RemoteConnection_isPaused())
+	{
+		Editor_update();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

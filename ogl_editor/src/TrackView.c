@@ -43,7 +43,6 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 	}
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void renderChannel(struct sync_track* track, int startX, int startY, int startPos, int endPos)
@@ -128,7 +127,7 @@ void TrackView_render(const TrackViewInfo* viewInfo, struct sync_data* syncData)
 
 	uint i = 0; //, channel_count = 10; 
 
-	printRowNumbers(2, 42, 40, start_pos, font_size, 8);
+	printRowNumbers(2, 42, 40, start_pos + viewInfo->rowPos, font_size, 8);
 
 	if (syncData->num_tracks == 0)
 		return;
@@ -141,7 +140,11 @@ void TrackView_render(const TrackViewInfo* viewInfo, struct sync_data* syncData)
 	//i = 0;
 
 	for (i = 0; i < num_tracks; ++i)
-		renderChannel(syncData->tracks[i], 40 + (i * 64), 20, start_pos, start_pos + 40);
+	{
+		renderChannel(syncData->tracks[i], 40 + (i * 64), 20, 
+				(start_pos + viewInfo->rowPos), 
+				(start_pos + viewInfo->rowPos + 40));
+	}	
 
 	uint32_t color = Emgui_color32(127, 127, 127, 56);
 

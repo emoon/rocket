@@ -10,6 +10,7 @@ typedef struct TrackViewInfo
 	int scrollPosX;
 	int windowSizeX;
 	int windowSizeY;
+	int rowPos;
 
 } TrackViewInfo;
 
