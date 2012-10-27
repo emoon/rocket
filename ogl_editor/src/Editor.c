@@ -82,11 +82,32 @@ void Editor_update()
 bool Editor_keyDown(int key)
 {
 	bool handled_key = true;
+	bool paused = RemoteConnection_isPaused();
 
 	switch (key)
 	{
-		case EMGUI_ARROW_DOWN : break;
-		case EMGUI_ARROW_UP : break;
+		case EMGUI_ARROW_DOWN:
+		{
+			if (paused)
+			{
+				int row = ++s_editorData.trackViewInfo.rowPos;
+				RemoteConnection_sendSetRowCommand(row);
+				Editor_update();
+				return true;
+			}
+		}
+
+		case EMGUI_ARROW_UP:
+		{
+			if (paused)
+			{
+				int row = --s_editorData.trackViewInfo.rowPos;
+				RemoteConnection_sendSetRowCommand(row);
+				Editor_update();
+				return true;
+			}
+		}
+
 		default : handled_key = false; break;
 	}
 
@@ -102,8 +123,7 @@ bool Editor_keyDown(int key)
 		// TODO: Don't start playing if we are in edit mode (but space shouldn't be added in edit mode but we still
 		// shouldn't start playing if we do
 
-		bool paused = !RemoteConnection_isPaused();
-		RemoteConnection_sendPauseCommand(paused);
+		RemoteConnection_sendPauseCommand(!paused);
 
 		return true;
 	}
