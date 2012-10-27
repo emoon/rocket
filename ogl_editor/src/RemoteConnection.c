@@ -204,6 +204,8 @@ void RemoteConnection_updateListner()
 	if (RemoteConnection_connected())
 		return;
 
+	rlog(R_INFO, "%d\n", s_socket);
+
 	FD_ZERO(&fds);
 	FD_SET(s_serverSocket, &fds);
 
@@ -242,6 +244,8 @@ void RemoteConnection_disconnect()
 #endif
 	s_socket = INVALID_SOCKET;
 
+	rlog(R_INFO, "disconnect!\n");
+
 	memset(s_nameLookup.ids, -1, sizeof(int) * s_nameLookup.count);
 	s_nameLookup.count = 0;
 }
@@ -257,8 +261,9 @@ bool RemoteConnection_recv(char* buffer, size_t length, int flags)
 
 	if ((ret = recv(s_socket, buffer, (int)length, flags)) != (int)length)
 	{
-		RemoteConnection_disconnect();
-		return false;
+		//rlog(R_INFO, "%d %d\n", ret, length);
+		//RemoteConnection_disconnect();
+		//return false;
 	}
 
 	return true;
