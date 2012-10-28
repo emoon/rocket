@@ -45,7 +45,7 @@ static EditorData s_editorData;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static uint64_t fontIds[2];
+//static uint64_t fontIds[2];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -53,7 +53,8 @@ void Editor_create()
 {
 	Emgui_create("foo");
 	//fontIds[0] = Emgui_loadFont("/Users/daniel/Library/Fonts/MicroKnight_v1.0.ttf", 11.0f);
-	fontIds[0] = Emgui_loadFont(FONT_PATH "Arial.ttf", 11.0f);
+	//fontIds[0] = Emgui_loadFont(FONT_PATH "Arial.ttf", 11.0f);
+	Emgui_setDefaultFont();
 
 	memset(&s_editorData, 0, sizeof(s_editorData));
 
@@ -102,6 +103,13 @@ bool Editor_keyDown(int key)
 			if (paused)
 			{
 				int row = --s_editorData.trackViewInfo.rowPos;
+
+				if (s_editorData.trackViewInfo.rowPos < 0)
+				{
+					s_editorData.trackViewInfo.rowPos = 0;
+					row = 0;
+				}
+
 				RemoteConnection_sendSetRowCommand(row);
 				Editor_update();
 				return true;

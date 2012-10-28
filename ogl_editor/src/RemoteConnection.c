@@ -37,7 +37,7 @@
 static int s_clientIndex;
 int s_socket = INVALID_SOCKET;
 int s_serverSocket = INVALID_SOCKET; 
-static bool s_paused = false;
+static bool s_paused = true;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

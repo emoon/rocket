@@ -7,8 +7,8 @@
 #include "../../sync/data.h"
 #include "../../sync/track.h"
 
-const int font_size = 12;
-static int start_pos = -19;
+const int font_size = 8;
+static int start_pos = -27;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -31,7 +31,8 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 	for (i = 0; i < rowCount; ++i)
 	{
 		char rowText[16];
-		sprintf(rowText, "%04d\n", rowOffset);
+		memset(rowText, 0, sizeof(rowText));
+		sprintf(rowText, "%04d", rowOffset);
 
 		if (rowOffset % maskBpm)
 			Emgui_drawText(rowText, x, y, Emgui_color32(0xa0, 0xa0, 0xa0, 0xff));
@@ -50,28 +51,31 @@ static void renderChannel(struct sync_track* track, int startX, int startY, int 
 	uint x, y;
 
 	uint32_t color = Emgui_color32(40, 40, 40, 255);
-	Emgui_drawBorder(color, color, startX, startY, 64, 600);
-	Emgui_drawText(track->name, startX + 2, startY + 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+	Emgui_drawBorder(color, color, startX, startY - 20, 128, 600);
 
-	int y_offset = (startY + font_size) + font_size/2;
+	if (track)
+		Emgui_drawText(track->name, startX + 2, startY + 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+
+	int y_offset = startY;// + font_size / 2;
 
 	if (startPos < 0)
 	{
-		y_offset = ((startY + font_size * -startPos) + font_size) + font_size/2;
+		y_offset = startY + (font_size * -startPos);
 		startPos = 0;
 		endPos = 40;
 	}
 
-	//int count = 0;
-
-	//float values[40];
+	y_offset += font_size / 2;
 
 	for (y = startPos; y < endPos; ++y)
 	{
 		int offset = startX + 6;
+		int idx = -1;
 
 		float value = 0.0f;
-		int idx = sync_find_key(track, y);
+
+		if (track)
+			idx = sync_find_key(track, y);
 
 		if (idx >= 0)
 		{
@@ -130,18 +134,23 @@ void TrackView_render(const TrackViewInfo* viewInfo, struct sync_data* syncData)
 	printRowNumbers(2, 42, 40, start_pos + viewInfo->rowPos, font_size, 8);
 
 	if (syncData->num_tracks == 0)
+	{
+		renderChannel(0, 40 + (i * 64), 42, 
+				(start_pos + viewInfo->rowPos), 
+				(start_pos + viewInfo->rowPos + 40));
+		uint32_t color = Emgui_color32(127, 127, 127, 56);
+		Emgui_fill(color, 0, 257, 800, font_size + 2);
 		return;
+	}
 
 	int num_tracks = syncData->num_tracks;
 
 	if (num_tracks > 4)
 		num_tracks = 4;
 
-	//i = 0;
-
 	for (i = 0; i < num_tracks; ++i)
 	{
-		renderChannel(syncData->tracks[i], 40 + (i * 64), 20, 
+		renderChannel(syncData->tracks[i], 40 + (i * 128), 42, 
 				(start_pos + viewInfo->rowPos), 
 				(start_pos + viewInfo->rowPos + 40));
 	}	
