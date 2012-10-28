@@ -59,11 +59,45 @@ void Editor_init()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void drawStatus()
+{
+	char temp[256];
+
+	if (!s_editorData.trackData.syncData.tracks)
+		return;
+
+	int active_track = s_editorData.trackData.activeTrack;
+	const struct sync_track* track = s_editorData.trackData.syncData.tracks[active_track];
+	int row = s_editorData.trackViewInfo.rowPos;
+	int idx = key_idx_floor(track, row);
+	const char *str = "---";
+	if (idx >= 0) 
+	{
+		switch (track->keys[idx].type) 
+		{
+			case KEY_STEP:   str = "step"; break;
+			case KEY_LINEAR: str = "linear"; break;
+			case KEY_SMOOTH: str = "smooth"; break;
+			case KEY_RAMP:   str = "ramp"; break;
+			default: break;
+		}
+	}
+
+	snprintf(temp, 256, "track %d row %d value %f type %s", active_track, row, sync_get_val(track, row), str);
+
+	Emgui_fill(Emgui_color32(0x10, 0x10, 0x10, 0xff), 1, 588, 400, 11); 
+	Emgui_drawText(temp, 3, 590, Emgui_color32(255, 255, 255, 255));
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Editor_update()
 {
 	Emgui_begin();
 
 	TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
+
+	drawStatus();
 
 	Emgui_end();
 }
