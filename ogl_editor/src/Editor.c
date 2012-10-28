@@ -7,6 +7,7 @@
 #include "LoadSave.h"
 #include "TrackView.h"
 #include "rlog.h"
+#include "TrackData.h"
 #include "RemoteConnection.h"
 #include "../../sync/sync.h"
 #include "../../sync/base.h"
@@ -24,21 +25,11 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef struct TrackInfo
-{
-	bool folded;
-} TrackInfo;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 typedef struct EditorData
 {
 	struct sync_data syncData; 
 	TrackViewInfo trackViewInfo;
-	TrackInfo trackInfo;
-	int trackOrder[8192];
-	int orderCount;
-
+	TrackData trackData;
 } EditorData;
 
 static EditorData s_editorData;
@@ -141,16 +132,6 @@ bool Editor_keyDown(int key)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int createTrack(EditorData* data, const char* name)
-{
-	int index = sync_create_track(&data->syncData, name);
-	data->trackOrder[data->orderCount] = index;
-	data->orderCount++;
-	return index;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void processCommands()
 {
 	//SyncDocument *doc = trackView->getDocument();
@@ -180,9 +161,7 @@ static void processCommands()
 
 				// find track
 				
-				serverIndex = sync_find_track(&s_editorData.syncData, trackName); 
-				if (0 > serverIndex)
-					serverIndex = createTrack(&s_editorData, trackName); 
+				serverIndex = TrackData_createGetTrack(&s_editorData.trackData, trackName);
 
 				// setup remap and send the keyframes to the demo
 				RemoteConnection_mapTrackName(trackName);
@@ -220,7 +199,7 @@ void Editor_timedUpdate()
 
 static void onOpen()
 {
-	LoadSave_loadRocketXMLDialog();
+	LoadSave_loadRocketXMLDialog(&s_editorData.trackData);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
