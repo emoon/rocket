@@ -52,7 +52,7 @@ static void renderChannel(struct sync_track* track, int startX, int startY, int 
 	uint x, y;
 
 	uint32_t color = Emgui_color32(40, 40, 40, 255);
-	Emgui_drawBorder(color, color, startX, startY - 20, 128, 600);
+	Emgui_drawBorder(color, color, startX, startY - 20, 160, 600);
 
 	if (track)
 		Emgui_drawText(track->name, startX + 2, startY + 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
@@ -126,9 +126,20 @@ int doMax(int a, int b)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static inline int min(int a, int b)
+{
+	if (a < b)
+		return a;
+	else
+		return b;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 {
 	struct sync_data* syncData = &trackData->syncData;
+	const int sel_track = trackData->activeTrack;
 
 	// TODO: Calculate how many channels we can draw given the width
 
@@ -148,24 +159,31 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 
 	int num_tracks = syncData->num_tracks;
 
-	if (num_tracks > 4)
-		num_tracks = 4;
+	if (num_tracks > 5)
+		num_tracks = 5;
 
-	for (i = 0; i < num_tracks; ++i)
+	int start_track = 0;
+
+	if (sel_track > 3)
+		start_track = sel_track - 3;
+
+	int x_pos = 40;
+
+	for (i = start_track; i < min(start_track + num_tracks, syncData->num_tracks - 1); ++i)
 	{
-		int x = 40 + (i * 128); 
-
-		renderChannel(syncData->tracks[i], x, 42, 
+		renderChannel(syncData->tracks[i], x_pos, 42, 
 				(start_pos + viewInfo->rowPos), 
 				(start_pos + viewInfo->rowPos + 40));
 
-		if (trackData->activeTrack == i)
+		if (sel_track == i)
 		{
-			Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), x, 257, 128, font_size + 2);
+			Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), x_pos, 257, 160, font_size + 2);
 
 			if (trackData->editText)
-				Emgui_drawText(trackData->editText, x, 257, Emgui_color32(255, 255, 255, 255));
+				Emgui_drawText(trackData->editText, x_pos, 257, Emgui_color32(255, 255, 255, 255));
 		}
+
+		x_pos += 160;
 	}	
 
 	uint32_t color = Emgui_color32(127, 127, 127, 56);
