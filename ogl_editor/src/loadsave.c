@@ -4,6 +4,8 @@
 #include "External/mxml/mxml.h"
 #include "../../sync/data.h"
 #include <Types.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -130,7 +132,53 @@ int LoadSave_loadRocketXMLDialog(TrackData* trackData)
 
 int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 {
-	return false; 
+	mxml_node_t* xml;
+	mxml_node_t* tracks;
+	
+	struct sync_data* sync_data = &trackData->syncData;
+
+	xml = mxmlNewXML("1.0");	
+	tracks = mxmlNewElement(xml, "tracks");
+
+	mxmlElementSetAttr(tracks, "rows", "1000000"); // TODO: Fix me
+
+	for (size_t i = 0; i < sync_data->num_tracks; ++i) 
+	{
+		const struct sync_track* t = sync_data->tracks[i];
+		mxml_node_t* track = mxmlNewElement(tracks, "track");
+		mxmlElementSetAttr(track, "name", t->name); 
+
+		for (int i = 0; i < (int)t->num_keys; ++i) 
+		{
+			char temp0[256];
+			char temp1[256];
+			char temp2[256];
+
+			int row = (int)t->keys[i].row;
+			float value = t->keys[i].value;
+			char interpolationType = (char)t->keys[i].type;
+
+			mxml_node_t* key = mxmlNewElement(track, "key");
+
+			memset(temp0, 0, sizeof(temp0));
+			memset(temp1, 0, sizeof(temp1));
+			memset(temp2, 0, sizeof(temp2));
+
+			sprintf(temp0, "%d", row); 
+			sprintf(temp1, "%f", value); 
+			sprintf(temp2, "%d", interpolationType); 
+
+			mxmlElementSetAttr(key, "row", temp0); 
+			mxmlElementSetAttr(key, "value", temp1); 
+			mxmlElementSetAttr(key, "interpolation", temp2); 
+		}
+	}
+
+	FILE* fp = fopen(path, "wt");
+    mxmlSaveFile(xml, fp, MXML_NO_CALLBACK);
+    fclose(fp);
+
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -142,8 +190,7 @@ int LoadSave_saveRocketXMLDialog(TrackData* trackData)
 	if (!Dialog_save(path))
 		return false;
 
-	printf("%s\n", path);
 
-	return true;
+	return LoadSave_saveRocketXML(path, trackData);
 }
 
