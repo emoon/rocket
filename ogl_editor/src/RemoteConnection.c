@@ -98,7 +98,7 @@ void RemoteConnection_mapTrackName(const char* name)
 {
 	int count = s_nameLookup.count;
 
-	if (findTrack(name))
+	if (findTrack(name) != -1)
 		return;
 
 	s_nameLookup.hashes[count] = quickHash(name);
@@ -204,8 +204,6 @@ void RemoteConnection_updateListner()
 	if (RemoteConnection_connected())
 		return;
 
-	rlog(R_INFO, "%d\n", s_socket);
-
 	FD_ZERO(&fds);
 	FD_SET(s_serverSocket, &fds);
 
@@ -303,14 +301,13 @@ static void sendSetKeyCommandIndex(uint32_t index, const struct track_key* key)
 {
 	uint32_t track, row;
 	uint8_t cmd = SET_KEY;
-	int track_id;
 
 	union {
 		float f;
 		uint32_t i;
 	} v;
 
-	track = htonl(track_id);
+	track = htonl(index);
 	row = htonl(key->row);
 
 	v.f = key->value;
