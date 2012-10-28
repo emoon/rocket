@@ -84,7 +84,7 @@ static void renderChannel(struct sync_track* track, int startX, int startY, int 
 			value = track->keys[idx].value;
 			snprintf(temp, 256, "% .2f", value);
 
-			Emgui_drawText(temp, offset, y_offset + (font_size / 2), Emgui_color32(255, 255, 255, 255));
+			Emgui_drawText(temp, offset, y_offset - font_size / 2, Emgui_color32(255, 255, 255, 255));
 		}
 		else
 		{
@@ -153,12 +153,19 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 
 	for (i = 0; i < num_tracks; ++i)
 	{
-		renderChannel(syncData->tracks[i], 40 + (i * 128), 42, 
+		int x = 40 + (i * 128); 
+
+		renderChannel(syncData->tracks[i], x, 42, 
 				(start_pos + viewInfo->rowPos), 
 				(start_pos + viewInfo->rowPos + 40));
 
 		if (trackData->activeTrack == i)
-			Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), 40 + (i * 128), 257, 128, font_size + 2);
+		{
+			Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), x, 257, 128, font_size + 2);
+
+			if (trackData->editText)
+				Emgui_drawText(trackData->editText, x, 257, Emgui_color32(255, 255, 255, 255));
+		}
 	}	
 
 	uint32_t color = Emgui_color32(127, 127, 127, 56);

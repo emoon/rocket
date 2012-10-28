@@ -68,7 +68,11 @@ void Editor_update()
 	Emgui_end();
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static char s_editBuffer[512];
+static bool is_editing = false;
 
 bool Editor_keyDown(int key)
 {
@@ -83,9 +87,10 @@ bool Editor_keyDown(int key)
 			{
 				int row = ++s_editorData.trackViewInfo.rowPos;
 				RemoteConnection_sendSetRowCommand(row);
-				Editor_update();
-				return true;
+				handled_key = true;
 			}
+
+			break;
 		}
 
 		case EMGUI_ARROW_UP:
@@ -101,9 +106,9 @@ bool Editor_keyDown(int key)
 				}
 
 				RemoteConnection_sendSetRowCommand(row);
-				Editor_update();
-				return true;
+				handled_key = true;
 			}
+			break;
 		}
 
 		case EMGUI_ARROW_LEFT:
@@ -115,9 +120,10 @@ bool Editor_keyDown(int key)
 				if (s_editorData.trackData.activeTrack < 0)
 					s_editorData.trackData.activeTrack = 0;
 
-				Editor_update();
-				return true;
+				handled_key = true;
 			}
+
+			break;
 		}
 
 		case EMGUI_ARROW_RIGHT:
@@ -125,9 +131,10 @@ bool Editor_keyDown(int key)
 			if (paused)
 			{
 				++s_editorData.trackData.activeTrack;
-				Editor_update();
-				return true;
+				handled_key = true;
 			}
+
+			break;
 		}
 
 		default : handled_key = false; break;
@@ -135,9 +142,46 @@ bool Editor_keyDown(int key)
 
 	// do edit here
 
-	if (key == '1')
+	if (paused)
 	{
-		return true;
+		if ((key >= '0' && key <= '9') || key == '.' )
+		{
+			if (!is_editing)
+			{
+				memset(s_editBuffer, 0, sizeof(s_editBuffer));
+				is_editing = true;
+			}
+
+			s_editBuffer[strlen(s_editBuffer)] = key;
+			s_editorData.trackData.editText = s_editBuffer;
+
+			return true;
+		}
+		else if (key == 13) // return/enter
+		{
+			struct track_key key;
+
+			key.row = s_editorData.trackViewInfo.rowPos;
+			key.value = atof(s_editBuffer);
+			key.type = 0;
+
+			struct sync_track* track = s_editorData.trackData.syncData.tracks[s_editorData.trackData.activeTrack];
+			const char* track_name = track->name; 
+
+			sync_set_key(track, &key);
+
+			rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, s_editorData.trackData.activeTrack, key.row, track_name);
+
+			RemoteConnection_sendSetKeyCommand(track_name, &key);
+
+			is_editing = false;
+			s_editorData.trackData.editText = 0;
+		}
+		else
+		{
+			is_editing = false;
+			s_editorData.trackData.editText = 0;
+		}
 	}
 
 	if (key == ' ')
@@ -146,9 +190,11 @@ bool Editor_keyDown(int key)
 		// shouldn't start playing if we do
 
 		RemoteConnection_sendPauseCommand(!paused);
-
-		return true;
+		handled_key = true;
 	}
+
+	if (handled_key)
+		Editor_update();
 
 	return handled_key;
 }
