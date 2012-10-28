@@ -71,6 +71,10 @@
 	keyChar = [key characterAtIndex:0];
 
 	int keyCode = keyChar;
+	int specialKeys = 0;
+
+	if ([theEvent modifierFlags] & NSShiftKeyMask)
+		specialKeys = 1;
 
 	if ([theEvent modifierFlags] & NSNumericPadKeyMask) 
 	{ 
@@ -83,7 +87,7 @@
 		}
 	}
 
-	if (!Editor_keyDown(keyCode))
+	if (!Editor_keyDown(keyCode, specialKeys))
     	[super keyDown:theEvent];
 
 	Editor_update();

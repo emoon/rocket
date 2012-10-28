@@ -108,7 +108,7 @@ void Editor_update()
 static char s_editBuffer[512];
 static bool is_editing = false;
 
-bool Editor_keyDown(int key)
+bool Editor_keyDown(int key, int modifiers)
 {
 	bool handled_key = true;
 	bool paused = RemoteConnection_isPaused();
@@ -119,8 +119,12 @@ bool Editor_keyDown(int key)
 		{
 			if (paused)
 			{
-				int row = ++s_editorData.trackViewInfo.rowPos;
-				RemoteConnection_sendSetRowCommand(row);
+				if (modifiers)
+					s_editorData.trackViewInfo.rowPos += 8;
+				else
+					s_editorData.trackViewInfo.rowPos++;
+
+				RemoteConnection_sendSetRowCommand(s_editorData.trackViewInfo.rowPos);
 				handled_key = true;
 			}
 
@@ -131,15 +135,15 @@ bool Editor_keyDown(int key)
 		{
 			if (paused)
 			{
-				int row = --s_editorData.trackViewInfo.rowPos;
+				if (modifiers)
+					s_editorData.trackViewInfo.rowPos -= 8;
+				else
+					s_editorData.trackViewInfo.rowPos--;
 
 				if (s_editorData.trackViewInfo.rowPos < 0)
-				{
 					s_editorData.trackViewInfo.rowPos = 0;
-					row = 0;
-				}
 
-				RemoteConnection_sendSetRowCommand(row);
+				RemoteConnection_sendSetRowCommand(s_editorData.trackViewInfo.rowPos);
 				handled_key = true;
 			}
 			break;
