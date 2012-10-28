@@ -332,14 +332,22 @@ static void onOpen()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void onSave()
+{
+	LoadSave_saveRocketXMLDialog(&s_editorData.trackData);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Editor_menuEvent(int menuItem)
 {
+	printf("%d\n", menuItem);
 	switch (menuItem)
 	{
 		//case EDITOR_MENU_NEW : onNew(); break;
 		case EDITOR_MENU_OPEN : onOpen(); break;
-		//case EDITOR_MENU_SAVE : onSave(); break;
-		//case EDITOR_MENU_SAVE_AS : onSaveAs(); break;
+		case EDITOR_MENU_SAVE : 
+		case EDITOR_MENU_SAVE_AS : onSave(); break;
 	}
 }
 
