@@ -63,7 +63,7 @@ void Editor_update()
 {
 	Emgui_begin();
 
-	TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData.syncData);
+	TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
 
 	Emgui_end();
 }
@@ -101,6 +101,30 @@ bool Editor_keyDown(int key)
 				}
 
 				RemoteConnection_sendSetRowCommand(row);
+				Editor_update();
+				return true;
+			}
+		}
+
+		case EMGUI_ARROW_LEFT:
+		{
+			if (paused)
+			{
+				--s_editorData.trackData.activeTrack;
+
+				if (s_editorData.trackData.activeTrack < 0)
+					s_editorData.trackData.activeTrack = 0;
+
+				Editor_update();
+				return true;
+			}
+		}
+
+		case EMGUI_ARROW_RIGHT:
+		{
+			if (paused)
+			{
+				++s_editorData.trackData.activeTrack;
 				Editor_update();
 				return true;
 			}

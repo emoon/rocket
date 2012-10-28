@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "TrackData.h"
 #include "../../sync/sync.h"
 #include "../../sync/data.h"
 #include "../../sync/track.h"
@@ -125,8 +126,10 @@ int doMax(int a, int b)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackView_render(const TrackViewInfo* viewInfo, struct sync_data* syncData)
+void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 {
+	struct sync_data* syncData = &trackData->syncData;
+
 	// TODO: Calculate how many channels we can draw given the width
 
 	uint i = 0; //, channel_count = 10; 
@@ -153,6 +156,9 @@ void TrackView_render(const TrackViewInfo* viewInfo, struct sync_data* syncData)
 		renderChannel(syncData->tracks[i], 40 + (i * 128), 42, 
 				(start_pos + viewInfo->rowPos), 
 				(start_pos + viewInfo->rowPos + 40));
+
+		if (trackData->activeTrack == i)
+			Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), 40 + (i * 128), 257, 128, font_size + 2);
 	}	
 
 	uint32_t color = Emgui_color32(127, 127, 127, 56);
