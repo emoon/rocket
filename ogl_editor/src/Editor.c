@@ -27,7 +27,6 @@
 
 typedef struct EditorData
 {
-	struct sync_data syncData; 
 	TrackViewInfo trackViewInfo;
 	TrackData trackData;
 } EditorData;
@@ -64,7 +63,7 @@ void Editor_update()
 {
 	Emgui_begin();
 
-	TrackView_render(&s_editorData.trackViewInfo, &s_editorData.syncData);
+	TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData.syncData);
 
 	Emgui_end();
 }
@@ -165,7 +164,7 @@ static void processCommands()
 
 				// setup remap and send the keyframes to the demo
 				RemoteConnection_mapTrackName(trackName);
-				RemoteConnection_sendKeyFrames(trackName, s_editorData.syncData.tracks[serverIndex]);
+				RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncData.tracks[serverIndex]);
 
 				break;
 			}
@@ -199,7 +198,8 @@ void Editor_timedUpdate()
 
 static void onOpen()
 {
-	LoadSave_loadRocketXMLDialog(&s_editorData.trackData);
+	if (LoadSave_loadRocketXMLDialog(&s_editorData.trackData))
+		Editor_update();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
