@@ -165,6 +165,10 @@ bool Editor_keyDown(int key)
 			if (paused)
 			{
 				++s_editorData.trackData.activeTrack;
+
+				if (s_editorData.trackData.activeTrack >= s_editorData.trackData.syncData.num_tracks-1)
+					s_editorData.trackData.activeTrack = s_editorData.trackData.syncData.num_tracks - 1;
+
 				handled_key = true;
 			}
 
@@ -178,7 +182,7 @@ bool Editor_keyDown(int key)
 
 	if (paused)
 	{
-		if ((key >= '0' && key <= '9') || key == '.' )
+		if ((key >= '0' && key <= '9') || key == '.' || key == '-')
 		{
 			if (!is_editing)
 			{
