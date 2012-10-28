@@ -216,6 +216,26 @@ bool Editor_keyDown(int key)
 			is_editing = false;
 			s_editorData.trackData.editText = 0;
 		}
+
+		if (key == 'i')
+		{
+			struct sync_track* track = s_editorData.trackData.syncData.tracks[s_editorData.trackData.activeTrack];
+			int row = s_editorData.trackViewInfo.rowPos;
+
+			int idx = key_idx_floor(track, row);
+			if (idx < 0) 
+				return false;
+
+			// copy and modify
+			struct track_key newKey = track->keys[idx];
+			newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
+
+			sync_set_key(track, &newKey);
+
+			RemoteConnection_sendSetKeyCommand(track->name, &newKey);
+
+			handled_key = true;
+		}
 	}
 
 	if (key == ' ')
