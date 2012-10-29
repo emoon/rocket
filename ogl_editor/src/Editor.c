@@ -142,6 +142,9 @@ bool Editor_keyDown(int key, int modifiers)
 {
 	bool handled_key = true;
 	bool paused = RemoteConnection_isPaused();
+	struct sync_track** tracks = getTracks();
+	int active_track = getActiveTrack();
+	int row_pos = s_editorData.trackViewInfo.rowPos;
 
 	switch (key)
 	{
@@ -229,35 +232,30 @@ bool Editor_keyDown(int key, int modifiers)
 
 			return true;
 		}
-		else if (key == 13) // return/enter
+		else if (is_editing)
 		{
 			struct track_key key;
 
-			key.row = s_editorData.trackViewInfo.rowPos;
+			key.row = row_pos;
 			key.value = atof(s_editBuffer);
 			key.type = 0;
 
-			struct sync_track* track = s_editorData.trackData.syncData.tracks[s_editorData.trackData.activeTrack];
+			struct sync_track* track = tracks[active_track];
 			const char* track_name = track->name; 
 
 			sync_set_key(track, &key);
 
-			rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, s_editorData.trackData.activeTrack, key.row, track_name);
+			rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, active_track, key.row, track_name);
 
 			RemoteConnection_sendSetKeyCommand(track_name, &key);
 
 			is_editing = false;
 			s_editorData.trackData.editText = 0;
 		}
-		else
-		{
-			is_editing = false;
-			s_editorData.trackData.editText = 0;
-		}
 
 		if (key == 'i')
 		{
-			struct sync_track* track = s_editorData.trackData.syncData.tracks[s_editorData.trackData.activeTrack];
+			struct sync_track* track = tracks[active_track];
 			int row = s_editorData.trackViewInfo.rowPos;
 
 			int idx = key_idx_floor(track, row);
