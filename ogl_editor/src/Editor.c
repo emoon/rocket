@@ -82,6 +82,14 @@ void Editor_create()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void Editor_setWindowSize(int x, int y)
+{
+	s_editorData.trackViewInfo.windowSizeX = x;
+	s_editorData.trackViewInfo.windowSizeY = y;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Editor_init()
 {
 }
@@ -301,7 +309,6 @@ bool Editor_keyDown(int key, int modifiers)
 
 static int processCommands()
 {
-	//SyncDocument *doc = trackView->getDocument();
 	int strLen, newRow, serverIndex;
 	unsigned char cmd = 0;
 	int ret = 0;

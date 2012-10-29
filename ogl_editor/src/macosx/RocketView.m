@@ -56,6 +56,7 @@
     [oglContext update];
 
 	EMGFXBackend_updateViewPort((int)frameRect.size.width, (int)frameRect.size.height);
+	Editor_setWindowSize((int)frameRect.size.width, (int)frameRect.size.height);
     Editor_update();
 }
 

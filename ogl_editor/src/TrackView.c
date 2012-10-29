@@ -136,6 +136,7 @@ static inline int min(int a, int b)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 
 
 void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 {
@@ -160,8 +161,10 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 
 	int num_tracks = syncData->num_tracks;
 
-	if (num_tracks > 5)
-		num_tracks = 5;
+	int max_render_tracks = viewInfo->windowSizeX / 128;
+
+	if (num_tracks > max_render_tracks)
+		num_tracks = max_render_tracks;
 
 	int start_track = 0;
 
