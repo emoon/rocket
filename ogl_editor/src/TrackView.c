@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "TrackData.h"
+#include "rlog.h"
 #include "../../sync/sync.h"
 #include "../../sync/data.h"
 #include "../../sync/track.h"
@@ -169,7 +170,9 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 
 	int x_pos = 40;
 
-	for (i = start_track; i < min(start_track + num_tracks, syncData->num_tracks - 1); ++i)
+	const int end_track = min(start_track + num_tracks, syncData->num_tracks);
+
+	for (i = start_track; i < end_track; ++i)
 	{
 		renderChannel(syncData->tracks[i], x_pos, 42, 
 				(start_pos + viewInfo->rowPos), 
