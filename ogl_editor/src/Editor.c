@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <Emgui.h>
 #include <stdio.h>
+#include <math.h>
 #include "Dialog.h"
 #include "Editor.h"
 #include "LoadSave.h"
@@ -35,6 +36,34 @@ static EditorData s_editorData;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static inline struct sync_track** getTracks()
+{
+	return s_editorData.trackData.syncData.tracks;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static inline void setActiveTrack(int track)
+{
+	s_editorData.trackData.activeTrack = track;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static inline int getActiveTrack()
+{
+	return s_editorData.trackData.activeTrack;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static inline int getTrackCount()
+{
+	return s_editorData.trackData.syncData.num_tracks;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 //static uint64_t fontIds[2];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -62,12 +91,13 @@ void Editor_init()
 static void drawStatus()
 {
 	char temp[256];
+	struct sync_track** tracks = getTracks();
 
-	if (!s_editorData.trackData.syncData.tracks)
+	if (!tracks)
 		return;
 
-	int active_track = s_editorData.trackData.activeTrack;
-	const struct sync_track* track = s_editorData.trackData.syncData.tracks[active_track];
+	int active_track = getActiveTrack();
+	const struct sync_track* track = tracks[active_track];
 	int row = s_editorData.trackViewInfo.rowPos;
 	int idx = key_idx_floor(track, row);
 	const char *str = "---";
@@ -149,10 +179,8 @@ bool Editor_keyDown(int key)
 		{
 			if (paused)
 			{
-				--s_editorData.trackData.activeTrack;
-
-				if (s_editorData.trackData.activeTrack < 0)
-					s_editorData.trackData.activeTrack = 0;
+				int track = getActiveTrack(); track--;
+				setActiveTrack(track < 0 ? 0 : track);
 
 				handled_key = true;
 			}
@@ -164,10 +192,12 @@ bool Editor_keyDown(int key)
 		{
 			if (paused)
 			{
-				++s_editorData.trackData.activeTrack;
+				int track = getActiveTrack(); track++;
 
-				if (s_editorData.trackData.activeTrack >= s_editorData.trackData.syncData.num_tracks-1)
-					s_editorData.trackData.activeTrack = s_editorData.trackData.syncData.num_tracks - 1;
+				if (track >= getTrackCount())
+					track = getTrackCount() - 1;
+
+				setActiveTrack(track);
 
 				handled_key = true;
 			}
