@@ -293,11 +293,12 @@ bool Editor_keyDown(int key, int modifiers)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void processCommands()
+static int processCommands()
 {
 	//SyncDocument *doc = trackView->getDocument();
 	int strLen, newRow, serverIndex;
 	unsigned char cmd = 0;
+	int ret = 0;
 
 	if (RemoteConnection_recv((char*)&cmd, 1, 0)) 
 	{
@@ -313,10 +314,10 @@ static void processCommands()
 				strLen = ntohl(strLen);
 
 				if (!RemoteConnection_connected())
-					return;
+					return 0;
 
 				if (!RemoteConnection_recv(trackName, strLen, 0))
-					return;
+					return 0;
 
 				rlog(R_INFO, "Got trackname %s (%d) from demo\n", trackName, strLen);
 
@@ -327,6 +328,7 @@ static void processCommands()
 				// setup remap and send the keyframes to the demo
 				RemoteConnection_mapTrackName(trackName);
 				RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncData.tracks[serverIndex]);
+				ret = 1;
 
 				break;
 			}
@@ -335,22 +337,27 @@ static void processCommands()
 			{
 				RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
 				s_editorData.trackViewInfo.rowPos = htonl(newRow);
+				ret = 1;
 				break;
 			}
 		}
 	}
+
+	return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Editor_timedUpdate()
 {
+	int processed_commands = 0;
+
 	RemoteConnection_updateListner();
 
 	while (RemoteConnection_pollRead())
-		processCommands();
+		processed_commands |= processCommands();
 
-	if (!RemoteConnection_isPaused())
+	if (!RemoteConnection_isPaused() || processed_commands)
 	{
 		Editor_update();
 	}
