@@ -16,3 +16,10 @@ enum
 	EDITOR_MENU_SAVE_AS,
 };
 
+enum
+{
+	EDITOR_KEY_SHIFT = 1,
+	EDITOR_KEY_ALT = 2,
+	EDITOR_KEY_CTRL = 4,
+};
+

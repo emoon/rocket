@@ -152,12 +152,16 @@ bool Editor_keyDown(int key, int modifiers)
 		{
 			if (paused)
 			{
-				if (modifiers)
-					s_editorData.trackViewInfo.rowPos += 8;
-				else
-					s_editorData.trackViewInfo.rowPos++;
+				int row = row_pos;
 
-				RemoteConnection_sendSetRowCommand(s_editorData.trackViewInfo.rowPos);
+				if (modifiers & EDITOR_KEY_ALT)
+					row += 8;
+				else
+					row++;	
+
+				s_editorData.trackViewInfo.rowPos = row;
+
+				RemoteConnection_sendSetRowCommand(row);
 				handled_key = true;
 			}
 
@@ -168,15 +172,19 @@ bool Editor_keyDown(int key, int modifiers)
 		{
 			if (paused)
 			{
-				if (modifiers)
-					s_editorData.trackViewInfo.rowPos -= 8;
+				int row = row_pos;
+
+				if (modifiers & EDITOR_KEY_ALT)
+					row -= 8;
 				else
-					s_editorData.trackViewInfo.rowPos--;
+					row--;
 
-				if (s_editorData.trackViewInfo.rowPos < 0)
-					s_editorData.trackViewInfo.rowPos = 0;
+				if (row < 0)
+					row = 0;
 
-				RemoteConnection_sendSetRowCommand(s_editorData.trackViewInfo.rowPos);
+				s_editorData.trackViewInfo.rowPos = row;
+
+				RemoteConnection_sendSetRowCommand(row);
 				handled_key = true;
 			}
 			break;

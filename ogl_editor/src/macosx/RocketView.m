@@ -74,7 +74,13 @@
 	int specialKeys = 0;
 
 	if ([theEvent modifierFlags] & NSShiftKeyMask)
-		specialKeys = 1;
+		specialKeys |= EDITOR_KEY_SHIFT;
+
+	if ([theEvent modifierFlags] & NSAlternateKeyMask)
+		specialKeys |= EDITOR_KEY_ALT;
+
+	if ([theEvent modifierFlags] & NSControlKeyMask)
+		specialKeys |= EDITOR_KEY_CTRL;
 
 	if ([theEvent modifierFlags] & NSNumericPadKeyMask) 
 	{ 
