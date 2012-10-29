@@ -50,7 +50,7 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 
 static void renderChannel(struct sync_track* track, int startX, int startY, int startPos, int endPos)
 {
-	uint x, y;
+	uint y;
 
 	uint32_t color = Emgui_color32(40, 40, 40, 255);
 	Emgui_drawBorder(color, color, startX, startY - 20, 160, 600);
@@ -64,7 +64,7 @@ static void renderChannel(struct sync_track* track, int startX, int startY, int 
 	{
 		y_offset = startY + (font_size * -startPos);
 		startPos = 0;
-		endPos = 40;
+		//endPos = 40;
 	}
 
 	y_offset += font_size / 2;
@@ -89,26 +89,14 @@ static void renderChannel(struct sync_track* track, int startX, int startY, int 
 		}
 		else
 		{
-			int points[64];
-			int* points_ptr = (int*)&points[0];
-
-			for (x = 0; x < 6; ++x)
-			{
-				points_ptr[0] = offset + 0;
-				points_ptr[1] = y_offset;
-				points_ptr[2] = offset + 2;
-				points_ptr[3] = y_offset;
-				points_ptr[4] = offset + 4;
-				points_ptr[5] = y_offset;
-
-				points_ptr += 6;
-				offset += 10;
-			}
+			uint32_t color = 0; 
 
 			if (y & 7)
-				Emgui_drawDots(0x004f4f4f, (int*)&points[0], 18 * 2);
+				color = Emgui_color32(0x4f, 0x4f, 0x4f, 0xff); 
 			else
-				Emgui_drawDots(0x007f7f7f, (int*)&points[0], 18 * 2);
+				color = Emgui_color32(0x7f, 0x7f, 0x7f, 0xff); 
+
+			Emgui_drawText("---", offset, y_offset - font_size / 2, color); 
 		}
 
 		y_offset += font_size;
@@ -136,7 +124,7 @@ static inline int min(int a, int b)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// 
+// foo 
 
 void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 {
@@ -146,14 +134,15 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 	// TODO: Calculate how many channels we can draw given the width
 
 	uint i = 0; //, channel_count = 10; 
+	int end_row = viewInfo->windowSizeY / font_size;
 
-	printRowNumbers(2, 42, 40, start_pos + viewInfo->rowPos, font_size, 8);
+	printRowNumbers(2, 42, end_row - 20, start_pos + viewInfo->rowPos, font_size, 8);
 
 	if (syncData->num_tracks == 0)
 	{
 		renderChannel(0, 40 + (i * 64), 42, 
 				(start_pos + viewInfo->rowPos), 
-				(start_pos + viewInfo->rowPos + 40));
+				(start_pos + viewInfo->rowPos + end_row));
 		uint32_t color = Emgui_color32(127, 127, 127, 56);
 		Emgui_fill(color, 0, 257, 800, font_size + 2);
 		return;
@@ -172,6 +161,7 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 		start_track = sel_track - 3;
 
 	int x_pos = 40;
+	end_row -= 20;
 
 	const int end_track = min(start_track + num_tracks, syncData->num_tracks);
 
@@ -179,7 +169,7 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 	{
 		renderChannel(syncData->tracks[i], x_pos, 42, 
 				(start_pos + viewInfo->rowPos), 
-				(start_pos + viewInfo->rowPos + 40));
+				(start_pos + viewInfo->rowPos + end_row));
 
 		if (sel_track == i)
 		{
