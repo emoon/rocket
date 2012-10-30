@@ -1,5 +1,6 @@
 #import "RocketView.h"
 #include "../Editor.h"
+#include "../rlog.h"
 #include <Emgui.h> 
 #include <GFXBackend.h> 
 
@@ -155,15 +156,6 @@
 -(BOOL) isOpaque 
 {
     return YES;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
--(void) dealloc 
-{
-	Editor_destroy();
-	EMGFXBackend_destroy();
-    [super dealloc];
 }
 
 @end

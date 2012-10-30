@@ -196,23 +196,14 @@ static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host)
 
 void RemoteConnection_updateListner()
 {
-	fd_set fds;
-	struct timeval timeout;
 	SOCKET clientSocket;
 	struct sockaddr_in client;
 
 	if (RemoteConnection_connected())
 		return;
 
-	FD_ZERO(&fds);
-	FD_SET(s_serverSocket, &fds);
-
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 0;
-
 	// look for new clients
 	
-	//if (select(0, &fds, NULL, NULL, &timeout) > 0)
 	{
 		clientSocket = clientConnect(s_serverSocket, &client);
 
@@ -412,5 +403,16 @@ void RemoteConnection_sendKeyFrames(const char* name, struct sync_track* track)
 
 	for (i = 0; i < (int)track->num_keys; ++i)
 		sendSetKeyCommandIndex((uint32_t)track_id, &track->keys[i]);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RemoteConnection_close()
+{
+	if (RemoteConnection_connected())
+	{
+		closesocket(s_socket);
+		s_socket = INVALID_SOCKET;
+	}
 }
 

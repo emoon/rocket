@@ -10,6 +10,7 @@ struct sync_track;
 
 bool RemoteConnection_createListner();
 void RemoteConnection_updateListner();
+void RemoteConnection_close();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Talk with the demo stuff

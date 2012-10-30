@@ -1,6 +1,8 @@
 
 #import "delegate.h"
 #include "../Editor.h"
+#include "../RemoteConnection.h"
+#include "rlog.h"
 
 @implementation MinimalAppAppDelegate
 
@@ -18,6 +20,15 @@
 - (IBAction) buttonClicked:(id)sender 
 {
 	Editor_menuEvent((int)((NSButton*)sender).tag);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (void)applicationWillTerminate:(NSNotification *)aNotification
+{
+	rlog(R_INFO, "Dealloc\n");
+	Editor_destroy();
+	RemoteConnection_close();
 }
 
 @end
