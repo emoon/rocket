@@ -248,11 +248,12 @@ bool RemoteConnection_recv(char* buffer, size_t length, int flags)
 	if (!RemoteConnection_connected())
 		return false;
 
-	if ((ret = recv(s_socket, buffer, (int)length, flags)) != (int)length)
+	ret = recv(s_socket, buffer, (int)length, flags);
+
+	if (ret == 0)
 	{
-		//rlog(R_INFO, "%d %d\n", ret, length);
-		//RemoteConnection_disconnect();
-		//return false;
+		RemoteConnection_disconnect();
+		return false;
 	}
 
 	return true;
