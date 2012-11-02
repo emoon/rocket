@@ -106,6 +106,7 @@ static void drawStatus()
 
 	int active_track = getActiveTrack();
 	const struct sync_track* track = tracks[active_track];
+	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
 	int row = s_editorData.trackViewInfo.rowPos;
 	int idx = key_idx_floor(track, row);
 	const char *str = "---";
@@ -123,8 +124,8 @@ static void drawStatus()
 
 	snprintf(temp, 256, "track %d row %d value %f type %s", active_track, row, sync_get_val(track, row), str);
 
-	Emgui_fill(Emgui_color32(0x10, 0x10, 0x10, 0xff), 1, 588, 400, 11); 
-	Emgui_drawText(temp, 3, 590, Emgui_color32(255, 255, 255, 255));
+	Emgui_fill(Emgui_color32(0x10, 0x10, 0x10, 0xff), 1, sizeY - 12, 400, 11); 
+	Emgui_drawText(temp, 3, sizeY - 10, Emgui_color32(255, 255, 255, 255));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -350,6 +351,7 @@ static int processCommands()
 			{
 				RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
 				s_editorData.trackViewInfo.rowPos = htonl(newRow);
+				rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos); 
 				ret = 1;
 				break;
 			}
