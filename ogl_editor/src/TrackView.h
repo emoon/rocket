@@ -11,6 +11,7 @@ typedef struct TrackViewInfo
 	int windowSizeX;
 	int windowSizeY;
 	int rowPos;
+	int smallFontId;
 
 } TrackViewInfo;
 

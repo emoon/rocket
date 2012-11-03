@@ -10,6 +10,7 @@
 #include "rlog.h"
 #include "TrackData.h"
 #include "RemoteConnection.h"
+#include "MinecraftiaFont.h"
 #include "../../sync/sync.h"
 #include "../../sync/base.h"
 #include "../../sync/data.h"
@@ -62,22 +63,21 @@ static inline int getTrackCount()
 	return s_editorData.trackData.syncData.num_tracks;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//static uint64_t fontIds[2];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Editor_create()
 {
+	int id;
 	Emgui_create("foo");
-	//fontIds[0] = Emgui_loadFont("/Users/daniel/Library/Fonts/MicroKnight_v1.0.ttf", 11.0f);
-	//fontIds[0] = Emgui_loadFont(FONT_PATH "Arial.ttf", 11.0f);
-	Emgui_setDefaultFont();
-
+	id = Emgui_loadFontBitmap(g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_FONT_MEMORY, 32, 128, g_minecraftiaFontLayout);
 	memset(&s_editorData, 0, sizeof(s_editorData));
 
 	RemoteConnection_createListner();
+
+	s_editorData.trackViewInfo.smallFontId = id;
+
+	Emgui_setDefaultFont();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -173,15 +173,10 @@ bool Editor_keyDown(int key, int modifiers)
 		{
 			int row = row_pos;
 
-			if (modifiers & EDITOR_KEY_ALT)
-				row += 8;
-			else
-				row++;	
-
+			row += modifiers & EDITOR_KEY_ALT ? 8 : 1;
 			s_editorData.trackViewInfo.rowPos = row;
 
 			RemoteConnection_sendSetRowCommand(row);
-			handled_key = true;
 
 			break;
 		}
@@ -190,15 +185,9 @@ bool Editor_keyDown(int key, int modifiers)
 		{
 			int row = row_pos;
 
-			if (modifiers & EDITOR_KEY_ALT)
-				row -= 8;
-			else
-				row--;
+			row -= modifiers & EDITOR_KEY_ALT ? 8 : 1;
 
-			if (row < 0)
-				row = 0;
-
-			if (modifiers & EDITOR_KEY_COMMAND)
+			if ((modifiers & EDITOR_KEY_COMMAND) || row < 0)
 				row = 0;
 
 			s_editorData.trackViewInfo.rowPos = row;
@@ -211,7 +200,7 @@ bool Editor_keyDown(int key, int modifiers)
 
 		case EMGUI_ARROW_LEFT:
 		{
-			int track = getActiveTrack(); track--;
+			int track = getActiveTrack() - 1;
 
 			if (modifiers & EDITOR_KEY_COMMAND)
 				track = 0;
@@ -244,7 +233,45 @@ bool Editor_keyDown(int key, int modifiers)
 		default : handled_key = false; break;
 	}
 
-	// do edit here
+	// Handle biasing of values
+
+	if ((key >= '1' && key <= '9') && ((modifiers & EDITOR_KEY_CTRL) || (modifiers & EDITOR_KEY_ALT)))
+	{
+		struct sync_track* track = tracks[active_track];
+		int row = s_editorData.trackViewInfo.rowPos;
+
+		float bias_value = 0.0f;
+
+		switch (key)
+		{
+			case '1' : bias_value = 0.01f; break;
+			case '2' : bias_value = 0.1f; break;
+			case '3' : bias_value = 1.0f; break;
+			case '4' : bias_value = 10.f; break;
+			case '5' : bias_value = 100.0f; break;
+			case '6' : bias_value = 1000.0f; break;
+			case '7' : bias_value = 10000.0f; break;
+		}
+
+		bias_value = modifiers & EDITOR_KEY_ALT ? -bias_value : bias_value;
+
+		int idx = key_idx_floor(track, row);
+		if (idx < 0) 
+			return false;
+
+		// copy and modify
+		struct track_key newKey = track->keys[idx];
+		newKey.value += bias_value;
+
+		sync_set_key(track, &newKey);
+
+		RemoteConnection_sendSetKeyCommand(track->name, &newKey);
+
+		Editor_update();
+		return true;
+	}
+
+	// do edit here and biasing here
 
 	if ((key >= '0' && key <= '9') || key == '.' || key == '-')
 	{
