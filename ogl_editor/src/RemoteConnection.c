@@ -25,6 +25,7 @@
 #include "../../sync/base.h"
 #include "../../sync/track.h"
 #include "rlog.h"
+#include <stdio.h>
 
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
@@ -138,9 +139,17 @@ bool RemoteConnection_createListner()
 	sin.sin_addr.s_addr = INADDR_ANY;
 	sin.sin_port = htons(1338);
 
+	int yes = 1;
+	if (setsockopt(s_serverSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+	{
+		perror("setsockopt");
+		return false;
+	}
+
 	if (-1 == bind(s_serverSocket, (struct sockaddr *)&sin, sizeof(sin)))
 	{
-		rlog(R_ERROR, "Unable to create server socket\n");
+		perror("bind");
+		rlog(R_ERROR, "Unable to bind server socket\n");
 		return false;
 	}
 
@@ -149,7 +158,7 @@ bool RemoteConnection_createListner()
 
 	setBlocking(s_serverSocket, false);
 
-	rlog(R_INFO, "Creaded listner\n");
+	rlog(R_INFO, "Created listner\n");
 
 	return true;
 }
@@ -228,12 +237,9 @@ void RemoteConnection_disconnect()
 {
 #if defined(_WIN32)
 	closesocket(s_socket);
-	close(s_serverSocket);
 #else
 	close(s_socket);
-	close(s_serverSocket);
 #endif
-	s_socket = INVALID_SOCKET;
 	s_socket = INVALID_SOCKET;
 
 	rlog(R_INFO, "disconnect!\n");
@@ -417,8 +423,14 @@ void RemoteConnection_close()
 {
 	if (RemoteConnection_connected())
 	{
+		rlog(R_INFO, "closing client socket %d\n", s_socket);
 		closesocket(s_socket);
 		s_socket = INVALID_SOCKET;
 	}
+
+	rlog(R_INFO, "closing socket %d\n", s_serverSocket);
+
+	closesocket(s_serverSocket);
+	s_serverSocket = INVALID_SOCKET;
 }
 
