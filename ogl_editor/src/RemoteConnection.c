@@ -235,6 +235,8 @@ void RemoteConnection_disconnect()
 
 	rlog(R_INFO, "disconnect!\n");
 
+	s_paused = true;
+
 	memset(s_nameLookup.ids, -1, sizeof(int) * s_nameLookup.count);
 	s_nameLookup.count = 0;
 }
