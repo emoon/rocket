@@ -73,7 +73,8 @@ Program {
 
 	Env = {
 		CPPPATH = { ".", "ogl_editor/src", 
-						 "../emgui/src", "../../../../../emgui/src",
+						 "../emgui/src", 
+						 "../../../../../emgui/src",
 					     "ogl_editor/External/mxml" },
 		PROGOPTS = {
 			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
