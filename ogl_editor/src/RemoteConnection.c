@@ -228,9 +228,12 @@ void RemoteConnection_disconnect()
 {
 #if defined(_WIN32)
 	closesocket(s_socket);
+	close(s_serverSocket);
 #else
 	close(s_socket);
+	close(s_serverSocket);
 #endif
+	s_socket = INVALID_SOCKET;
 	s_socket = INVALID_SOCKET;
 
 	rlog(R_INFO, "disconnect!\n");
