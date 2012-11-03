@@ -104,6 +104,27 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 		if (track)
 			idx = sync_find_key(track, y);
 
+		// This is kinda crappy implementation as we will overdraw this quite a bit but might be fine
+
+		int fidx = idx >= 0 ? idx : -idx - 2;
+		enum key_type interpolationType = (fidx >= 0) ? track->keys[fidx].type : KEY_STEP;
+
+		uint32_t color = 0;
+
+		switch (interpolationType) 
+		{
+			case KEY_STEP   : color = 0; break;
+			case KEY_LINEAR : color = Emgui_color32(255, 0, 0, 255); break;
+			case KEY_SMOOTH : color = Emgui_color32(0, 255, 0, 255); break;
+			case KEY_RAMP   : color = Emgui_color32(0, 0, 255, 255); break;
+			default: break;
+		}
+
+		if (viewInfo)
+			Emgui_fill(color, startX + (size - 4), y_offset - font_size / 2, 2, (endSizeY - y_offset) + font_size - 1);
+
+		// Draw text if we have any
+
 		if (idx >= 0)
 		{
 			char temp[256];
@@ -185,7 +206,7 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 
 	int num_tracks = syncData->num_tracks;
 
-	int max_render_tracks = viewInfo->windowSizeX / 128;
+	int max_render_tracks = viewInfo->windowSizeX / min_track_size;
 
 	if (num_tracks > max_render_tracks)
 		num_tracks = max_render_tracks;
