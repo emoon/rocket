@@ -141,7 +141,6 @@ void Editor_update()
 	Emgui_end();
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static char s_editBuffer[512];
@@ -155,87 +154,89 @@ bool Editor_keyDown(int key, int modifiers)
 	int active_track = getActiveTrack();
 	int row_pos = s_editorData.trackViewInfo.rowPos;
 
+	if (key == ' ')
+	{
+		// TODO: Don't start playing if we are in edit mode (but space shouldn't be added in edit mode but we still
+		// shouldn't start playing if we do
+
+		RemoteConnection_sendPauseCommand(!paused);
+		Editor_update();
+		return true;
+	}
+
+	if (!paused)
+		return false;
+
 	switch (key)
 	{
 		case EMGUI_ARROW_DOWN:
 		{
-			if (paused)
-			{
-				int row = row_pos;
+			int row = row_pos;
 
-				if (modifiers & EDITOR_KEY_ALT)
-					row += 8;
-				else
-					row++;	
+			if (modifiers & EDITOR_KEY_ALT)
+				row += 8;
+			else
+				row++;	
 
-				s_editorData.trackViewInfo.rowPos = row;
+			s_editorData.trackViewInfo.rowPos = row;
 
-				RemoteConnection_sendSetRowCommand(row);
-				handled_key = true;
-			}
+			RemoteConnection_sendSetRowCommand(row);
+			handled_key = true;
 
 			break;
 		}
 
 		case EMGUI_ARROW_UP:
 		{
-			if (paused)
-			{
-				int row = row_pos;
+			int row = row_pos;
 
-				if (modifiers & EDITOR_KEY_ALT)
-					row -= 8;
-				else
-					row--;
+			if (modifiers & EDITOR_KEY_ALT)
+				row -= 8;
+			else
+				row--;
 
-				if (row < 0)
-					row = 0;
+			if (row < 0)
+				row = 0;
 
-				if (modifiers & EDITOR_KEY_COMMAND)
-					row = 0;
+			if (modifiers & EDITOR_KEY_COMMAND)
+				row = 0;
 
-				s_editorData.trackViewInfo.rowPos = row;
+			s_editorData.trackViewInfo.rowPos = row;
 
-				RemoteConnection_sendSetRowCommand(row);
-				handled_key = true;
-			}
+			RemoteConnection_sendSetRowCommand(row);
+			handled_key = true;
+
 			break;
 		}
 
 		case EMGUI_ARROW_LEFT:
 		{
-			if (paused)
-			{
-				int track = getActiveTrack(); track--;
+			int track = getActiveTrack(); track--;
 
-				if (modifiers & EDITOR_KEY_COMMAND)
-					track = 0;
+			if (modifiers & EDITOR_KEY_COMMAND)
+				track = 0;
 
-				setActiveTrack(track < 0 ? 0 : track);
+			setActiveTrack(track < 0 ? 0 : track);
 
-				handled_key = true;
-			}
+			handled_key = true;
 
 			break;
 		}
 
 		case EMGUI_ARROW_RIGHT:
 		{
-			if (paused)
-			{
-				int track = getActiveTrack(); track++;
-				int track_count = getTrackCount();
+			int track = getActiveTrack(); track++;
+			int track_count = getTrackCount();
 
-				if (track >= track_count) 
-					track = track_count - 1;
+			if (track >= track_count) 
+				track = track_count - 1;
 
-				if (modifiers & EDITOR_KEY_COMMAND)
-					track = track_count - 1;
+			if (modifiers & EDITOR_KEY_COMMAND)
+				track = track_count - 1;
 
-				setActiveTrack(track);
+			setActiveTrack(track);
 
-				handled_key = true;
-			}
+			handled_key = true;
 
 			break;
 		}
@@ -245,69 +246,57 @@ bool Editor_keyDown(int key, int modifiers)
 
 	// do edit here
 
-	if (paused)
+	if ((key >= '0' && key <= '9') || key == '.' || key == '-')
 	{
-		if ((key >= '0' && key <= '9') || key == '.' || key == '-')
+		if (!is_editing)
 		{
-			if (!is_editing)
-			{
-				memset(s_editBuffer, 0, sizeof(s_editBuffer));
-				is_editing = true;
-			}
-
-			s_editBuffer[strlen(s_editBuffer)] = key;
-			s_editorData.trackData.editText = s_editBuffer;
-
-			return true;
-		}
-		else if (is_editing)
-		{
-			struct track_key key;
-
-			key.row = row_pos;
-			key.value = atof(s_editBuffer);
-			key.type = 0;
-
-			struct sync_track* track = tracks[active_track];
-			const char* track_name = track->name; 
-
-			sync_set_key(track, &key);
-
-			rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, active_track, key.row, track_name);
-
-			RemoteConnection_sendSetKeyCommand(track_name, &key);
-
-			is_editing = false;
-			s_editorData.trackData.editText = 0;
+			memset(s_editBuffer, 0, sizeof(s_editBuffer));
+			is_editing = true;
 		}
 
-		if (key == 'i')
-		{
-			struct sync_track* track = tracks[active_track];
-			int row = s_editorData.trackViewInfo.rowPos;
+		s_editBuffer[strlen(s_editBuffer)] = key;
+		s_editorData.trackData.editText = s_editBuffer;
 
-			int idx = key_idx_floor(track, row);
-			if (idx < 0) 
-				return false;
+		return true;
+	}
+	else if (is_editing)
+	{
+		struct track_key key;
 
-			// copy and modify
-			struct track_key newKey = track->keys[idx];
-			newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
+		key.row = row_pos;
+		key.value = atof(s_editBuffer);
+		key.type = 0;
 
-			sync_set_key(track, &newKey);
+		struct sync_track* track = tracks[active_track];
+		const char* track_name = track->name; 
 
-			RemoteConnection_sendSetKeyCommand(track->name, &newKey);
+		sync_set_key(track, &key);
 
-			handled_key = true;
-		}
+		rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, active_track, key.row, track_name);
+
+		RemoteConnection_sendSetKeyCommand(track_name, &key);
+
+		is_editing = false;
+		s_editorData.trackData.editText = 0;
 	}
 
-	if (key == ' ')
+	if (key == 'i')
 	{
-		// TODO: Don't start playing if we are in edit mode (but space shouldn't be added in edit mode but we still
-		// shouldn't start playing if we do
+		struct sync_track* track = tracks[active_track];
+		int row = s_editorData.trackViewInfo.rowPos;
 
-		RemoteConnection_sendPauseCommand(!paused);
+		int idx = key_idx_floor(track, row);
+		if (idx < 0) 
+			return false;
+
+		// copy and modify
+		struct track_key newKey = track->keys[idx];
+		newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
+
+		sync_set_key(track, &newKey);
+
+		RemoteConnection_sendSetKeyCommand(track->name, &newKey);
+
 		handled_key = true;
 	}
 
