@@ -191,6 +191,9 @@ bool Editor_keyDown(int key, int modifiers)
 				if (row < 0)
 					row = 0;
 
+				if (modifiers & EDITOR_KEY_COMMAND)
+					row = 0;
+
 				s_editorData.trackViewInfo.rowPos = row;
 
 				RemoteConnection_sendSetRowCommand(row);
@@ -204,6 +207,10 @@ bool Editor_keyDown(int key, int modifiers)
 			if (paused)
 			{
 				int track = getActiveTrack(); track--;
+
+				if (modifiers & EDITOR_KEY_COMMAND)
+					track = 0;
+
 				setActiveTrack(track < 0 ? 0 : track);
 
 				handled_key = true;
@@ -217,9 +224,13 @@ bool Editor_keyDown(int key, int modifiers)
 			if (paused)
 			{
 				int track = getActiveTrack(); track++;
+				int track_count = getTrackCount();
 
-				if (track >= getTrackCount())
-					track = getTrackCount() - 1;
+				if (track >= track_count) 
+					track = track_count - 1;
+
+				if (modifiers & EDITOR_KEY_COMMAND)
+					track = track_count - 1;
 
 				setActiveTrack(track);
 

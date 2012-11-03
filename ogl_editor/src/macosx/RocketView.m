@@ -84,6 +84,9 @@
 	if ([theEvent modifierFlags] & NSControlKeyMask)
 		specialKeys |= EDITOR_KEY_CTRL;
 
+	if ([theEvent modifierFlags] & NSCommandKeyMask)
+		specialKeys |= EDITOR_KEY_COMMAND;
+
 	if ([theEvent modifierFlags] & NSNumericPadKeyMask) 
 	{ 
 		switch (keyChar)
