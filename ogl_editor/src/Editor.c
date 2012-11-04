@@ -275,10 +275,11 @@ bool Editor_keyDown(int key, int modifiers)
 
 	if ((key >= '1' && key <= '9') && ((modifiers & EDITOR_KEY_CTRL) || (modifiers & EDITOR_KEY_ALT)))
 	{
-		struct sync_track* track = tracks[active_track];
-		int row = viewInfo->rowPos;
+		struct sync_track** tracks;
+		int track, row;
 
 		float bias_value = 0.0f;
+		tracks = getTracks();
 
 		switch (key)
 		{
@@ -293,19 +294,32 @@ bool Editor_keyDown(int key, int modifiers)
 
 		bias_value = modifiers & EDITOR_KEY_ALT ? -bias_value : bias_value;
 
-		int idx = key_idx_floor(track, row);
-		if (idx < 0) 
-			return false;
+		int selectLeft  = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+		int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+		int selectTop    = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+		int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
-		// copy and modify
-		struct track_key newKey = track->keys[idx];
-		newKey.value += bias_value;
+		for (track = selectLeft; track <= selectRight; ++track) 
+		{
+			struct sync_track* t = tracks[track];
 
-		sync_set_key(track, &newKey);
+			for (row = selectTop; row <= selectBottom; ++row) 
+			{
+				int idx = sync_find_key(t, row);
+				if (idx < 0) 
+					continue;
 
-		RemoteConnection_sendSetKeyCommand(track->name, &newKey);
+				struct track_key newKey = t->keys[idx];
+				newKey.value += bias_value;
+
+				sync_set_key(t, &newKey);
+
+				RemoteConnection_sendSetKeyCommand(t->name, &newKey);
+			}
+		}
 
 		Editor_update();
+
 		return true;
 	}
 
