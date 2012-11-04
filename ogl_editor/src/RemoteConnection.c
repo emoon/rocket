@@ -252,7 +252,7 @@ void RemoteConnection_disconnect()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool RemoteConnection_recv(char* buffer, size_t length, int flags)
+int RemoteConnection_recv(char* buffer, size_t length, int flags)
 {
 	int ret;
 
@@ -267,7 +267,7 @@ bool RemoteConnection_recv(char* buffer, size_t length, int flags)
 		return false;
 	}
 
-	return true;
+	return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

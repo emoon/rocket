@@ -217,8 +217,6 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 	const int track_count = getTrackCount();
 	struct sync_track** tracks = getTracks();
 
-	rlog(R_INFO, "rowPos %d track %d bw %d bh %d\n", bufferWidth, bufferHeight);
-
 	for (i = 0; i < bufferWidth; ++i) 
 	{
 		size_t trackPos = track + i;
@@ -591,10 +589,31 @@ static int processCommands()
 
 			case SET_ROW:
 			{
-				RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
-				s_editorData.trackViewInfo.rowPos = htonl(newRow);
-				rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos); 
+				int i = 0;
+				ret = RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
+
+				if (ret == -1)
+				{
+					// retry to get the data and do it for max of 20 times otherwise disconnect
+
+					for (i = 0; i < 20; ++i)
+					{
+						if (RemoteConnection_recv((char*)&newRow, sizeof(int), 0) == 4)
+						{
+							s_editorData.trackViewInfo.rowPos = htonl(newRow);
+							rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
+							return 1;
+						}
+					}
+				}
+				else
+				{
+					s_editorData.trackViewInfo.rowPos = htonl(newRow);
+					rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
+				}
+
 				ret = 1;
+
 				break;
 			}
 		}
