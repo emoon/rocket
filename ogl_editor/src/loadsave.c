@@ -2,6 +2,7 @@
 #include "Dialog.h"
 #include "TrackData.h"
 #include "External/mxml/mxml.h"
+#include "RemoteConnection.h"
 #include "../../sync/data.h"
 #include <Types.h>
 #include <stdio.h>
@@ -55,12 +56,29 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 
 				if (!strcmp("track", element_name))
 				{
+					int i;
+
 					// TODO: Create the new track/channel here
 			
                     const char* track_name = mxmlElementGetAttr(node, "name");
                     
 					track_index = TrackData_createGetTrack(trackData, track_name);
 					printf("track_index %d\n", track_index);
+
+					struct sync_track* track = trackData->syncData.tracks[track_index];
+
+					// If we already have this track loaded we delete all the existing keys
+					
+					for (i = 0; i < track->num_keys; ++i)
+					{
+						int row = track->keys[i].row;
+						RemoteConnection_sendDeleteKeyCommand(track->name, row);
+					}
+
+					free(track->keys);
+
+					track->keys = 0;
+					track->num_keys = 0;
 
 					printf("Creating track/channel with name %s\n", track_name);
 				}
