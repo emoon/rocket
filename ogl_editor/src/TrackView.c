@@ -5,6 +5,7 @@
 #include <string.h>
 #include "TrackData.h"
 #include "rlog.h"
+#include "minmax.h"
 #include "../../sync/sync.h"
 #include "../../sync/data.h"
 #include "../../sync/track.h"
@@ -52,7 +53,8 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track, 
-						  int startX, int startY, int startPos, int endPos, int endSizeY)
+						 int startX, int startY, int startPos, int endPos, int endSizeY,
+						 int trackId, int selectLeft, int selectRight, int selectTop, int selectBottom)
 {
 	uint y;
 	int size = min_track_size;
@@ -63,10 +65,7 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 		int x_adjust = 0;
 
 		Emgui_setFont(viewInfo->smallFontId);
-
 		text_size = Emgui_getTextSize(track->name) + 4;
-
-		rlog(R_INFO, "t %s size %d\n", track->name, text_size);
 
 		// if text is smaller than min size we center the text
 
@@ -74,8 +73,6 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 			x_adjust = (min_track_size - text_size) / 2;
 		else
 			size = text_size + 1; 
-
-		rlog(R_INFO, "t %s size %d adjust %d\n", track->name, text_size, x_adjust);
 
 		Emgui_drawText(track->name, (startX + 3) + x_adjust, startY - 12, Emgui_color32(0xff, 0xff, 0xff, 0xff));
 		Emgui_setDefaultFont();
@@ -135,15 +132,14 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 		}
 		else
 		{
-			uint32_t color = 0; 
-
-			if (y & 7)
-				color = Emgui_color32(0x4f, 0x4f, 0x4f, 0xff); 
-			else
-				color = Emgui_color32(0x7f, 0x7f, 0x7f, 0xff); 
-
+			uint32_t color = (y & 7) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff); 
 			Emgui_drawText("---", offset, y_offset - font_size / 2, color); 
 		}
+
+		bool selected = (trackId >= selectLeft && trackId <= selectRight) && (y >= selectTop && y < selectBottom);
+
+		if (selected)
+			Emgui_fill(Emgui_color32(0x4f, 0x4f, 0x4f, 0x3f), startX, y_offset - font_size/2, size, font_size);  
 
 		y_offset += font_size;
 
@@ -155,27 +151,6 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int doMax(int a, int b)
-{
-	if (b >= a)
-		return b;
-	else
-		return a;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static inline int min(int a, int b)
-{
-	if (a < b)
-		return a;
-	else
-		return b;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// foo 
 
 void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 {
@@ -198,11 +173,19 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 
 	if (syncData->num_tracks == 0)
 	{
-		renderChannel(0, 0, 40 + (i * 64), adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border);
+		renderChannel(0, 0, 40 + (i * 64), adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
+				      0, 0, 0, 0, 0);
 		uint32_t color = Emgui_color32(127, 127, 127, 56);
 		Emgui_fill(color, 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 2);
 		return;
 	}
+
+	int selectLeft  = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	int selectTop    = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+
+	rlog(R_INFO, "%d %d %d %d\n", selectLeft, selectRight, selectTop, selectBottom);
 
 	int num_tracks = syncData->num_tracks;
 
@@ -218,11 +201,12 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 
 	int x_pos = 40;
 
-	const int end_track = min(start_track + num_tracks, syncData->num_tracks);
+	const int end_track = mini(start_track + num_tracks, syncData->num_tracks);
 
 	for (i = start_track; i < end_track; ++i)
 	{
-		int size = renderChannel(viewInfo, syncData->tracks[i], x_pos, adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border);
+		int size = renderChannel(viewInfo, syncData->tracks[i], x_pos, adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
+								 i, selectLeft, selectRight, selectTop, selectBottom);
 
 		if (sel_track == i)
 		{

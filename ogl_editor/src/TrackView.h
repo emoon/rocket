@@ -12,6 +12,10 @@ typedef struct TrackViewInfo
 	int windowSizeY;
 	int rowPos;
 	int smallFontId;
+	int selectStartTrack;
+	int selectStopTrack;
+	int selectStartRow;
+	int selectStopRow;
 
 } TrackViewInfo;
 

@@ -8,6 +8,7 @@
 #include "LoadSave.h"
 #include "TrackView.h"
 #include "rlog.h"
+#include "minmax.h"
 #include "TrackData.h"
 #include "RemoteConnection.h"
 #include "MinecraftiaFont.h"
@@ -149,10 +150,11 @@ static bool is_editing = false;
 bool Editor_keyDown(int key, int modifiers)
 {
 	bool handled_key = true;
+	TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
 	bool paused = RemoteConnection_isPaused();
 	struct sync_track** tracks = getTracks();
 	int active_track = getActiveTrack();
-	int row_pos = s_editorData.trackViewInfo.rowPos;
+	int row_pos = viewInfo->rowPos;
 
 	if (key == ' ')
 	{
@@ -174,7 +176,16 @@ bool Editor_keyDown(int key, int modifiers)
 			int row = row_pos;
 
 			row += modifiers & EDITOR_KEY_ALT ? 8 : 1;
-			s_editorData.trackViewInfo.rowPos = row;
+			viewInfo->rowPos = row;
+
+			if (modifiers & EDITOR_KEY_SHIFT)
+			{
+				viewInfo->selectStopRow = row;
+				break;
+			}
+
+			viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+			viewInfo->selectStartTrack = viewInfo->selectStopTrack = active_track;
 
 			RemoteConnection_sendSetRowCommand(row);
 
@@ -190,7 +201,16 @@ bool Editor_keyDown(int key, int modifiers)
 			if ((modifiers & EDITOR_KEY_COMMAND) || row < 0)
 				row = 0;
 
-			s_editorData.trackViewInfo.rowPos = row;
+			viewInfo->rowPos = row;
+
+			if (modifiers & EDITOR_KEY_SHIFT)
+			{
+				viewInfo->selectStopRow = row;
+				break;
+			}
+
+			viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+			viewInfo->selectStartTrack = viewInfo->selectStopTrack = active_track;
 
 			RemoteConnection_sendSetRowCommand(row);
 			handled_key = true;
@@ -206,6 +226,15 @@ bool Editor_keyDown(int key, int modifiers)
 				track = 0;
 
 			setActiveTrack(track < 0 ? 0 : track);
+
+			if (modifiers & EDITOR_KEY_SHIFT)
+			{
+				viewInfo->selectStopTrack = track;
+				break;
+			}
+
+			viewInfo->selectStartRow = viewInfo->selectStopRow = row_pos;
+			viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
 
 			handled_key = true;
 
@@ -225,6 +254,15 @@ bool Editor_keyDown(int key, int modifiers)
 
 			setActiveTrack(track);
 
+			if (modifiers & EDITOR_KEY_SHIFT)
+			{
+				viewInfo->selectStopTrack = track;
+				break;
+			}
+
+			viewInfo->selectStartRow = viewInfo->selectStopRow = row_pos;
+			viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
+
 			handled_key = true;
 
 			break;
@@ -238,7 +276,7 @@ bool Editor_keyDown(int key, int modifiers)
 	if ((key >= '1' && key <= '9') && ((modifiers & EDITOR_KEY_CTRL) || (modifiers & EDITOR_KEY_ALT)))
 	{
 		struct sync_track* track = tracks[active_track];
-		int row = s_editorData.trackViewInfo.rowPos;
+		int row = viewInfo->rowPos;
 
 		float bias_value = 0.0f;
 
@@ -310,7 +348,7 @@ bool Editor_keyDown(int key, int modifiers)
 	if (key == 'i')
 	{
 		struct sync_track* track = tracks[active_track];
-		int row = s_editorData.trackViewInfo.rowPos;
+		int row = viewInfo->rowPos;
 
 		int idx = key_idx_floor(track, row);
 		if (idx < 0) 
