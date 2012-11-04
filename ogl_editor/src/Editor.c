@@ -28,13 +28,33 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+typedef struct CopyEntry
+{
+	int track;
+	struct track_key keyFrame;
+} CopyEntry;
+
+typedef struct CopyData
+{
+	CopyEntry* entries;
+	int bufferWidth;
+	int bufferHeight;
+	int count;
+
+} CopyData;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 typedef struct EditorData
 {
 	TrackViewInfo trackViewInfo;
 	TrackData trackData;
+	CopyEntry* copyEntries;
+	int copyCount;
 } EditorData;
 
 static EditorData s_editorData;
+static CopyData s_copyData;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -144,6 +164,81 @@ void Editor_update()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void copySelection(int row, int track, int selectLeft, int selectRight, int selectTop, int selectBottom)
+{
+	CopyEntry* entry = 0;
+	int copy_count = 0;
+	struct sync_track** tracks = getTracks();
+
+	// Count how much we need to copy
+
+	for (track = selectLeft; track <= selectRight; ++track) 
+	{
+		struct sync_track* t = tracks[track];
+		for (row = selectTop; row <= selectBottom; ++row) 
+		{
+			int idx = sync_find_key(t, row);
+			if (idx < 0) 
+				continue;
+
+			copy_count++;
+		}
+	}
+
+	free(s_copyData.entries);
+	entry = s_copyData.entries = malloc(sizeof(CopyEntry) * copy_count);
+
+	for (track = selectLeft; track <= selectRight; ++track) 
+	{
+		struct sync_track* t = tracks[track];
+		for (row = selectTop; row <= selectBottom; ++row) 
+		{
+			int idx = sync_find_key(t, row);
+			if (idx < 0) 
+				continue;
+
+			entry->track = track - selectLeft;
+			entry->keyFrame = t->keys[idx];
+			entry->keyFrame.row -= selectTop; 
+			entry++;
+		}
+	}
+
+	s_copyData.bufferWidth = selectRight - selectLeft + 1;
+	s_copyData.bufferHeight = selectBottom - selectTop + 1;
+	s_copyData.count = copy_count;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
+{
+	int i, j;
+	const int track_count = getTrackCount();
+	struct sync_track** tracks = getTracks();
+
+	rlog(R_INFO, "rowPos %d track %d bw %d bh %d\n", bufferWidth, bufferHeight);
+
+	for (i = 0; i < bufferWidth; ++i) 
+	{
+		size_t trackPos = track + i;
+		if (trackPos >= track_count) 
+			continue;
+
+		size_t trackIndex = trackPos;
+		struct sync_track* t = tracks[trackIndex];
+
+		for (j = 0; j < bufferHeight; ++j) 
+		{
+			int row = rowPos + j;
+			if (is_key_frame(t, row))
+				sync_del_key(t, row);
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static char s_editBuffer[512];
 static bool is_editing = false;
 
@@ -155,6 +250,11 @@ bool Editor_keyDown(int key, int modifiers)
 	struct sync_track** tracks = getTracks();
 	int active_track = getActiveTrack();
 	int row_pos = viewInfo->rowPos;
+
+	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
 	if (key == ' ')
 	{
@@ -271,6 +371,64 @@ bool Editor_keyDown(int key, int modifiers)
 		default : handled_key = false; break;
 	}
 
+	// handle copy of tracks/values
+
+	if (key == 'c' && (modifiers & EDITOR_KEY_COMMAND))
+	{
+		copySelection(row_pos, active_track, selectLeft, selectRight, selectTop, selectBottom);
+		return true;
+	}
+
+	if (key == 'x' && (modifiers & EDITOR_KEY_COMMAND))
+	{
+		copySelection(row_pos, active_track, selectLeft, selectRight, selectTop, selectBottom);
+		deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight);
+		handled_key = true;
+	}
+
+	// Handle paste of data
+
+	if (key == 'v' && (modifiers & EDITOR_KEY_COMMAND))
+	{
+		const int buffer_width = s_copyData.bufferWidth;
+		const int buffer_height = s_copyData.bufferHeight;
+		const int buffer_size = s_copyData.count;
+		const int track_count = getTrackCount();
+
+		if (!s_copyData.entries)
+			return false;
+
+		// First clear the paste area
+
+		deleteArea(row_pos, active_track, buffer_width, buffer_height);
+
+		for (int i = 0; i < buffer_size; ++i)
+		{
+			const CopyEntry* ce = &s_copyData.entries[i];
+			
+			assert(ce->track >= 0);
+			assert(ce->track < buffer_width);
+			assert(ce->keyFrame.row >= 0);
+			assert(ce->keyFrame.row < buffer_height);
+
+			size_t trackPos = active_track + ce->track;
+			if (trackPos < track_count)
+			{
+				size_t trackIndex = trackPos;
+				struct track_key key = ce->keyFrame;
+				key.row += row_pos;
+
+				rlog(R_INFO, "key.row %d\n", key.row);
+
+				sync_set_key(tracks[trackIndex], &key);
+
+				RemoteConnection_sendSetKeyCommand(tracks[trackIndex]->name, &key);
+			}
+		}
+
+		handled_key = true;
+	}
+
 	// Handle biasing of values
 
 	if ((key >= '1' && key <= '9') && ((modifiers & EDITOR_KEY_CTRL) || (modifiers & EDITOR_KEY_ALT)))
@@ -293,11 +451,6 @@ bool Editor_keyDown(int key, int modifiers)
 		}
 
 		bias_value = modifiers & EDITOR_KEY_ALT ? -bias_value : bias_value;
-
-		int selectLeft  = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-		int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-		int selectTop    = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-		int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
 		for (track = selectLeft; track <= selectRight; ++track) 
 		{

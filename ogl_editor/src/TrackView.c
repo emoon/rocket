@@ -185,8 +185,6 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 	int selectTop    = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
 	int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
-	rlog(R_INFO, "%d %d %d %d\n", selectLeft, selectRight, selectTop, selectBottom);
-
 	int num_tracks = syncData->num_tracks;
 
 	int max_render_tracks = viewInfo->windowSizeX / min_track_size;
