@@ -52,7 +52,7 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track, 
+static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track, int editRow, 
 						 int startX, int startY, int startPos, int endPos, int endSizeY,
 						 int trackId, int selectLeft, int selectRight, int selectTop, int selectBottom)
 {
@@ -128,7 +128,8 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 			value = track->keys[idx].value;
 			snprintf(temp, 256, "% .2f", value);
 
-			Emgui_drawText(temp, offset, y_offset - font_size / 2, Emgui_color32(255, 255, 255, 255));
+			if (y != editRow)
+				Emgui_drawText(temp, offset, y_offset - font_size / 2, Emgui_color32(255, 255, 255, 255));
 		}
 		else
 		{
@@ -173,7 +174,7 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 
 	if (syncData->num_tracks == 0)
 	{
-		renderChannel(0, 0, 40 + (i * 64), adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
+		renderChannel(0, 0, -1, 40 + (i * 64), adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
 				      0, 0, 0, 0, 0);
 		uint32_t color = Emgui_color32(127, 127, 127, 56);
 		Emgui_fill(color, 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 2);
@@ -203,7 +204,12 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 
 	for (i = start_track; i < end_track; ++i)
 	{
-		int size = renderChannel(viewInfo, syncData->tracks[i], x_pos, adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
+		int editRow = -1;
+
+		if (sel_track == i && trackData->editText)
+			editRow = viewInfo->rowPos;
+
+		int size = renderChannel(viewInfo, syncData->tracks[i], editRow, x_pos, adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
 								 i, selectLeft, selectRight, selectTop, selectBottom);
 
 		if (sel_track == i)

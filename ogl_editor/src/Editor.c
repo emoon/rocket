@@ -493,20 +493,27 @@ bool Editor_keyDown(int key, int modifiers)
 	}
 	else if (is_editing)
 	{
-		struct track_key key;
+		// if we press esc we discard the value
 
-		key.row = row_pos;
-		key.value = atof(s_editBuffer);
-		key.type = 0;
+		if (key != 27)
+		{
+			struct track_key key;
 
-		struct sync_track* track = tracks[active_track];
-		const char* track_name = track->name; 
+			key.row = row_pos;
+			key.value = atof(s_editBuffer);
+			key.type = 0;
 
-		sync_set_key(track, &key);
+			struct sync_track* track = tracks[active_track];
+			const char* track_name = track->name; 
 
-		rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, active_track, key.row, track_name);
+			sync_set_key(track, &key);
 
-		RemoteConnection_sendSetKeyCommand(track_name, &key);
+			rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, active_track, key.row, track_name);
+
+			RemoteConnection_sendSetKeyCommand(track_name, &key);
+		}
+
+		handled_key = true;
 
 		is_editing = false;
 		s_editorData.trackData.editText = 0;
