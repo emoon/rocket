@@ -231,6 +231,9 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 		for (j = 0; j < bufferHeight; ++j) 
 		{
 			int row = rowPos + j;
+
+			RemoteConnection_sendDeleteKeyCommand(t->name, row);
+
 			if (is_key_frame(t, row))
 				sync_del_key(t, row);
 		}
