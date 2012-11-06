@@ -120,30 +120,37 @@ void Editor_init()
 static void drawStatus()
 {
 	char temp[256];
-	struct sync_track** tracks = getTracks();
-
-	if (!tracks)
-		return;
-
-	int active_track = getActiveTrack();
-	const struct sync_track* track = tracks[active_track];
-	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
-	int row = s_editorData.trackViewInfo.rowPos;
-	int idx = key_idx_floor(track, row);
+	int active_track = 0;
+	int current_row = 0;
+	float value = 0.0f; 
 	const char *str = "---";
-	if (idx >= 0) 
+	struct sync_track** tracks = getTracks();
+		const int sizeY = s_editorData.trackViewInfo.windowSizeY;
+
+	active_track = getActiveTrack();
+	current_row = s_editorData.trackViewInfo.rowPos;
+
+	if (tracks)
 	{
-		switch (track->keys[idx].type) 
+		const struct sync_track* track = tracks[active_track];
+		int row = s_editorData.trackViewInfo.rowPos;
+		int idx = key_idx_floor(track, row);
+		if (idx >= 0) 
 		{
-			case KEY_STEP:   str = "step"; break;
-			case KEY_LINEAR: str = "linear"; break;
-			case KEY_SMOOTH: str = "smooth"; break;
-			case KEY_RAMP:   str = "ramp"; break;
-			default: break;
+			switch (track->keys[idx].type) 
+			{
+				case KEY_STEP:   str = "step"; break;
+				case KEY_LINEAR: str = "linear"; break;
+				case KEY_SMOOTH: str = "smooth"; break;
+				case KEY_RAMP:   str = "ramp"; break;
+				default: break;
+			}
 		}
+
+		value = sync_get_val(track, row);
 	}
 
-	snprintf(temp, 256, "track %d row %d value %f type %s", active_track, row, sync_get_val(track, row), str);
+	snprintf(temp, 256, "track %d row %d value %f type %s", active_track, current_row, value, str);
 
 	Emgui_fill(Emgui_color32(0x10, 0x10, 0x10, 0xff), 1, sizeY - 12, 400, 11); 
 	Emgui_drawText(temp, 3, sizeY - 10, Emgui_color32(255, 255, 255, 255));
