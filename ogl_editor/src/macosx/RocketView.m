@@ -127,8 +127,9 @@
 	NSWindow* window = [self window];
 	NSRect originalFrame = [window frame];
 	NSPoint location = [window mouseLocationOutsideOfEventStream];
+	NSRect adjustFrame = [NSWindow contentRectForFrameRect: originalFrame styleMask: NSTitledWindowMask];
 
-	Emgui_setMousePos((int)location.x, (int)originalFrame.size.height - (int)location.y);
+	Emgui_setMousePos((int)location.x, (int)adjustFrame.size.height - (int)location.y);
 	Editor_update();
 }
 
@@ -147,8 +148,9 @@
 	NSWindow *window = [self window];
 	NSRect originalFrame = [window frame];
 	NSPoint location = [window mouseLocationOutsideOfEventStream];
+	NSRect adjustFrame = [NSWindow contentRectForFrameRect: originalFrame styleMask: NSTitledWindowMask];
 
-	Emgui_setMousePos((int)location.x, (int)originalFrame.size.height - (int)location.y);
+	Emgui_setMousePos((int)location.x, (int)adjustFrame.size.height - (int)location.y);
 	Emgui_setMouseLmb(1);
 	
 	Editor_update();
