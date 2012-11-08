@@ -65,7 +65,7 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 		int x_adjust = 0;
 
 		Emgui_setFont(viewInfo->smallFontId);
-		text_size = Emgui_getTextSize(track->name) + 4;
+		text_size = (Emgui_getTextSize(track->name) & 0xffff) + 4;
 
 		// if text is smaller than min size we center the text
 
