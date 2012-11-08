@@ -14,15 +14,6 @@
 #include "../../sync/base.h"
 #include "../../sync/data.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if defined(EMGUI_MACOSX)
-#define FONT_PATH "/Library/Fonts/"
-#elif defined(EMGUI_WINDOWS)
-#define FONT_PATH "C:\\Windows\\Fonts\\"
-#else
-#error "Unsupported platform"
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -99,16 +90,18 @@ void Editor_init()
 static void drawStatus()
 {
 	char temp[256];
+	int row, idx;
+	const char *str = "---";
+	const struct sync_track* track;
 	struct sync_track** tracks = getTracks();
+	int active_track = getActiveTrack();
 
 	if (!tracks)
 		return;
 
-	int active_track = getActiveTrack();
-	const struct sync_track* track = tracks[active_track];
-	int row = s_editorData.trackViewInfo.rowPos;
-	int idx = key_idx_floor(track, row);
-	const char *str = "---";
+	track = tracks[active_track];
+	row = s_editorData.trackViewInfo.rowPos;
+	idx = key_idx_floor(track, row);
 	if (idx >= 0) 
 	{
 		switch (track->keys[idx].type) 
@@ -243,21 +236,22 @@ bool Editor_keyDown(int key, int modifiers)
 				is_editing = true;
 			}
 
-			s_editBuffer[strlen(s_editBuffer)] = key;
+			s_editBuffer[strlen(s_editBuffer)] = (char)key;
 			s_editorData.trackData.editText = s_editBuffer;
 
 			return true;
 		}
 		else if (is_editing)
 		{
+			const char* track_name;
 			struct track_key key;
+			struct sync_track* track = tracks[active_track];
 
 			key.row = row_pos;
-			key.value = atof(s_editBuffer);
+			key.value = (float)atof(s_editBuffer);
 			key.type = 0;
 
-			struct sync_track* track = tracks[active_track];
-			const char* track_name = track->name; 
+			track_name = track->name; 
 
 			sync_set_key(track, &key);
 
@@ -271,6 +265,7 @@ bool Editor_keyDown(int key, int modifiers)
 
 		if (key == 'i')
 		{
+			struct track_key newKey;
 			struct sync_track* track = tracks[active_track];
 			int row = s_editorData.trackViewInfo.rowPos;
 
@@ -279,7 +274,7 @@ bool Editor_keyDown(int key, int modifiers)
 				return false;
 
 			// copy and modify
-			struct track_key newKey = track->keys[idx];
+			newKey = track->keys[idx];
 			newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
 
 			sync_set_key(track, &newKey);

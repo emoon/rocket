@@ -11,7 +11,8 @@
 
 static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 {
-	int track_index = 0;
+	struct track_key k;
+	int is_key, track_index = 0;
 	//struct sync_track** tracks = trackData->syncData.tracks;
 	mxml_node_t* node = rootNode;
 
@@ -72,12 +73,11 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					const char* value = mxmlElementGetAttr(node, "value"); 
 					const char* interpolation = mxmlElementGetAttr(node, "interpolation"); 
 
-					struct track_key k;
 					k.row = atoi(row);
 					k.value = (float)(atof(value));
 					k.type = (atoi(interpolation));
 
-					int is_key = is_key_frame(track, k.row);
+					is_key = is_key_frame(track, k.row);
 
 					assert(!is_key);
 					sync_set_key(track, &k);
@@ -134,6 +134,8 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 {
 	mxml_node_t* xml;
 	mxml_node_t* tracks;
+	FILE* fp;
+	size_t p;
 	
 	struct sync_data* sync_data = &trackData->syncData;
 
@@ -142,13 +144,14 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 
 	mxmlElementSetAttr(tracks, "rows", "1000000"); // TODO: Fix me
 
-	for (size_t i = 0; i < sync_data->num_tracks; ++i) 
+	for (p = 0; p < sync_data->num_tracks; ++p) 
 	{
-		const struct sync_track* t = sync_data->tracks[i];
+		int i;
+		const struct sync_track* t = sync_data->tracks[p];
 		mxml_node_t* track = mxmlNewElement(tracks, "track");
 		mxmlElementSetAttr(track, "name", t->name); 
 
-		for (int i = 0; i < (int)t->num_keys; ++i) 
+		for (i = 0; i < (int)t->num_keys; ++i) 
 		{
 			char temp0[256];
 			char temp1[256];
@@ -174,7 +177,7 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 		}
 	}
 
-	FILE* fp = fopen(path, "wt");
+	fp = fopen(path, "wt");
     mxmlSaveFile(xml, fp, MXML_NO_CALLBACK);
     fclose(fp);
 

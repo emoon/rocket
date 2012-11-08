@@ -66,7 +66,9 @@
  * Do we have threading support?
  */
 
+#if defined(__APPLE__)
 #define HAVE_PTHREAD_H 1
+#endif
 
 
 /*

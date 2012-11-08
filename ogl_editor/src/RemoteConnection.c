@@ -126,12 +126,13 @@ static bool setBlocking(int sock, bool blocking)
 
 bool RemoteConnection_createListner()
 {
+	struct sockaddr_in sin;
+
 	s_serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (s_serverSocket == INVALID_SOCKET)
 		return false;
 
-	struct sockaddr_in sin;
 	memset(&sin, 0, sizeof sin);
 
 	sin.sin_family = AF_INET;

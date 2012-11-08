@@ -96,7 +96,7 @@ Program {
 	Sources = { 
 		FGlob {
 			Dir = "ogl_editor/src",
-			Extensions = { ".c", ".m" },
+			Extensions = { ".c" },
 			Filters = {
 				{ Pattern = "macosx"; Config = "macosx-*-*" },
 				{ Pattern = "windows"; Config = { "win32-*-*", "win64-*-*" } },
@@ -104,8 +104,6 @@ Program {
 		},
 	},
 }
-
-Default "editor"
 
 local rocketBundle = OsxBundle 
 {
@@ -119,6 +117,13 @@ local rocketBundle = OsxBundle
 	},
 }
 
-Default(rocketBundle)
+local native = require('tundra.native')
+
+if native.platform == "macosx" then
+	Default(rocketBundle)
+else
+	Default "editor"
+end
+
 
 
