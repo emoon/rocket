@@ -60,8 +60,6 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 	int size = min_track_size;
 	uint32_t color = Emgui_color32(40, 40, 40, 255);
 
-	Emgui_drawBorder(color, color, startX, startY - 20, 160, 600);
-
 	if (track)
 	{
 		int text_size;
@@ -113,7 +111,7 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 
 		switch (interpolationType) 
 		{
-			case KEY_STEP   : color = 0; break;
+			case KEY_STEP   : color = Emgui_color32(0, 0, 0,   255);; break;
 			case KEY_LINEAR : color = Emgui_color32(255, 0, 0, 255); break;
 			case KEY_SMOOTH : color = Emgui_color32(0, 255, 0, 255); break;
 			case KEY_RAMP   : color = Emgui_color32(0, 0, 255, 255); break;
@@ -160,7 +158,7 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 {
 	struct sync_data* syncData = &trackData->syncData;
 	const int sel_track = trackData->activeTrack;
-	uint32_t color = Emgui_color32(127, 127, 127, 56);
+	//uint32_t color = Emgui_color32(127, 127, 127, 56);
 	int num_tracks;
 	int max_render_tracks;
 	int start_track = 0;
