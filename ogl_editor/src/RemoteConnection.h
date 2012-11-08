@@ -10,6 +10,7 @@ struct sync_track;
 
 bool RemoteConnection_createListner();
 void RemoteConnection_updateListner();
+void RemoteConnection_close();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Talk with the demo stuff
@@ -17,7 +18,7 @@ void RemoteConnection_updateListner();
 bool RemoteConnection_isPaused();
 bool RemoteConnection_connected();
 void RemoteConnection_disconnect();
-bool RemoteConnection_recv(char* buffer, size_t length, int flags);
+int  RemoteConnection_recv(char* buffer, size_t length, int flags);
 bool RemoteConnection_send(const char* buffer, size_t length, int flags);
 bool RemoteConnection_pollRead();
 

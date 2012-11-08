@@ -8,8 +8,10 @@
 #include "LoadSave.h"
 #include "TrackView.h"
 #include "rlog.h"
+#include "minmax.h"
 #include "TrackData.h"
 #include "RemoteConnection.h"
+#include "MinecraftiaFont.h"
 #include "../../sync/sync.h"
 #include "../../sync/base.h"
 #include "../../sync/data.h"
@@ -17,13 +19,33 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+typedef struct CopyEntry
+{
+	int track;
+	struct track_key keyFrame;
+} CopyEntry;
+
+typedef struct CopyData
+{
+	CopyEntry* entries;
+	int bufferWidth;
+	int bufferHeight;
+	int count;
+
+} CopyData;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 typedef struct EditorData
 {
 	TrackViewInfo trackViewInfo;
 	TrackData trackData;
+	CopyEntry* copyEntries;
+	int copyCount;
 } EditorData;
 
 static EditorData s_editorData;
+static CopyData s_copyData;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -53,22 +75,21 @@ static inline int getTrackCount()
 	return s_editorData.trackData.syncData.num_tracks;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//static uint64_t fontIds[2];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Editor_create()
 {
+	int id;
 	Emgui_create("foo");
-	//fontIds[0] = Emgui_loadFont("/Users/daniel/Library/Fonts/MicroKnight_v1.0.ttf", 11.0f);
-	//fontIds[0] = Emgui_loadFont(FONT_PATH "Arial.ttf", 11.0f);
-	Emgui_setDefaultFont();
-
+	id = Emgui_loadFontBitmap(g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_FONT_MEMORY, 32, 128, g_minecraftiaFontLayout);
 	memset(&s_editorData, 0, sizeof(s_editorData));
 
 	RemoteConnection_createListner();
+
+	s_editorData.trackViewInfo.smallFontId = id;
+
+	Emgui_setDefaultFont();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -85,39 +106,49 @@ void Editor_init()
 {
 }
 
+static char s_numRows[64] = "10000";
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void drawStatus()
 {
 	char temp[256];
-	int row, idx;
+	int active_track = 0;
+	int current_row = 0;
+	float value = 0.0f; 
 	const char *str = "---";
-	const struct sync_track* track;
 	struct sync_track** tracks = getTracks();
-	int active_track = getActiveTrack();
+	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
 
-	if (!tracks)
-		return;
+	active_track = getActiveTrack();
+	current_row = s_editorData.trackViewInfo.rowPos;
 
-	track = tracks[active_track];
-	row = s_editorData.trackViewInfo.rowPos;
-	idx = key_idx_floor(track, row);
-	if (idx >= 0) 
+	if (tracks)
 	{
-		switch (track->keys[idx].type) 
+		const struct sync_track* track = tracks[active_track];
+		int row = s_editorData.trackViewInfo.rowPos;
+		int idx = key_idx_floor(track, row);
+
+		if (idx >= 0) 
 		{
-			case KEY_STEP:   str = "step"; break;
-			case KEY_LINEAR: str = "linear"; break;
-			case KEY_SMOOTH: str = "smooth"; break;
-			case KEY_RAMP:   str = "ramp"; break;
-			default: break;
+			switch (track->keys[idx].type) 
+			{
+				case KEY_STEP:   str = "step"; break;
+				case KEY_LINEAR: str = "linear"; break;
+				case KEY_SMOOTH: str = "smooth"; break;
+				case KEY_RAMP:   str = "ramp"; break;
+				default: break;
+			}
 		}
+
+		value = sync_get_val(track, row);
 	}
 
-	snprintf(temp, 256, "track %d row %d value %f type %s", active_track, row, sync_get_val(track, row), str);
+	snprintf(temp, 256, "track %d row %d value %f type %s", active_track, current_row, value, str);
 
-	Emgui_fill(Emgui_color32(0x10, 0x10, 0x10, 0xff), 1, 588, 400, 11); 
-	Emgui_drawText(temp, 3, 590, Emgui_color32(255, 255, 255, 255));
+	Emgui_fill(Emgui_color32(0x10, 0x10, 0x10, 0xff), 1, sizeY - 12, 400, 11); 
+	Emgui_drawText(temp, 3, sizeY - 10, Emgui_color32(255, 255, 255, 255));
+	Emgui_editBoxXY(400, sizeY - 14, 100, 12, s_numRows); 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -133,6 +164,83 @@ void Editor_update()
 	Emgui_end();
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void copySelection(int row, int track, int selectLeft, int selectRight, int selectTop, int selectBottom)
+{
+	CopyEntry* entry = 0;
+	int copy_count = 0;
+	struct sync_track** tracks = getTracks();
+
+	// Count how much we need to copy
+
+	for (track = selectLeft; track <= selectRight; ++track) 
+	{
+		struct sync_track* t = tracks[track];
+		for (row = selectTop; row <= selectBottom; ++row) 
+		{
+			int idx = sync_find_key(t, row);
+			if (idx < 0) 
+				continue;
+
+			copy_count++;
+		}
+	}
+
+	free(s_copyData.entries);
+	entry = s_copyData.entries = malloc(sizeof(CopyEntry) * copy_count);
+
+	for (track = selectLeft; track <= selectRight; ++track) 
+	{
+		struct sync_track* t = tracks[track];
+		for (row = selectTop; row <= selectBottom; ++row) 
+		{
+			int idx = sync_find_key(t, row);
+			if (idx < 0) 
+				continue;
+
+			entry->track = track - selectLeft;
+			entry->keyFrame = t->keys[idx];
+			entry->keyFrame.row -= selectTop; 
+			entry++;
+		}
+	}
+
+	s_copyData.bufferWidth = selectRight - selectLeft + 1;
+	s_copyData.bufferHeight = selectBottom - selectTop + 1;
+	s_copyData.count = copy_count;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
+{
+	int i, j;
+	const int track_count = getTrackCount();
+	struct sync_track** tracks = getTracks();
+
+	for (i = 0; i < bufferWidth; ++i) 
+	{
+		struct sync_track* t;
+		int trackPos = track + i;
+		int trackIndex = trackPos;
+
+		if (trackPos >= track_count) 
+			continue;
+
+		t = tracks[trackIndex];
+
+		for (j = 0; j < bufferHeight; ++j) 
+		{
+			int row = rowPos + j;
+
+			RemoteConnection_sendDeleteKeyCommand(t->name, row);
+
+			if (is_key_frame(t, row))
+				sync_del_key(t, row);
+		}
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -142,81 +250,125 @@ static bool is_editing = false;
 bool Editor_keyDown(int key, int modifiers)
 {
 	bool handled_key = true;
+	TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
 	bool paused = RemoteConnection_isPaused();
 	struct sync_track** tracks = getTracks();
 	int active_track = getActiveTrack();
-	int row_pos = s_editorData.trackViewInfo.rowPos;
+	int row_pos = viewInfo->rowPos;
+
+	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+
+	if (key == ' ')
+	{
+		// TODO: Don't start playing if we are in edit mode (but space shouldn't be added in edit mode but we still
+		// shouldn't start playing if we do
+
+		RemoteConnection_sendPauseCommand(!paused);
+		Editor_update();
+		return true;
+	}
+
+	if (!paused)
+		return false;
 
 	switch (key)
 	{
 		case EMGUI_ARROW_DOWN:
 		{
-			if (paused)
+			int row = row_pos;
+
+			row += modifiers & EDITOR_KEY_ALT ? 8 : 1;
+			viewInfo->rowPos = row;
+
+			if (modifiers & EDITOR_KEY_SHIFT)
 			{
-				int row = row_pos;
-
-				if (modifiers & EDITOR_KEY_ALT)
-					row += 8;
-				else
-					row++;	
-
-				s_editorData.trackViewInfo.rowPos = row;
-
-				RemoteConnection_sendSetRowCommand(row);
-				handled_key = true;
+				viewInfo->selectStopRow = row;
+				break;
 			}
+
+			viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+			viewInfo->selectStartTrack = viewInfo->selectStopTrack = active_track;
+
+			RemoteConnection_sendSetRowCommand(row);
 
 			break;
 		}
 
 		case EMGUI_ARROW_UP:
 		{
-			if (paused)
+			int row = row_pos;
+
+			row -= modifiers & EDITOR_KEY_ALT ? 8 : 1;
+
+			if ((modifiers & EDITOR_KEY_COMMAND) || row < 0)
+				row = 0;
+
+			viewInfo->rowPos = row;
+
+			if (modifiers & EDITOR_KEY_SHIFT)
 			{
-				int row = row_pos;
-
-				if (modifiers & EDITOR_KEY_ALT)
-					row -= 8;
-				else
-					row--;
-
-				if (row < 0)
-					row = 0;
-
-				s_editorData.trackViewInfo.rowPos = row;
-
-				RemoteConnection_sendSetRowCommand(row);
-				handled_key = true;
+				viewInfo->selectStopRow = row;
+				break;
 			}
+
+			viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+			viewInfo->selectStartTrack = viewInfo->selectStopTrack = active_track;
+
+			RemoteConnection_sendSetRowCommand(row);
+			handled_key = true;
+
 			break;
 		}
 
 		case EMGUI_ARROW_LEFT:
 		{
-			if (paused)
-			{
-				int track = getActiveTrack(); track--;
-				setActiveTrack(track < 0 ? 0 : track);
+			int track = getActiveTrack() - 1;
 
-				handled_key = true;
+			if (modifiers & EDITOR_KEY_COMMAND)
+				track = 0;
+
+			setActiveTrack(track < 0 ? 0 : track);
+
+			if (modifiers & EDITOR_KEY_SHIFT)
+			{
+				viewInfo->selectStopTrack = track;
+				break;
 			}
+
+			viewInfo->selectStartRow = viewInfo->selectStopRow = row_pos;
+			viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
+
+			handled_key = true;
 
 			break;
 		}
 
 		case EMGUI_ARROW_RIGHT:
 		{
-			if (paused)
+			int track = getActiveTrack() + 1;
+			int track_count = getTrackCount();
+
+			if (track >= track_count) 
+				track = track_count - 1;
+
+			if (modifiers & EDITOR_KEY_COMMAND)
+				track = track_count - 1;
+
+			setActiveTrack(track);
+
+			if (modifiers & EDITOR_KEY_SHIFT)
 			{
-				int track = getActiveTrack(); track++;
-
-				if (track >= getTrackCount())
-					track = getTrackCount() - 1;
-
-				setActiveTrack(track);
-
-				handled_key = true;
+				viewInfo->selectStopTrack = track;
+				break;
 			}
+
+			viewInfo->selectStartRow = viewInfo->selectStopRow = row_pos;
+			viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
+
+			handled_key = true;
 
 			break;
 		}
@@ -224,24 +376,133 @@ bool Editor_keyDown(int key, int modifiers)
 		default : handled_key = false; break;
 	}
 
-	// do edit here
+	// handle copy of tracks/values
 
-	if (paused)
+	if (key == 'c' && (modifiers & EDITOR_KEY_COMMAND))
 	{
-		if ((key >= '0' && key <= '9') || key == '.' || key == '-')
+		copySelection(row_pos, active_track, selectLeft, selectRight, selectTop, selectBottom);
+		return true;
+	}
+
+	if (key == 'x' && (modifiers & EDITOR_KEY_COMMAND))
+	{
+		copySelection(row_pos, active_track, selectLeft, selectRight, selectTop, selectBottom);
+		deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight);
+		handled_key = true;
+	}
+
+	// Handle paste of data
+
+	if (key == 'v' && (modifiers & EDITOR_KEY_COMMAND))
+	{
+		const int buffer_width = s_copyData.bufferWidth;
+		const int buffer_height = s_copyData.bufferHeight;
+		const int buffer_size = s_copyData.count;
+		const int track_count = getTrackCount();
+		int i, trackPos;
+
+		if (!s_copyData.entries)
+			return false;
+
+		// First clear the paste area
+
+		deleteArea(row_pos, active_track, buffer_width, buffer_height);
+
+		for (i = 0; i < buffer_size; ++i)
 		{
-			if (!is_editing)
+			const CopyEntry* ce = &s_copyData.entries[i];
+			
+			assert(ce->track >= 0);
+			assert(ce->track < buffer_width);
+			assert(ce->keyFrame.row >= 0);
+			assert(ce->keyFrame.row < buffer_height);
+
+			trackPos = active_track + ce->track;
+			if (trackPos < track_count)
 			{
-				memset(s_editBuffer, 0, sizeof(s_editBuffer));
-				is_editing = true;
+				size_t trackIndex = trackPos;
+				struct track_key key = ce->keyFrame;
+				key.row += row_pos;
+
+				rlog(R_INFO, "key.row %d\n", key.row);
+
+				sync_set_key(tracks[trackIndex], &key);
+
+				RemoteConnection_sendSetKeyCommand(tracks[trackIndex]->name, &key);
 			}
-
-			s_editBuffer[strlen(s_editBuffer)] = (char)key;
-			s_editorData.trackData.editText = s_editBuffer;
-
-			return true;
 		}
-		else if (is_editing)
+
+		handled_key = true;
+	}
+
+	// Handle biasing of values
+
+	if ((key >= '1' && key <= '9') && ((modifiers & EDITOR_KEY_CTRL) || (modifiers & EDITOR_KEY_ALT)))
+	{
+		struct sync_track** tracks;
+		int track, row;
+
+		float bias_value = 0.0f;
+		tracks = getTracks();
+
+		switch (key)
+		{
+			case '1' : bias_value = 0.01f; break;
+			case '2' : bias_value = 0.1f; break;
+			case '3' : bias_value = 1.0f; break;
+			case '4' : bias_value = 10.f; break;
+			case '5' : bias_value = 100.0f; break;
+			case '6' : bias_value = 1000.0f; break;
+			case '7' : bias_value = 10000.0f; break;
+		}
+
+		bias_value = modifiers & EDITOR_KEY_ALT ? -bias_value : bias_value;
+
+		for (track = selectLeft; track <= selectRight; ++track) 
+		{
+			struct sync_track* t = tracks[track];
+
+			for (row = selectTop; row <= selectBottom; ++row) 
+			{
+				struct track_key newKey;
+				int idx = sync_find_key(t, row);
+				if (idx < 0) 
+					continue;
+
+				newKey = t->keys[idx];
+				newKey.value += bias_value;
+
+				sync_set_key(t, &newKey);
+
+				RemoteConnection_sendSetKeyCommand(t->name, &newKey);
+			}
+		}
+
+		Editor_update();
+
+		return true;
+	}
+
+	// do edit here and biasing here
+
+	if ((key >= '0' && key <= '9') || key == '.' || key == '-')
+	{
+		if (!is_editing)
+		{
+			memset(s_editBuffer, 0, sizeof(s_editBuffer));
+			is_editing = true;
+		}
+
+		s_editBuffer[strlen(s_editBuffer)] = (char)key;
+		s_editorData.trackData.editText = s_editBuffer;
+
+		return true;
+	}
+	else if (is_editing)
+	{
+		// if we press esc we discard the value
+
+		if (key != 27)
 		{
 			const char* track_name;
 			struct track_key key;
@@ -258,39 +519,30 @@ bool Editor_keyDown(int key, int modifiers)
 			rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, active_track, key.row, track_name);
 
 			RemoteConnection_sendSetKeyCommand(track_name, &key);
-
-			is_editing = false;
-			s_editorData.trackData.editText = 0;
 		}
 
-		if (key == 'i')
-		{
-			struct track_key newKey;
-			struct sync_track* track = tracks[active_track];
-			int row = s_editorData.trackViewInfo.rowPos;
-
-			int idx = key_idx_floor(track, row);
-			if (idx < 0) 
-				return false;
-
-			// copy and modify
-			newKey = track->keys[idx];
-			newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
-
-			sync_set_key(track, &newKey);
-
-			RemoteConnection_sendSetKeyCommand(track->name, &newKey);
-
-			handled_key = true;
-		}
+		is_editing = false;
+		s_editorData.trackData.editText = 0;
 	}
 
-	if (key == ' ')
+	if (key == 'i')
 	{
-		// TODO: Don't start playing if we are in edit mode (but space shouldn't be added in edit mode but we still
-		// shouldn't start playing if we do
+		struct track_key newKey;
+		struct sync_track* track = tracks[active_track];
+		int row = viewInfo->rowPos;
 
-		RemoteConnection_sendPauseCommand(!paused);
+		int idx = key_idx_floor(track, row);
+		if (idx < 0) 
+			return false;
+
+		// copy and modify
+		newKey = track->keys[idx];
+		newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
+
+		sync_set_key(track, &newKey);
+
+		RemoteConnection_sendSetKeyCommand(track->name, &newKey);
+
 		handled_key = true;
 	}
 
@@ -343,9 +595,31 @@ static int processCommands()
 
 			case SET_ROW:
 			{
-				RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
-				s_editorData.trackViewInfo.rowPos = htonl(newRow);
+				int i = 0;
+				ret = RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
+
+				if (ret == -1)
+				{
+					// retry to get the data and do it for max of 20 times otherwise disconnect
+
+					for (i = 0; i < 20; ++i)
+					{
+						if (RemoteConnection_recv((char*)&newRow, sizeof(int), 0) == 4)
+						{
+							s_editorData.trackViewInfo.rowPos = htonl(newRow);
+							rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
+							return 1;
+						}
+					}
+				}
+				else
+				{
+					s_editorData.trackViewInfo.rowPos = htonl(newRow);
+					rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
+				}
+
 				ret = 1;
+
 				break;
 			}
 		}

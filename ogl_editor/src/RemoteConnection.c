@@ -25,6 +25,7 @@
 #include "../../sync/base.h"
 #include "../../sync/track.h"
 #include "rlog.h"
+#include <stdio.h>
 
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
@@ -127,6 +128,7 @@ static bool setBlocking(int sock, bool blocking)
 bool RemoteConnection_createListner()
 {
 	struct sockaddr_in sin;
+	int yes = 1;
 
 	s_serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -139,9 +141,16 @@ bool RemoteConnection_createListner()
 	sin.sin_addr.s_addr = INADDR_ANY;
 	sin.sin_port = htons(1338);
 
+	if (setsockopt(s_serverSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+	{
+		perror("setsockopt");
+		return false;
+	}
+
 	if (-1 == bind(s_serverSocket, (struct sockaddr *)&sin, sizeof(sin)))
 	{
-		rlog(R_ERROR, "Unable to create server socket\n");
+		perror("bind");
+		rlog(R_ERROR, "Unable to bind server socket\n");
 		return false;
 	}
 
@@ -150,7 +159,7 @@ bool RemoteConnection_createListner()
 
 	setBlocking(s_serverSocket, false);
 
-	rlog(R_INFO, "Creaded listner\n");
+	rlog(R_INFO, "Created listner\n");
 
 	return true;
 }
@@ -197,23 +206,14 @@ static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host)
 
 void RemoteConnection_updateListner()
 {
-	fd_set fds;
-	struct timeval timeout;
 	SOCKET clientSocket;
 	struct sockaddr_in client;
 
 	if (RemoteConnection_connected())
 		return;
 
-	FD_ZERO(&fds);
-	FD_SET(s_serverSocket, &fds);
-
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 0;
-
 	// look for new clients
 	
-	//if (select(0, &fds, NULL, NULL, &timeout) > 0)
 	{
 		clientSocket = clientConnect(s_serverSocket, &client);
 
@@ -245,27 +245,30 @@ void RemoteConnection_disconnect()
 
 	rlog(R_INFO, "disconnect!\n");
 
+	s_paused = true;
+
 	memset(s_nameLookup.ids, -1, sizeof(int) * s_nameLookup.count);
 	s_nameLookup.count = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool RemoteConnection_recv(char* buffer, size_t length, int flags)
+int RemoteConnection_recv(char* buffer, size_t length, int flags)
 {
 	int ret;
 
 	if (!RemoteConnection_connected())
 		return false;
 
-	if ((ret = recv(s_socket, buffer, (int)length, flags)) != (int)length)
+	ret = recv(s_socket, buffer, (int)length, flags);
+
+	if (ret == 0)
 	{
-		//rlog(R_INFO, "%d %d\n", ret, length);
-		//RemoteConnection_disconnect();
-		//return false;
+		RemoteConnection_disconnect();
+		return false;
 	}
 
-	return true;
+	return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -413,5 +416,22 @@ void RemoteConnection_sendKeyFrames(const char* name, struct sync_track* track)
 
 	for (i = 0; i < (int)track->num_keys; ++i)
 		sendSetKeyCommandIndex((uint32_t)track_id, &track->keys[i]);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RemoteConnection_close()
+{
+	if (RemoteConnection_connected())
+	{
+		rlog(R_INFO, "closing client socket %d\n", s_socket);
+		closesocket(s_socket);
+		s_socket = INVALID_SOCKET;
+	}
+
+	rlog(R_INFO, "closing socket %d\n", s_serverSocket);
+
+	closesocket(s_serverSocket);
+	s_serverSocket = INVALID_SOCKET;
 }
 

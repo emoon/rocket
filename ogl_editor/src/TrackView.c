@@ -5,12 +5,13 @@
 #include <string.h>
 #include "TrackData.h"
 #include "rlog.h"
+#include "minmax.h"
 #include "../../sync/sync.h"
 #include "../../sync/data.h"
 #include "../../sync/track.h"
 
 const int font_size = 8;
-static int start_pos = -27;
+const int min_track_size = 100;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -20,7 +21,7 @@ void TrackView_init()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSpacing, int maskBpm)
+static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSpacing, int maskBpm, int endY)
 {
 	int i;
 
@@ -43,20 +44,44 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 
 		y += rowSpacing;
 		rowOffset++;
+
+		if (y > endY)
+			break;
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void renderChannel(struct sync_track* track, int startX, int startY, int startPos, int endPos)
+static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track, int editRow, 
+						 int startX, int startY, int startPos, int endPos, int endSizeY,
+						 int trackId, int selectLeft, int selectRight, int selectTop, int selectBottom)
 {
-	int x, y, y_offset;
-
+	int y, y_offset;
+	int size = min_track_size;
 	uint32_t color = Emgui_color32(40, 40, 40, 255);
+
 	Emgui_drawBorder(color, color, startX, startY - 20, 160, 600);
 
 	if (track)
-		Emgui_drawText(track->name, startX + 2, startY + 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+	{
+		int text_size;
+		int x_adjust = 0;
+
+		Emgui_setFont(viewInfo->smallFontId);
+		text_size = Emgui_getTextSize(track->name) + 4;
+
+		// if text is smaller than min size we center the text
+
+		if (text_size < min_track_size) 
+			x_adjust = (min_track_size - text_size) / 2;
+		else
+			size = text_size + 1; 
+
+		Emgui_drawText(track->name, (startX + 3) + x_adjust, startY - 12, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+		Emgui_setDefaultFont();
+	}
+
+	Emgui_drawBorder(color, color, startX, startY - font_size * 2, size, endSizeY);
 
 	y_offset = startY;// + font_size / 2;
 
@@ -64,7 +89,6 @@ static void renderChannel(struct sync_track* track, int startX, int startY, int 
 	{
 		y_offset = startY + (font_size * -startPos);
 		startPos = 0;
-		endPos = 40;
 	}
 
 	y_offset += font_size / 2;
@@ -73,11 +97,33 @@ static void renderChannel(struct sync_track* track, int startX, int startY, int 
 	{
 		int offset = startX + 6;
 		int idx = -1;
-
+		int fidx;
+		enum key_type interpolationType;
+		uint32_t color;
+		bool selected;
 		float value = 0.0f;
 
 		if (track)
 			idx = sync_find_key(track, y);
+
+		// This is kinda crappy implementation as we will overdraw this quite a bit but might be fine
+
+		fidx = idx >= 0 ? idx : -idx - 2;
+		interpolationType = (fidx >= 0) ? track->keys[fidx].type : KEY_STEP;
+
+		switch (interpolationType) 
+		{
+			case KEY_STEP   : color = 0; break;
+			case KEY_LINEAR : color = Emgui_color32(255, 0, 0, 255); break;
+			case KEY_SMOOTH : color = Emgui_color32(0, 255, 0, 255); break;
+			case KEY_RAMP   : color = Emgui_color32(0, 0, 255, 255); break;
+			default: break;
+		}
+
+		if (viewInfo)
+			Emgui_fill(color, startX + (size - 4), y_offset - font_size / 2, 2, (endSizeY - y_offset) + font_size - 1);
+
+		// Draw text if we have any
 
 		if (idx >= 0)
 		{
@@ -85,34 +131,27 @@ static void renderChannel(struct sync_track* track, int startX, int startY, int 
 			value = track->keys[idx].value;
 			snprintf(temp, 256, "% .2f", value);
 
-			Emgui_drawText(temp, offset, y_offset - font_size / 2, Emgui_color32(255, 255, 255, 255));
+			if (y != editRow)
+				Emgui_drawText(temp, offset, y_offset - font_size / 2, Emgui_color32(255, 255, 255, 255));
 		}
 		else
 		{
-			int points[64];
-			int* points_ptr = (int*)&points[0];
-
-			for (x = 0; x < 6; ++x)
-			{
-				points_ptr[0] = offset + 0;
-				points_ptr[1] = y_offset;
-				points_ptr[2] = offset + 2;
-				points_ptr[3] = y_offset;
-				points_ptr[4] = offset + 4;
-				points_ptr[5] = y_offset;
-
-				points_ptr += 6;
-				offset += 10;
-			}
-
-			if (y & 7)
-				Emgui_drawDots(0x004f4f4f, (int*)&points[0], 18 * 2);
-			else
-				Emgui_drawDots(0x007f7f7f, (int*)&points[0], 18 * 2);
+			uint32_t color = (y & 7) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff); 
+			Emgui_drawText("---", offset, y_offset - font_size / 2, color); 
 		}
 
+		selected = (trackId >= selectLeft && trackId <= selectRight) && (y >= selectTop && y < selectBottom);
+
+		if (selected)
+			Emgui_fill(Emgui_color32(0x4f, 0x4f, 0x4f, 0x3f), startX, y_offset - font_size/2, size, font_size);  
+
 		y_offset += font_size;
+
+		if (y_offset > (endSizeY + font_size/2))
+			break;
 	}
+
+	return size;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -128,23 +167,39 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 	int x_pos = 40;
 	int end_track = 0;
 	int i = 0;
+	int adjust_top_size;
+	int mid_screen_y ;
+	int y_pos_row, end_row, y_end_border;
+
+	int selectLeft  = emini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	int selectRight = emaxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	int selectTop    = emini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	int selectBottom = emaxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+
+	// Calc to position the selection in the ~middle of the screen 
+
+	adjust_top_size = 3 * font_size;
+	mid_screen_y = (viewInfo->windowSizeY / 2) & ~(font_size - 1);
+	y_pos_row = viewInfo->rowPos - (mid_screen_y / font_size);
 
 	// TODO: Calculate how many channels we can draw given the width
 
-	printRowNumbers(2, 42, 40, start_pos + viewInfo->rowPos, font_size, 8);
+	end_row = viewInfo->windowSizeY / font_size;
+	y_end_border = viewInfo->windowSizeY - 32; // adjust to have some space at the end of the screen
+
+	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, 8, y_end_border);
 
 	if (syncData->num_tracks == 0)
 	{
-		renderChannel(0, 40 + (i * 64), 42, 
-				(start_pos + viewInfo->rowPos), 
-				(start_pos + viewInfo->rowPos + 40));
-		Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, 257, 800, font_size + 2);
+		uint32_t color = Emgui_color32(127, 127, 127, 56);
+		renderChannel(0, 0, -1, 40 + (i * 64), adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
+				      0, 0, 0, 0, 0);
+		Emgui_fill(color, 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 2);
 		return;
 	}
 
 	num_tracks = syncData->num_tracks;
-
-	max_render_tracks = viewInfo->windowSizeX / 128;
+	max_render_tracks = viewInfo->windowSizeX / min_track_size;
 
 	if (num_tracks > max_render_tracks)
 		num_tracks = max_render_tracks;
@@ -156,21 +211,25 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 
 	for (i = start_track; i < end_track; ++i)
 	{
-		renderChannel(syncData->tracks[i], x_pos, 42, 
-				(start_pos + viewInfo->rowPos), 
-				(start_pos + viewInfo->rowPos + 40));
+		int size, editRow = -1;
+
+		if (sel_track == i && trackData->editText)
+			editRow = viewInfo->rowPos;
+
+		size = renderChannel(viewInfo, syncData->tracks[i], editRow, x_pos, adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
+							 i, selectLeft, selectRight, selectTop, selectBottom);
 
 		if (sel_track == i)
 		{
-			Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), x_pos, 257, 160, font_size + 2);
+			Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
 
 			if (trackData->editText)
-				Emgui_drawText(trackData->editText, x_pos, 257, Emgui_color32(255, 255, 255, 255));
+				Emgui_drawText(trackData->editText, x_pos, mid_screen_y + adjust_top_size, Emgui_color32(255, 255, 255, 255));
 		}
 
-		x_pos += 160;
+		x_pos += size;
 	}	
 
-	Emgui_fill(color, 0, 257, 800, font_size + 3);
+	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
 }
 

@@ -1,5 +1,6 @@
 #import "RocketView.h"
 #include "../Editor.h"
+#include "../rlog.h"
 #include <Emgui.h> 
 #include <GFXBackend.h> 
 
@@ -83,6 +84,9 @@
 	if ([theEvent modifierFlags] & NSControlKeyMask)
 		specialKeys |= EDITOR_KEY_CTRL;
 
+	if ([theEvent modifierFlags] & NSCommandKeyMask)
+		specialKeys |= EDITOR_KEY_COMMAND;
+
 	if ([theEvent modifierFlags] & NSNumericPadKeyMask) 
 	{ 
 		switch (keyChar)
@@ -123,8 +127,9 @@
 	NSWindow* window = [self window];
 	NSRect originalFrame = [window frame];
 	NSPoint location = [window mouseLocationOutsideOfEventStream];
+	NSRect adjustFrame = [NSWindow contentRectForFrameRect: originalFrame styleMask: NSTitledWindowMask];
 
-	Emgui_setMousePos((int)location.x, (int)originalFrame.size.height - (int)location.y);
+	Emgui_setMousePos((int)location.x, (int)adjustFrame.size.height - (int)location.y);
 	Editor_update();
 }
 
@@ -143,8 +148,9 @@
 	NSWindow *window = [self window];
 	NSRect originalFrame = [window frame];
 	NSPoint location = [window mouseLocationOutsideOfEventStream];
+	NSRect adjustFrame = [NSWindow contentRectForFrameRect: originalFrame styleMask: NSTitledWindowMask];
 
-	Emgui_setMousePos((int)location.x, (int)originalFrame.size.height - (int)location.y);
+	Emgui_setMousePos((int)location.x, (int)adjustFrame.size.height - (int)location.y);
 	Emgui_setMouseLmb(1);
 	
 	Editor_update();
@@ -155,15 +161,6 @@
 -(BOOL) isOpaque 
 {
     return YES;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
--(void) dealloc 
-{
-	Editor_destroy();
-	EMGFXBackend_destroy();
-    [super dealloc];
 }
 
 @end
