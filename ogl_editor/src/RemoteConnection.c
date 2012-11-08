@@ -127,19 +127,20 @@ static bool setBlocking(int sock, bool blocking)
 
 bool RemoteConnection_createListner()
 {
+	struct sockaddr_in sin;
+	int yes = 1;
+
 	s_serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (s_serverSocket == INVALID_SOCKET)
 		return false;
 
-	struct sockaddr_in sin;
 	memset(&sin, 0, sizeof sin);
 
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = INADDR_ANY;
 	sin.sin_port = htons(1338);
 
-	int yes = 1;
 	if (setsockopt(s_serverSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
 	{
 		perror("setsockopt");

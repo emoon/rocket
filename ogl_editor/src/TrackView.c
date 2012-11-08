@@ -56,8 +56,11 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 						 int startX, int startY, int startPos, int endPos, int endSizeY,
 						 int trackId, int selectLeft, int selectRight, int selectTop, int selectBottom)
 {
-	uint y;
+	int y, y_offset;
 	int size = min_track_size;
+	uint32_t color = Emgui_color32(40, 40, 40, 255);
+
+	Emgui_drawBorder(color, color, startX, startY - 20, 160, 600);
 
 	if (track)
 	{
@@ -78,10 +81,9 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 		Emgui_setDefaultFont();
 	}
 
-	uint32_t color = Emgui_color32(40, 40, 40, 255);
 	Emgui_drawBorder(color, color, startX, startY - font_size * 2, size, endSizeY);
 
-	int y_offset = startY;
+	y_offset = startY;// + font_size / 2;
 
 	if (startPos < 0)
 	{
@@ -95,7 +97,10 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 	{
 		int offset = startX + 6;
 		int idx = -1;
-
+		int fidx;
+		enum key_type interpolationType;
+		uint32_t color;
+		bool selected;
 		float value = 0.0f;
 
 		if (track)
@@ -103,10 +108,8 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 
 		// This is kinda crappy implementation as we will overdraw this quite a bit but might be fine
 
-		int fidx = idx >= 0 ? idx : -idx - 2;
-		enum key_type interpolationType = (fidx >= 0) ? track->keys[fidx].type : KEY_STEP;
-
-		uint32_t color = 0;
+		fidx = idx >= 0 ? idx : -idx - 2;
+		interpolationType = (fidx >= 0) ? track->keys[fidx].type : KEY_STEP;
 
 		switch (interpolationType) 
 		{
@@ -137,7 +140,7 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 			Emgui_drawText("---", offset, y_offset - font_size / 2, color); 
 		}
 
-		bool selected = (trackId >= selectLeft && trackId <= selectRight) && (y >= selectTop && y < selectBottom);
+		selected = (trackId >= selectLeft && trackId <= selectRight) && (y >= selectTop && y < selectBottom);
 
 		if (selected)
 			Emgui_fill(Emgui_color32(0x4f, 0x4f, 0x4f, 0x3f), startX, y_offset - font_size/2, size, font_size);  
@@ -155,62 +158,66 @@ static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track
 
 void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 {
-	uint i = 0;
 	struct sync_data* syncData = &trackData->syncData;
 	const int sel_track = trackData->activeTrack;
+	uint32_t color = Emgui_color32(127, 127, 127, 56);
+	int num_tracks;
+	int max_render_tracks;
+	int start_track = 0;
+	int x_pos = 40;
+	int end_track = 0;
+	int i = 0;
+	int adjust_top_size;
+	int mid_screen_y ;
+	int y_pos_row, end_row, y_end_border;
+
+	int selectLeft  = emini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	int selectRight = emaxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	int selectTop    = emini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	int selectBottom = emaxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
 	// Calc to position the selection in the ~middle of the screen 
 
-	const int adjust_top_size = 3 * font_size;
-	const int mid_screen_y = (viewInfo->windowSizeY / 2) & ~(font_size - 1);
-	const int y_pos_row = viewInfo->rowPos - (mid_screen_y / font_size);
+	adjust_top_size = 3 * font_size;
+	mid_screen_y = (viewInfo->windowSizeY / 2) & ~(font_size - 1);
+	y_pos_row = viewInfo->rowPos - (mid_screen_y / font_size);
 
 	// TODO: Calculate how many channels we can draw given the width
 
-	int end_row = viewInfo->windowSizeY / font_size;
-	int y_end_border = viewInfo->windowSizeY - 32; // adjust to have some space at the end of the screen
+	end_row = viewInfo->windowSizeY / font_size;
+	y_end_border = viewInfo->windowSizeY - 32; // adjust to have some space at the end of the screen
 
 	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, 8, y_end_border);
 
 	if (syncData->num_tracks == 0)
 	{
+		uint32_t color = Emgui_color32(127, 127, 127, 56);
 		renderChannel(0, 0, -1, 40 + (i * 64), adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
 				      0, 0, 0, 0, 0);
-		uint32_t color = Emgui_color32(127, 127, 127, 56);
 		Emgui_fill(color, 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 2);
 		return;
 	}
 
-	int selectLeft  = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	int selectTop    = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
-
-	int num_tracks = syncData->num_tracks;
-
-	int max_render_tracks = viewInfo->windowSizeX / min_track_size;
+	num_tracks = syncData->num_tracks;
+	max_render_tracks = viewInfo->windowSizeX / min_track_size;
 
 	if (num_tracks > max_render_tracks)
 		num_tracks = max_render_tracks;
 
-	int start_track = 0;
-
 	if (sel_track > 3)
 		start_track = sel_track - 3;
 
-	int x_pos = 40;
-
-	const int end_track = mini(start_track + num_tracks, syncData->num_tracks);
+	end_track = emini(start_track + num_tracks, syncData->num_tracks);
 
 	for (i = start_track; i < end_track; ++i)
 	{
-		int editRow = -1;
+		int size, editRow = -1;
 
 		if (sel_track == i && trackData->editText)
 			editRow = viewInfo->rowPos;
 
-		int size = renderChannel(viewInfo, syncData->tracks[i], editRow, x_pos, adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
-								 i, selectLeft, selectRight, selectTop, selectBottom);
+		size = renderChannel(viewInfo, syncData->tracks[i], editRow, x_pos, adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
+							 i, selectLeft, selectRight, selectTop, selectBottom);
 
 		if (sel_track == i)
 		{
@@ -223,7 +230,6 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 		x_pos += size;
 	}	
 
-	uint32_t color = Emgui_color32(127, 127, 127, 56);
-	Emgui_fill(color, 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
+	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
 }
 

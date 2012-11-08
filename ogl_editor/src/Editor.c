@@ -16,15 +16,6 @@
 #include "../../sync/base.h"
 #include "../../sync/data.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if defined(EMGUI_MACOSX)
-#define FONT_PATH "/Library/Fonts/"
-#elif defined(EMGUI_WINDOWS)
-#define FONT_PATH "C:\\Windows\\Fonts\\"
-#else
-#error "Unsupported platform"
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -127,7 +118,7 @@ static void drawStatus()
 	float value = 0.0f; 
 	const char *str = "---";
 	struct sync_track** tracks = getTracks();
-		const int sizeY = s_editorData.trackViewInfo.windowSizeY;
+	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
 
 	active_track = getActiveTrack();
 	current_row = s_editorData.trackViewInfo.rowPos;
@@ -137,6 +128,7 @@ static void drawStatus()
 		const struct sync_track* track = tracks[active_track];
 		int row = s_editorData.trackViewInfo.rowPos;
 		int idx = key_idx_floor(track, row);
+
 		if (idx >= 0) 
 		{
 			switch (track->keys[idx].type) 
@@ -229,12 +221,14 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 
 	for (i = 0; i < bufferWidth; ++i) 
 	{
-		size_t trackPos = track + i;
+		struct sync_track* t;
+		int trackPos = track + i;
+		int trackIndex = trackPos;
+
 		if (trackPos >= track_count) 
 			continue;
 
-		size_t trackIndex = trackPos;
-		struct sync_track* t = tracks[trackIndex];
+		t = tracks[trackIndex];
 
 		for (j = 0; j < bufferHeight; ++j) 
 		{
@@ -354,7 +348,7 @@ bool Editor_keyDown(int key, int modifiers)
 
 		case EMGUI_ARROW_RIGHT:
 		{
-			int track = getActiveTrack(); track++;
+			int track = getActiveTrack() + 1;
 			int track_count = getTrackCount();
 
 			if (track >= track_count) 
@@ -405,6 +399,7 @@ bool Editor_keyDown(int key, int modifiers)
 		const int buffer_height = s_copyData.bufferHeight;
 		const int buffer_size = s_copyData.count;
 		const int track_count = getTrackCount();
+		int i, trackPos;
 
 		if (!s_copyData.entries)
 			return false;
@@ -413,7 +408,7 @@ bool Editor_keyDown(int key, int modifiers)
 
 		deleteArea(row_pos, active_track, buffer_width, buffer_height);
 
-		for (int i = 0; i < buffer_size; ++i)
+		for (i = 0; i < buffer_size; ++i)
 		{
 			const CopyEntry* ce = &s_copyData.entries[i];
 			
@@ -422,7 +417,7 @@ bool Editor_keyDown(int key, int modifiers)
 			assert(ce->keyFrame.row >= 0);
 			assert(ce->keyFrame.row < buffer_height);
 
-			size_t trackPos = active_track + ce->track;
+			trackPos = active_track + ce->track;
 			if (trackPos < track_count)
 			{
 				size_t trackIndex = trackPos;
@@ -469,11 +464,12 @@ bool Editor_keyDown(int key, int modifiers)
 
 			for (row = selectTop; row <= selectBottom; ++row) 
 			{
+				struct track_key newKey;
 				int idx = sync_find_key(t, row);
 				if (idx < 0) 
 					continue;
 
-				struct track_key newKey = t->keys[idx];
+				newKey = t->keys[idx];
 				newKey.value += bias_value;
 
 				sync_set_key(t, &newKey);
@@ -497,7 +493,7 @@ bool Editor_keyDown(int key, int modifiers)
 			is_editing = true;
 		}
 
-		s_editBuffer[strlen(s_editBuffer)] = key;
+		s_editBuffer[strlen(s_editBuffer)] = (char)key;
 		s_editorData.trackData.editText = s_editBuffer;
 
 		return true;
@@ -508,14 +504,15 @@ bool Editor_keyDown(int key, int modifiers)
 
 		if (key != 27)
 		{
+			const char* track_name;
 			struct track_key key;
+			struct sync_track* track = tracks[active_track];
 
 			key.row = row_pos;
-			key.value = atof(s_editBuffer);
+			key.value = (float)atof(s_editBuffer);
 			key.type = 0;
 
-			struct sync_track* track = tracks[active_track];
-			const char* track_name = track->name; 
+			track_name = track->name; 
 
 			sync_set_key(track, &key);
 
@@ -524,14 +521,13 @@ bool Editor_keyDown(int key, int modifiers)
 			RemoteConnection_sendSetKeyCommand(track_name, &key);
 		}
 
-		handled_key = true;
-
 		is_editing = false;
 		s_editorData.trackData.editText = 0;
 	}
 
 	if (key == 'i')
 	{
+		struct track_key newKey;
 		struct sync_track* track = tracks[active_track];
 		int row = viewInfo->rowPos;
 
@@ -540,7 +536,7 @@ bool Editor_keyDown(int key, int modifiers)
 			return false;
 
 		// copy and modify
-		struct track_key newKey = track->keys[idx];
+		newKey = track->keys[idx];
 		newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
 
 		sync_set_key(track, &newKey);
