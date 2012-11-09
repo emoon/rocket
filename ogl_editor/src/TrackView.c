@@ -217,12 +217,15 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 		size = renderChannel(viewInfo, syncData->tracks[i], editRow, x_pos, adjust_top_size, y_pos_row, y_pos_row + end_row, y_end_border,
 							 i, selectLeft, selectRight, selectTop, selectBottom);
 
-		if (sel_track == i)
+		if (!Emgui_hasKeyboardFocus())
 		{
-			Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
+			if (sel_track == i)
+			{
+				Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
 
-			if (trackData->editText)
-				Emgui_drawText(trackData->editText, x_pos, mid_screen_y + adjust_top_size, Emgui_color32(255, 255, 255, 255));
+				if (trackData->editText)
+					Emgui_drawText(trackData->editText, x_pos, mid_screen_y + adjust_top_size, Emgui_color32(255, 255, 255, 255));
+			}
 		}
 
 		x_pos += size;

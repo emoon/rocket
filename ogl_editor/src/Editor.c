@@ -120,6 +120,8 @@ static void drawStatus()
 	struct sync_track** tracks = getTracks();
 	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
 
+	//Emgui_setFont(s_editorData.trackViewInfo.smallFontId);
+
 	active_track = getActiveTrack();
 	current_row = s_editorData.trackViewInfo.rowPos;
 
@@ -145,10 +147,9 @@ static void drawStatus()
 	}
 
 	snprintf(temp, 256, "track %d row %d value %f type %s", active_track, current_row, value, str);
-
-	Emgui_fill(Emgui_color32(0x10, 0x10, 0x10, 0xff), 1, sizeY - 12, 400, 11); 
+	Emgui_fillGrad( Emgui_color32(70, 70, 70, 255), Emgui_color32(30, 30, 30, 255), 1, sizeY - 12, 400, 11); 
 	Emgui_drawText(temp, 3, sizeY - 10, Emgui_color32(255, 255, 255, 255));
-	Emgui_editBoxXY(400, sizeY - 14, 100, 12, s_numRows); 
+	Emgui_editBoxXY(400, sizeY - 14, 100, 12, sizeof(s_numRows), s_numRows); 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -274,16 +275,32 @@ bool Editor_keyDown(int key, int modifiers)
 	if (!paused)
 		return false;
 
+	// If some emgui control has focus let it do its thing until its done
+
+	if (Emgui_hasKeyboardFocus())
+	{
+		Editor_update();
+		return true;
+	}
+
+	if (key == EMGUI_KEY_TAB)
+	{
+		printf("set first con\n");
+		Emgui_setFirstControlFocus();
+		Editor_update();
+		return true;
+	}
+
 	switch (key)
 	{
 		case EMGUI_ARROW_DOWN:
 		{
 			int row = row_pos;
 
-			row += modifiers & EDITOR_KEY_ALT ? 8 : 1;
+			row += modifiers & EMGUI_KEY_ALT ? 8 : 1;
 			viewInfo->rowPos = row;
 
-			if (modifiers & EDITOR_KEY_SHIFT)
+			if (modifiers & EMGUI_KEY_SHIFT)
 			{
 				viewInfo->selectStopRow = row;
 				break;
@@ -301,14 +318,14 @@ bool Editor_keyDown(int key, int modifiers)
 		{
 			int row = row_pos;
 
-			row -= modifiers & EDITOR_KEY_ALT ? 8 : 1;
+			row -= modifiers & EMGUI_KEY_ALT ? 8 : 1;
 
-			if ((modifiers & EDITOR_KEY_COMMAND) || row < 0)
+			if ((modifiers & EMGUI_KEY_COMMAND) || row < 0)
 				row = 0;
 
 			viewInfo->rowPos = row;
 
-			if (modifiers & EDITOR_KEY_SHIFT)
+			if (modifiers & EMGUI_KEY_SHIFT)
 			{
 				viewInfo->selectStopRow = row;
 				break;
@@ -327,12 +344,12 @@ bool Editor_keyDown(int key, int modifiers)
 		{
 			int track = getActiveTrack() - 1;
 
-			if (modifiers & EDITOR_KEY_COMMAND)
+			if (modifiers & EMGUI_KEY_COMMAND)
 				track = 0;
 
 			setActiveTrack(track < 0 ? 0 : track);
 
-			if (modifiers & EDITOR_KEY_SHIFT)
+			if (modifiers & EMGUI_KEY_SHIFT)
 			{
 				viewInfo->selectStopTrack = track;
 				break;
@@ -354,12 +371,12 @@ bool Editor_keyDown(int key, int modifiers)
 			if (track >= track_count) 
 				track = track_count - 1;
 
-			if (modifiers & EDITOR_KEY_COMMAND)
+			if (modifiers & EMGUI_KEY_COMMAND)
 				track = track_count - 1;
 
 			setActiveTrack(track);
 
-			if (modifiers & EDITOR_KEY_SHIFT)
+			if (modifiers & EMGUI_KEY_SHIFT)
 			{
 				viewInfo->selectStopTrack = track;
 				break;
@@ -378,13 +395,13 @@ bool Editor_keyDown(int key, int modifiers)
 
 	// handle copy of tracks/values
 
-	if (key == 'c' && (modifiers & EDITOR_KEY_COMMAND))
+	if (key == 'c' && (modifiers & EMGUI_KEY_COMMAND))
 	{
 		copySelection(row_pos, active_track, selectLeft, selectRight, selectTop, selectBottom);
 		return true;
 	}
 
-	if (key == 'x' && (modifiers & EDITOR_KEY_COMMAND))
+	if (key == 'x' && (modifiers & EMGUI_KEY_COMMAND))
 	{
 		copySelection(row_pos, active_track, selectLeft, selectRight, selectTop, selectBottom);
 		deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight);
@@ -393,7 +410,7 @@ bool Editor_keyDown(int key, int modifiers)
 
 	// Handle paste of data
 
-	if (key == 'v' && (modifiers & EDITOR_KEY_COMMAND))
+	if (key == 'v' && (modifiers & EMGUI_KEY_COMMAND))
 	{
 		const int buffer_width = s_copyData.bufferWidth;
 		const int buffer_height = s_copyData.bufferHeight;
@@ -437,7 +454,7 @@ bool Editor_keyDown(int key, int modifiers)
 
 	// Handle biasing of values
 
-	if ((key >= '1' && key <= '9') && ((modifiers & EDITOR_KEY_CTRL) || (modifiers & EDITOR_KEY_ALT)))
+	if ((key >= '1' && key <= '9') && ((modifiers & EMGUI_KEY_CTRL) || (modifiers & EMGUI_KEY_ALT)))
 	{
 		struct sync_track** tracks;
 		int track, row;
@@ -456,7 +473,7 @@ bool Editor_keyDown(int key, int modifiers)
 			case '7' : bias_value = 10000.0f; break;
 		}
 
-		bias_value = modifiers & EDITOR_KEY_ALT ? -bias_value : bias_value;
+		bias_value = modifiers & EMGUI_KEY_ALT ? -bias_value : bias_value;
 
 		for (track = selectLeft; track <= selectRight; ++track) 
 		{

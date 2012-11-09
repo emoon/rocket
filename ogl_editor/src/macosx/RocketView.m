@@ -76,16 +76,18 @@
 	int specialKeys = 0;
 
 	if ([theEvent modifierFlags] & NSShiftKeyMask)
-		specialKeys |= EDITOR_KEY_SHIFT;
+		specialKeys |= EMGUI_KEY_SHIFT;
 
 	if ([theEvent modifierFlags] & NSAlternateKeyMask)
-		specialKeys |= EDITOR_KEY_ALT;
+		specialKeys |= EMGUI_KEY_ALT;
 
 	if ([theEvent modifierFlags] & NSControlKeyMask)
-		specialKeys |= EDITOR_KEY_CTRL;
+		specialKeys |= EMGUI_KEY_CTRL;
 
 	if ([theEvent modifierFlags] & NSCommandKeyMask)
-		specialKeys |= EDITOR_KEY_COMMAND;
+		specialKeys |= EMGUI_KEY_COMMAND;
+
+	Emgui_sendKeyinput(keyChar, specialKeys);
 
 	if ([theEvent modifierFlags] & NSNumericPadKeyMask) 
 	{ 
