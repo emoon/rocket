@@ -11,6 +11,8 @@
 #include "../../sync/track.h"
 
 const int font_size = 8;
+const int font_size_half = font_size / 2;
+const int track_size_folded = 20;
 const int min_track_size = 100;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -78,20 +80,79 @@ struct TrackInfo
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
-static void renderTrackFolded(struct TrackInfo* info, int trackIndex)
+static int renderTrackName(const struct TrackInfo* info, struct sync_track* track, int startX, bool folded)
 {
+	int size = min_track_size;
 
+	if (!track)
+		return folded ? track_size_folded : size;
+
+	int text_size;
+	int x_adjust = 0;
+
+	Emgui_setFont(info->viewInfo->smallFontId);
+	text_size = (Emgui_getTextSize(track->name) & 0xffff) + 4;
+
+	// if text is smaller than min size we center the text
+
+	if (text_size < min_track_size) 
+		x_adjust = (min_track_size - text_size) / 2;
+	else
+		size = text_size + 1; 
+
+	Emgui_drawText(track->name, (startX + 3) + x_adjust, info->startY - font_size * 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+	Emgui_setDefaultFont();
+
+	return size;
 }
-*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
-static int renderChannel(const TrackViewInfo* viewInfo, struct sync_track* track, uint32_t color, int editRow, 
-						 int startX, int startY, int startPos, int endPos, int endSizeY,
-						 int trackId, int selectLeft, int selectRight, int selectTop, int selectBottom)
-*/
+static void renderInterpolation(const struct TrackInfo* info, struct sync_track* track, int size, int idx, int x, int y, bool folded) 
+{
+	int fidx;
+	enum key_type interpolationType;
+	uint32_t color = 0;
+
+	// This is kinda crappy implementation as we will overdraw this quite a bit but might be fine
+
+	fidx = idx >= 0 ? idx : -idx - 2;
+	interpolationType = (fidx >= 0) ? track->keys[fidx].type : KEY_STEP;
+
+	switch (interpolationType) 
+	{
+		case KEY_STEP   : color = Emgui_color32(0, 0, 0,   255);; break;
+		case KEY_LINEAR : color = Emgui_color32(255, 0, 0, 255); break;
+		case KEY_SMOOTH : color = Emgui_color32(0, 255, 0, 255); break;
+		case KEY_RAMP   : color = Emgui_color32(0, 0, 255, 255); break;
+		default: break;
+	}
+
+	if (info->viewInfo)
+		Emgui_fill(color, x + (size - 4), y - font_size_half, 2, (info->endSizeY - y) + font_size - 1);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void renderText(const struct TrackInfo* info, struct sync_track* track, int idx, int x, int y, bool editRow, bool folded)
+{
+	if (idx >= 0)
+	{
+		char temp[256];
+		float value = track->keys[idx].value;
+		snprintf(temp, 256, "% .2f", value);
+
+		if (!editRow)
+			Emgui_drawText(temp, x, y - font_size_half, Emgui_color32(255, 255, 255, 255));
+	}
+	else
+	{
+		uint32_t color = (y & 7) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff); 
+		Emgui_drawText("---", x, y - font_size_half, color); 
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int renderChannel(const struct TrackInfo* info, int startX, int editRow, int trackIndex)
 {
@@ -102,28 +163,12 @@ static int renderChannel(const struct TrackInfo* info, int startX, int editRow, 
 	uint32_t borderColor = Emgui_color32(40, 40, 40, 255);
 	struct sync_track* track = 0;
 	const uint32_t color = info->trackData->colors[trackIndex];
+	const bool folded = info->trackData->folded[trackIndex];
 
 	if (info->trackData->syncData.tracks)
 		track = info->trackData->syncData.tracks[trackIndex];
 
-	if (track)
-	{
-		int text_size;
-		int x_adjust = 0;
-
-		Emgui_setFont(info->viewInfo->smallFontId);
-		text_size = (Emgui_getTextSize(track->name) & 0xffff) + 4;
-
-		// if text is smaller than min size we center the text
-
-		if (text_size < min_track_size) 
-			x_adjust = (min_track_size - text_size) / 2;
-		else
-			size = text_size + 1; 
-
-		Emgui_drawText(track->name, (startX + 3) + x_adjust, info->startY - font_size * 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
-		Emgui_setDefaultFont();
-	}
+	size = renderTrackName(info, track, startX, folded);
 
 	Emgui_drawBorder(borderColor, borderColor, startX, info->startY - font_size * 4, size, info->endSizeY);
 
@@ -132,7 +177,7 @@ static int renderChannel(const struct TrackInfo* info, int startX, int editRow, 
 		printf("Yah!\n");
 	}
 
-	y_offset = info->startY;// + font_size / 2;
+	y_offset = info->startY;
 
 	if (startPos < 0)
 	{
@@ -140,64 +185,29 @@ static int renderChannel(const struct TrackInfo* info, int startX, int editRow, 
 		startPos = 0;
 	}
 
-	y_offset += font_size / 2;
+	y_offset += font_size_half;
 
 	for (y = startPos; y < endPos; ++y)
 	{
-		int offset = startX + 6;
 		int idx = -1;
-		int fidx;
-		enum key_type interpolationType;
-		uint32_t color;
+		int offset = startX + 6;
 		bool selected;
-		float value = 0.0f;
 
 		if (track)
 			idx = sync_find_key(track, y);
 
-		// This is kinda crappy implementation as we will overdraw this quite a bit but might be fine
-
-		fidx = idx >= 0 ? idx : -idx - 2;
-		interpolationType = (fidx >= 0) ? track->keys[fidx].type : KEY_STEP;
-
-		switch (interpolationType) 
-		{
-			case KEY_STEP   : color = Emgui_color32(0, 0, 0,   255);; break;
-			case KEY_LINEAR : color = Emgui_color32(255, 0, 0, 255); break;
-			case KEY_SMOOTH : color = Emgui_color32(0, 255, 0, 255); break;
-			case KEY_RAMP   : color = Emgui_color32(0, 0, 255, 255); break;
-			default: break;
-		}
-
-		if (info->viewInfo)
-			Emgui_fill(color, startX + (size - 4), y_offset - font_size / 2, 2, (info->endSizeY - y_offset) + font_size - 1);
-
-		// Draw text if we have any
-
-		if (idx >= 0)
-		{
-			char temp[256];
-			value = track->keys[idx].value;
-			snprintf(temp, 256, "% .2f", value);
-
-			if (y != editRow)
-				Emgui_drawText(temp, offset, y_offset - font_size / 2, Emgui_color32(255, 255, 255, 255));
-		}
-		else
-		{
-			uint32_t color = (y & 7) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff); 
-			Emgui_drawText("---", offset, y_offset - font_size / 2, color); 
-		}
+		renderInterpolation(info, track, size, idx, offset, y_offset, folded);
+		renderText(info, track, idx, offset, y_offset, y == editRow, folded);
 
 		selected = (trackIndex >= info->selectLeft && trackIndex <= info->selectRight) && 
 			       (y >= info->selectTop && y < info->selectBottom);
 
 		if (selected)
-			Emgui_fill(Emgui_color32(0x4f, 0x4f, 0x4f, 0x3f), startX, y_offset - font_size/2, size, font_size);  
+			Emgui_fill(Emgui_color32(0x4f, 0x4f, 0x4f, 0x3f), startX, y_offset - font_size_half, size, font_size);  
 
 		y_offset += font_size;
 
-		if (y_offset > (info->endSizeY + font_size/2))
+		if (y_offset > (info->endSizeY + font_size_half))
 			break;
 	}
 
