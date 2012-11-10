@@ -63,11 +63,21 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					// TODO: Create the new track/channel here
 			
                     const char* track_name = mxmlElementGetAttr(node, "name");
+                    const char* color_text = mxmlElementGetAttr(node, "color");
                     
 					track_index = TrackData_createGetTrack(trackData, track_name);
 					printf("track_index %d\n", track_index);
 
 					track = trackData->syncData.tracks[track_index];
+
+					if (!color_text && trackData->colors[track_index] == 0)
+					{
+						trackData->colors[track_index] = TrackData_getNextColor(trackData);
+					}
+					else
+					{
+						trackData->colors[track_index] = atoi(color_text);
+					}
 
 					// If we already have this track loaded we delete all the existing keys
 					
