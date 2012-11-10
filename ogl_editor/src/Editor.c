@@ -125,51 +125,14 @@ static int drawConnectionStatus(int posX, int sizeY)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int drawNameValue(char* name, int posX, int sizeY, int* value, int low, int high, char* buffer)
+static int drawCurrentValue(int posX, int sizeY)
 {
-	int current_value;
-	int text_size = Emgui_getTextSize(name) & 0xffff;
-
-	Emgui_drawText(name, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
-
-	current_value = atoi(buffer);
-
-	if (current_value != *value)
-	{
-		if (strcmp(buffer, ""))
-			snprintf(buffer, 64, "%d", *value);
-	}
-
-	Emgui_editBoxXY(posX + text_size + 6, sizeY - 15, 50, 13, 64, buffer); 
-
-	current_value = atoi(buffer);
-
-	if (current_value != *value)
-	{
-		current_value = eclampi(current_value, low, high); 
-		if (strcmp(buffer, ""))
-			snprintf(buffer, 64, "%d", current_value);
-		*value = current_value;
-	}
-
-	return text_size + 56;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static void drawStatus()
-{
-	char temp[256];
-	int size;
+	char valueText[256];
+	float value = 0.0f; 
 	int active_track = 0;
 	int current_row = 0;
-	float value = 0.0f; 
 	const char *str = "---";
 	struct sync_track** tracks = getTracks();
-	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
-	const int sizeX = s_editorData.trackViewInfo.windowSizeX;
-
-	//Emgui_setFont(s_editorData.trackViewInfo.smallFontId);
 
 	active_track = getActiveTrack();
 	current_row = s_editorData.trackViewInfo.rowPos;
@@ -195,16 +158,62 @@ static void drawStatus()
 		value = sync_get_val(track, row);
 	}
 
-	snprintf(temp, 256, "value %f type %s", value, str);
+	snprintf(valueText, 256, "%f", value);
+	Emgui_drawText(valueText, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
+	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX, sizeY - 17, 80, 15); 
+	Emgui_drawText(str, posX + 85, sizeY - 15, Emgui_color32(160, 160, 160, 255));
+	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX + 80, sizeY - 17, 40, 15); 
+
+	return 130;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int drawNameValue(char* name, int posX, int sizeY, int* value, int low, int high, char* buffer)
+{
+	int current_value;
+	int text_size = Emgui_getTextSize(name) & 0xffff;
+
+	Emgui_drawText(name, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
+
+	current_value = atoi(buffer);
+
+	if (current_value != *value)
+	{
+		if (buffer[0] != 0)
+			snprintf(buffer, 64, "%d", *value);
+	}
+
+	Emgui_editBoxXY(posX + text_size + 6, sizeY - 15, 50, 13, 64, buffer); 
+
+	current_value = atoi(buffer);
+
+	if (current_value != *value)
+	{
+		current_value = eclampi(current_value, low, high); 
+		if (buffer[0] != 0)
+			snprintf(buffer, 64, "%d", current_value);
+		*value = current_value;
+	}
+
+	return text_size + 56;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void drawStatus()
+{
+	int size = 0;
+	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
+	const int sizeX = s_editorData.trackViewInfo.windowSizeX;
 
 	Emgui_setFont(s_editorData.trackViewInfo.smallFontId);
-
-	// TODO: Lots of custom drawing here, maybe we could wrap this into more controlable controls instead?
 
 	Emgui_fill(Emgui_color32(20, 20, 20, 255), 2, sizeY - 15, sizeX - 3, 13); 
 	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), 0, sizeY - 17, sizeX - 2, 15); 
 
 	size = drawConnectionStatus(0, sizeY);
+	size += drawCurrentValue(size, sizeY);
 	size += drawNameValue("Track", size, sizeY, &s_editorData.trackData.activeTrack, 0, getTrackCount() - 1, s_currentTrack);
 	size += drawNameValue("Row", size, sizeY, &s_editorData.trackViewInfo.rowPos, 0, 20000 - 1, s_currentRow);
 	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackViewInfo.startRow, 0, 10000000, s_startRow);
