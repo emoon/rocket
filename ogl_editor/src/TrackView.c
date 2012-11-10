@@ -227,6 +227,11 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 					Emgui_drawText(trackData->editText, x_pos, mid_screen_y + adjust_top_size, Emgui_color32(255, 255, 255, 255));
 			}
 		}
+		else
+		{
+			if (sel_track == i)
+				Emgui_fill(Emgui_color32(0x7f, 0x7f, 0x7f, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
+		}
 
 		x_pos += size;
 	}	

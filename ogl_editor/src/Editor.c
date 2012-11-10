@@ -75,7 +75,6 @@ static inline int getTrackCount()
 	return s_editorData.trackData.syncData.num_tracks;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Editor_create()
@@ -106,13 +105,95 @@ void Editor_init()
 {
 }
 
-static char s_numRows[64] = "10000";
+//static char s_endRow[64] = "10000";
+static char s_currentTrack[64] = "0";
+char s_startRow[64] = "0";
+char s_currentRow[64] = "0";
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int drawConnectionStatus(int posX, int sizeY)
+{
+	char conStatus[64] = "Not Connected";
+
+	Emgui_drawBorder(Emgui_color32(20, 20, 20, 255), Emgui_color32(20, 20, 20, 255), posX, sizeY - 17, 200, 15); 
+	Emgui_drawText(conStatus, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
+
+	return posX + 200;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int drawNameValue(char* name, int posX, int sizeY, int* value, int low, int high, char* buffer)
+{
+	int current_value;
+	int text_size = Emgui_getTextSize(name) & 0xffff;
+
+	Emgui_drawText(name, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
+
+	current_value = atoi(s_currentTrack);
+
+	if (current_value != *value)
+	{
+		if (strcmp(buffer, ""))
+			snprintf(buffer, 64, "%d", *value);
+	}
+
+	Emgui_editBoxXY(posX + text_size + 6, sizeY - 15, 50, 13, 64, buffer); 
+
+	current_value = atoi(buffer);
+
+	if (current_value != *value)
+	{
+		current_value = eclampi(current_value, low, high); 
+		if (strcmp(buffer, ""))
+			snprintf(buffer, 64, "%d", current_value);
+		*value = current_value;
+	}
+
+	return text_size + 50;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int drawTrack(int posX, int sizeY)
+{
+	return drawNameValue("Track", posX, sizeY, &s_editorData.trackData.activeTrack, 0, getTrackCount() - 1, s_currentTrack);
+
+	/*
+	int set_track = 0;
+
+	Emgui_drawText("Track", posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
+
+	// make sure to adjust the track to the limits we have
+
+	set_track = atoi(s_currentTrack);
+
+	if (set_track != activeTrack)
+		snprintf(s_currentTrack, sizeof(s_currentTrack), "%d", activeTrack);
+
+	Emgui_editBoxXY(posX + 40, sizeY - 15, 50, 13, sizeof(s_currentTrack), s_currentTrack); 
+
+	set_track = atoi(s_currentTrack);
+
+	if (set_track != activeTrack)
+	{
+		set_track = eclampi(set_track, 0, getTrackCount() - 1);
+		printf("track %d %d %d\n", set_track, activeTrack, getTrackCount()); 
+		snprintf(s_currentTrack, sizeof(s_currentTrack), "%d", set_track);
+		setActiveTrack(set_track);
+	}
+
+	return posX + 100;
+	*/
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void drawStatus()
 {
 	char temp[256];
+	int size;
 	int active_track = 0;
 	int current_row = 0;
 	float value = 0.0f; 
@@ -147,9 +228,21 @@ static void drawStatus()
 	}
 
 	snprintf(temp, 256, "track %d row %d value %f type %s", active_track, current_row, value, str);
-	Emgui_fillGrad( Emgui_color32(70, 70, 70, 255), Emgui_color32(30, 30, 30, 255), 1, sizeY - 12, 400, 11); 
-	Emgui_drawText(temp, 3, sizeY - 10, Emgui_color32(255, 255, 255, 255));
-	Emgui_editBoxXY(400, sizeY - 14, 100, 12, sizeof(s_numRows), s_numRows); 
+
+	Emgui_setFont(s_editorData.trackViewInfo.smallFontId);
+
+	// TODO: Lots of custom drawing here, maybe we could wrap this into more controlable controls instead?
+
+	Emgui_fill(Emgui_color32(40, 40, 40, 255), 2, sizeY - 15, 400, 13); 
+	Emgui_drawBorder(Emgui_color32(20, 20, 20, 255), Emgui_color32(20, 20, 20, 255), 0, sizeY - 17, 400, 15); 
+
+	size = drawConnectionStatus(0, sizeY);
+	size = drawTrack(size, sizeY);
+	//size = drawRow(size, sizeY, active_track);
+	//size = drawMinRow(size, sizeY, active_track);
+	//size = drawMaxRow(size, sizeY, active_track);
+
+	Emgui_setDefaultFont();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -158,9 +251,9 @@ void Editor_update()
 {
 	Emgui_begin();
 
-	TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
-
 	drawStatus();
+
+	TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
 
 	Emgui_end();
 }
@@ -285,7 +378,6 @@ bool Editor_keyDown(int key, int modifiers)
 
 	if (key == EMGUI_KEY_TAB)
 	{
-		printf("set first con\n");
 		Emgui_setFirstControlFocus();
 		Editor_update();
 		return true;

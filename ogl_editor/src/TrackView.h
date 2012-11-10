@@ -10,7 +10,9 @@ typedef struct TrackViewInfo
 	int scrollPosX;
 	int windowSizeX;
 	int windowSizeY;
+	int minRow;
 	int rowPos;
+	int maxRow;
 	int smallFontId;
 	int selectStartTrack;
 	int selectStopTrack;
