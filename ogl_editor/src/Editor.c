@@ -87,6 +87,7 @@ void Editor_create()
 	RemoteConnection_createListner();
 
 	s_editorData.trackViewInfo.smallFontId = id;
+	s_editorData.trackViewInfo.endRow = 10000;
 
 	Emgui_setDefaultFont();
 }
@@ -105,10 +106,10 @@ void Editor_init()
 {
 }
 
-//static char s_endRow[64] = "10000";
 static char s_currentTrack[64] = "0";
-char s_startRow[64] = "0";
-char s_currentRow[64] = "0";
+static char s_currentRow[64] = "0";
+static char s_startRow[64] = "0";
+static char s_endRow[64] = "10000";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -116,7 +117,7 @@ static int drawConnectionStatus(int posX, int sizeY)
 {
 	char conStatus[64] = "Not Connected";
 
-	Emgui_drawBorder(Emgui_color32(20, 20, 20, 255), Emgui_color32(20, 20, 20, 255), posX, sizeY - 17, 200, 15); 
+	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX, sizeY - 17, 200, 15); 
 	Emgui_drawText(conStatus, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
 
 	return posX + 200;
@@ -131,7 +132,7 @@ static int drawNameValue(char* name, int posX, int sizeY, int* value, int low, i
 
 	Emgui_drawText(name, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
 
-	current_value = atoi(s_currentTrack);
+	current_value = atoi(buffer);
 
 	if (current_value != *value)
 	{
@@ -151,41 +152,7 @@ static int drawNameValue(char* name, int posX, int sizeY, int* value, int low, i
 		*value = current_value;
 	}
 
-	return text_size + 50;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static int drawTrack(int posX, int sizeY)
-{
-	return drawNameValue("Track", posX, sizeY, &s_editorData.trackData.activeTrack, 0, getTrackCount() - 1, s_currentTrack);
-
-	/*
-	int set_track = 0;
-
-	Emgui_drawText("Track", posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
-
-	// make sure to adjust the track to the limits we have
-
-	set_track = atoi(s_currentTrack);
-
-	if (set_track != activeTrack)
-		snprintf(s_currentTrack, sizeof(s_currentTrack), "%d", activeTrack);
-
-	Emgui_editBoxXY(posX + 40, sizeY - 15, 50, 13, sizeof(s_currentTrack), s_currentTrack); 
-
-	set_track = atoi(s_currentTrack);
-
-	if (set_track != activeTrack)
-	{
-		set_track = eclampi(set_track, 0, getTrackCount() - 1);
-		printf("track %d %d %d\n", set_track, activeTrack, getTrackCount()); 
-		snprintf(s_currentTrack, sizeof(s_currentTrack), "%d", set_track);
-		setActiveTrack(set_track);
-	}
-
-	return posX + 100;
-	*/
+	return text_size + 56;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -200,6 +167,7 @@ static void drawStatus()
 	const char *str = "---";
 	struct sync_track** tracks = getTracks();
 	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
+	const int sizeX = s_editorData.trackViewInfo.windowSizeX;
 
 	//Emgui_setFont(s_editorData.trackViewInfo.smallFontId);
 
@@ -227,20 +195,20 @@ static void drawStatus()
 		value = sync_get_val(track, row);
 	}
 
-	snprintf(temp, 256, "track %d row %d value %f type %s", active_track, current_row, value, str);
+	snprintf(temp, 256, "value %f type %s", value, str);
 
 	Emgui_setFont(s_editorData.trackViewInfo.smallFontId);
 
 	// TODO: Lots of custom drawing here, maybe we could wrap this into more controlable controls instead?
 
-	Emgui_fill(Emgui_color32(40, 40, 40, 255), 2, sizeY - 15, 400, 13); 
-	Emgui_drawBorder(Emgui_color32(20, 20, 20, 255), Emgui_color32(20, 20, 20, 255), 0, sizeY - 17, 400, 15); 
+	Emgui_fill(Emgui_color32(20, 20, 20, 255), 2, sizeY - 15, sizeX - 3, 13); 
+	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), 0, sizeY - 17, sizeX - 2, 15); 
 
 	size = drawConnectionStatus(0, sizeY);
-	size = drawTrack(size, sizeY);
-	//size = drawRow(size, sizeY, active_track);
-	//size = drawMinRow(size, sizeY, active_track);
-	//size = drawMaxRow(size, sizeY, active_track);
+	size += drawNameValue("Track", size, sizeY, &s_editorData.trackData.activeTrack, 0, getTrackCount() - 1, s_currentTrack);
+	size += drawNameValue("Row", size, sizeY, &s_editorData.trackViewInfo.rowPos, 0, 20000 - 1, s_currentRow);
+	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackViewInfo.startRow, 0, 10000000, s_startRow);
+	size += drawNameValue("End Row", size, sizeY, &s_editorData.trackViewInfo.endRow, 0, 10000000, s_endRow);
 
 	Emgui_setDefaultFont();
 }
