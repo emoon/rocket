@@ -39,6 +39,7 @@ static int s_clientIndex;
 int s_socket = INVALID_SOCKET;
 int s_serverSocket = INVALID_SOCKET; 
 static bool s_paused = true;
+static char s_connectionName[256];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -219,7 +220,8 @@ void RemoteConnection_updateListner()
 
 		if (INVALID_SOCKET != clientSocket)
 		{
-			rlog(R_INFO, "Connected to %s\n", inet_ntoa(client.sin_addr));
+			snprintf(s_connectionName, sizeof(s_connectionName), "Connected to %s", inet_ntoa(client.sin_addr));
+			rlog(R_INFO, "%s\n", s_connectionName); 
 			s_socket = clientSocket; 
 			s_clientIndex = 0;
 			RemoteConnection_sendPauseCommand(true);
@@ -403,6 +405,19 @@ void RemoteConnection_sendSaveCommand()
 bool RemoteConnection_isPaused()
 {
 	return s_paused;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RemoteConnection_getConnectionStatus(char** status)
+{
+	if (!RemoteConnection_connected())
+	{
+		*status = "Not Connected";
+		return;
+	}
+	
+	*status = s_connectionName;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

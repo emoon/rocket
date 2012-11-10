@@ -31,3 +31,5 @@ void RemoteConnection_sendSaveCommand();
 void RemoteConnection_sendKeyFrames(const char* name, struct sync_track* track);
 void RemoteConnection_mapTrackName(const char* name);
 
+void RemoteConnection_getConnectionStatus(char** status);
+

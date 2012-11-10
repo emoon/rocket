@@ -115,7 +115,9 @@ static char s_endRow[64] = "10000";
 
 static int drawConnectionStatus(int posX, int sizeY)
 {
-	char conStatus[64] = "Not Connected";
+	char* conStatus;
+
+	RemoteConnection_getConnectionStatus(&conStatus);
 
 	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX, sizeY - 17, 200, 15); 
 	Emgui_drawText(conStatus, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
