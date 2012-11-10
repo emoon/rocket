@@ -358,6 +358,10 @@ bool Editor_keyDown(int key, int modifiers)
 			int row = row_pos;
 
 			row += modifiers & EMGUI_KEY_ALT ? 8 : 1;
+
+			if ((modifiers & EMGUI_KEY_COMMAND) || row > viewInfo->endRow)
+				row = viewInfo->endRow;
+
 			viewInfo->rowPos = row;
 
 			if (modifiers & EMGUI_KEY_SHIFT)
@@ -380,8 +384,8 @@ bool Editor_keyDown(int key, int modifiers)
 
 			row -= modifiers & EMGUI_KEY_ALT ? 8 : 1;
 
-			if ((modifiers & EMGUI_KEY_COMMAND) || row < 0)
-				row = 0;
+			if ((modifiers & EMGUI_KEY_COMMAND) || row < viewInfo->startRow)
+				row = viewInfo->startRow;
 
 			viewInfo->rowPos = row;
 
