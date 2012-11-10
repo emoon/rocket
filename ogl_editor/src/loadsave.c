@@ -76,7 +76,8 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					}
 					else
 					{
-						trackData->colors[track_index] = atoi(color_text);
+						if (color_text)
+							trackData->colors[track_index] = atoi(color_text);
 					}
 
 					// If we already have this track loaded we delete all the existing keys
