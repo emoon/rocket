@@ -85,7 +85,7 @@ static int renderTrackName(const struct TrackInfo* info, struct sync_track* trac
 	int size = min_track_size;
 
 	if (!track)
-		return folded ? track_size_folded : size;
+		return folded ? 1 : size;
 
 	int text_size;
 	int x_adjust = 0;
@@ -100,7 +100,16 @@ static int renderTrackName(const struct TrackInfo* info, struct sync_track* trac
 	else
 		size = text_size + 1; 
 
-	Emgui_drawText(track->name, (startX + 3) + x_adjust, info->startY - font_size * 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+	if (folded)
+	{
+		Emgui_drawTextFlipped(track->name, (startX + 3), info->startY + text_size, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+		size = text_size;
+	}
+	else
+	{
+		Emgui_drawText(track->name, (startX + 3) + x_adjust, info->startY - font_size * 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+	}
+
 	Emgui_setDefaultFont();
 
 	return size;
@@ -134,21 +143,32 @@ static void renderInterpolation(const struct TrackInfo* info, struct sync_track*
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void renderText(const struct TrackInfo* info, struct sync_track* track, int idx, int x, int y, bool editRow, bool folded)
+static void renderText(const struct TrackInfo* info, struct sync_track* track, int row, int idx, int x, int y, bool editRow, bool folded)
 {
-	if (idx >= 0)
-	{
-		char temp[256];
-		float value = track->keys[idx].value;
-		snprintf(temp, 256, "% .2f", value);
+	uint32_t color = (row & 7) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff); 
 
-		if (!editRow)
-			Emgui_drawText(temp, x, y - font_size_half, Emgui_color32(255, 255, 255, 255));
+	if (folded)
+	{
+		if (idx >= 0)
+			Emgui_fill(color, x, y - font_size_half, 8, 8);
+		else
+			Emgui_drawText("-", x, y - font_size_half, color); 
 	}
 	else
 	{
-		uint32_t color = (y & 7) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff); 
-		Emgui_drawText("---", x, y - font_size_half, color); 
+		if (idx >= 0)
+		{
+			char temp[256];
+			float value = track->keys[idx].value;
+			snprintf(temp, 256, "% .2f", value);
+
+			if (!editRow)
+				Emgui_drawText(temp, x, y - font_size_half, Emgui_color32(255, 255, 255, 255));
+		}
+		else
+		{
+			Emgui_drawText("---", x, y - font_size_half, color); 
+		}
 	}
 }
 
@@ -157,6 +177,7 @@ static void renderText(const struct TrackInfo* info, struct sync_track* track, i
 static int renderChannel(const struct TrackInfo* info, int startX, int editRow, int trackIndex)
 {
 	int y, y_offset;
+	int text_size = 0;
 	int size = min_track_size;
 	int startPos = info->startPos;
 	const int endPos = info->endPos;
@@ -170,6 +191,12 @@ static int renderChannel(const struct TrackInfo* info, int startX, int editRow, 
 
 	size = renderTrackName(info, track, startX, folded);
 
+	if (folded)
+	{
+		text_size = size;
+		size = track_size_folded;
+	}
+
 	Emgui_drawBorder(borderColor, borderColor, startX, info->startY - font_size * 4, size, info->endSizeY);
 
 	if (drawColorButton(color, startX + 4, info->startY - font_size * 3, size))
@@ -178,6 +205,19 @@ static int renderChannel(const struct TrackInfo* info, int startX, int editRow, 
 	}
 
 	y_offset = info->startY;
+
+	// if folded we should skip rendering the rows that are covered by the text
+
+	if (folded)
+	{
+		int skip_rows = (text_size + font_size * 2) / font_size;
+
+		if (startPos + skip_rows > 0)
+		{
+			startPos += skip_rows;
+			y_offset += skip_rows * font_size;
+		}
+	}
 
 	if (startPos < 0)
 	{
@@ -197,7 +237,7 @@ static int renderChannel(const struct TrackInfo* info, int startX, int editRow, 
 			idx = sync_find_key(track, y);
 
 		renderInterpolation(info, track, size, idx, offset, y_offset, folded);
-		renderText(info, track, idx, offset, y_offset, y == editRow, folded);
+		renderText(info, track, y, idx, offset, y_offset, y == editRow, folded);
 
 		selected = (trackIndex >= info->selectLeft && trackIndex <= info->selectRight) && 
 			       (y >= info->selectTop && y < info->selectBottom);
@@ -216,15 +256,13 @@ static int renderChannel(const struct TrackInfo* info, int startX, int editRow, 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
+void TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 {
 	struct TrackInfo info;
 	struct sync_data* syncData = &trackData->syncData;
 	const int sel_track = trackData->activeTrack;
 	//uint32_t color = Emgui_color32(127, 127, 127, 56);
-	int num_tracks;
-	int max_render_tracks;
-	int start_track = 0;
+	int start_track = viewInfo->startTrack;
 	int x_pos = 40;
 	int end_track = 0;
 	int i = 0;
@@ -266,16 +304,7 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 		return;
 	}
 
-	num_tracks = syncData->num_tracks;
-	max_render_tracks = viewInfo->windowSizeX / min_track_size;
-
-	if (num_tracks > max_render_tracks)
-		num_tracks = max_render_tracks;
-
-	if (sel_track > 3)
-		start_track = sel_track - 3;
-
-	end_track = emini(start_track + num_tracks, syncData->num_tracks);
+	end_track = syncData->num_tracks;
 
 	for (i = start_track; i < end_track; ++i)
 	{
@@ -299,11 +328,24 @@ void TrackView_render(const TrackViewInfo* viewInfo, TrackData* trackData)
 		else
 		{
 			if (sel_track == i)
+			{
 				Emgui_fill(Emgui_color32(0x7f, 0x7f, 0x7f, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
+			}
 		}
 
 		x_pos += size;
+
+		if (x_pos >= viewInfo->windowSizeX)
+		{
+			if (sel_track + 1 >= i)
+				viewInfo->startTrack++;
+
+			break;
+		}
 	}	
+
+	if (sel_track < start_track)
+		viewInfo->startTrack = emaxi(viewInfo->startTrack - 1, 0);
 
 	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
 }
