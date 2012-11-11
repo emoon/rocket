@@ -81,7 +81,7 @@ void Editor_create()
 {
 	int id;
 	Emgui_create("foo");
-	id = Emgui_loadFontBitmap(g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_FONT_MEMORY, 32, 128, g_minecraftiaFontLayout);
+	id = Emgui_loadFontBitmap(g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_LOCATION_MEMORY, 32, 128, g_minecraftiaFontLayout);
 	memset(&s_editorData, 0, sizeof(s_editorData));
 
 	RemoteConnection_createListner();
@@ -224,11 +224,19 @@ static void drawStatus()
 	Emgui_setDefaultFont();
 }
 
+static bool flip = true;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Editor_update()
 {
 	Emgui_begin();
+
+	Emgui_radioButtonImage("/Users/emoon/code/rocket/ogl_editor/data/images/arrow_left.png", 0,
+						   "/Users/emoon/code/rocket/ogl_editor/data/images/arrow_right.png", 0,
+						   EMGUI_LOCATION_FILE, Emgui_color32(255, 255, 255, 255), 10, 10, &flip);
+
+	rlog(R_INFO, "%d\n", flip);
 
 	drawStatus();
 

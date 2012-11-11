@@ -66,8 +66,8 @@ static bool drawColorButton(uint32_t color, int x, int y, int size)
 
 struct TrackInfo
 {
-	const TrackViewInfo* viewInfo;
-	const TrackData* trackData;
+	TrackViewInfo* viewInfo;
+	TrackData* trackData;
 	int selectLeft;
 	int selectRight;
 	int selectTop;
@@ -83,15 +83,15 @@ struct TrackInfo
 static int renderTrackName(const struct TrackInfo* info, struct sync_track* track, int startX, bool folded)
 {
 	int size = min_track_size;
+	int text_size;
+	int x_adjust = 0;
+	int spacing = folded ? 0 : 30;
 
 	if (!track)
 		return folded ? 1 : size;
 
-	int text_size;
-	int x_adjust = 0;
-
 	Emgui_setFont(info->viewInfo->smallFontId);
-	text_size = (Emgui_getTextSize(track->name) & 0xffff) + 4;
+	text_size = (Emgui_getTextSize(track->name) & 0xffff) + spacing;
 
 	// if text is smaller than min size we center the text
 
@@ -107,7 +107,7 @@ static int renderTrackName(const struct TrackInfo* info, struct sync_track* trac
 	}
 	else
 	{
-		Emgui_drawText(track->name, (startX + 3) + x_adjust, info->startY - font_size * 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+		Emgui_drawText(track->name, (startX + 3) + x_adjust + 16, info->startY - font_size * 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
 	}
 
 	Emgui_setDefaultFont();
@@ -174,7 +174,7 @@ static void renderText(const struct TrackInfo* info, struct sync_track* track, i
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int renderChannel(const struct TrackInfo* info, int startX, int editRow, int trackIndex)
+static int renderChannel(struct TrackInfo* info, int startX, int editRow, int trackIndex)
 {
 	int y, y_offset;
 	int text_size = 0;
@@ -184,8 +184,16 @@ static int renderChannel(const struct TrackInfo* info, int startX, int editRow, 
 	uint32_t borderColor = Emgui_color32(40, 40, 40, 255);
 	struct sync_track* track = 0;
 	const uint32_t color = info->trackData->colors[trackIndex];
-	const bool folded = info->trackData->folded[trackIndex];
+	bool folded;
+	
+	Emgui_radioButtonImage("/Users/emoon/code/rocket/ogl_editor/data/images/arrow_right.png", 0,
+						   "/Users/emoon/code/rocket/ogl_editor/data/images/arrow_left.png", 0,
+						   EMGUI_LOCATION_FILE, Emgui_color32(255, 255, 255, 255), 
+						   startX + 6, info->startY - (font_size + 5),
+						   &info->trackData->folded[trackIndex]);
 
+	folded = info->trackData->folded[trackIndex];
+	
 	if (info->trackData->syncData.tracks)
 		track = info->trackData->syncData.tracks[trackIndex];
 
@@ -199,7 +207,7 @@ static int renderChannel(const struct TrackInfo* info, int startX, int editRow, 
 
 	Emgui_drawBorder(borderColor, borderColor, startX, info->startY - font_size * 4, size, info->endSizeY);
 
-	if (drawColorButton(color, startX + 4, info->startY - font_size * 3, size))
+	if (drawColorButton(color, startX + 4, info->startY - ((font_size * 3) + 2), size))
 	{
 		printf("Yah!\n");
 	}
