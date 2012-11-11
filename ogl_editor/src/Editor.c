@@ -331,6 +331,7 @@ static bool is_editing = false;
 bool Editor_keyDown(int key, int modifiers)
 {
 	bool handled_key = true;
+	TrackData* trackData = &s_editorData.trackData;
 	TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
 	bool paused = RemoteConnection_isPaused();
 	struct sync_track** tracks = getTracks();
@@ -427,6 +428,13 @@ bool Editor_keyDown(int key, int modifiers)
 		{
 			int track = getActiveTrack() - 1;
 
+			if (modifiers & EMGUI_KEY_ALT)
+			{
+				trackData->folded[getActiveTrack()] = true;
+				Editor_update();
+				return true;
+			}
+
 			if (modifiers & EMGUI_KEY_COMMAND)
 				track = 0;
 
@@ -451,11 +459,19 @@ bool Editor_keyDown(int key, int modifiers)
 			int track = getActiveTrack() + 1;
 			int track_count = getTrackCount();
 
+			if (modifiers & EMGUI_KEY_ALT)
+			{
+				trackData->folded[getActiveTrack()] = false;
+				Editor_update();
+				return true;
+			}
+
 			if (track >= track_count) 
 				track = track_count - 1;
 
 			if (modifiers & EMGUI_KEY_COMMAND)
 				track = track_count - 1;
+
 
 			setActiveTrack(track);
 
