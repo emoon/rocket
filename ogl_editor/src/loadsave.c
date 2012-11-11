@@ -128,6 +128,8 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 			default: break;
 		}
 	}
+
+	TrackData_linkGroups(trackData);
 }
 
 

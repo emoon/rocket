@@ -33,8 +33,14 @@ typedef struct Track
 
 typedef struct Group
 {
+	const char* name;
+	union
+	{
+		Track* track;
+		Track** tracks;
+	} t;
+
 	enum GroupType type;
-	Track** track;
 	int trackCount;
 } Group;
 
@@ -45,6 +51,7 @@ typedef struct TrackData
 	struct sync_data syncData;
 	Track tracks[EDITOR_MAX_TRACKS];
 	Group groups[EDITOR_MAX_TRACKS];
+	int groupCount;
 	int activeTrack;
 	int lastColor;
 	int trackCount;
@@ -56,4 +63,5 @@ typedef struct TrackData
 
 int TrackData_createGetTrack(TrackData* trackData, const char* name);
 uint32_t TrackData_getNextColor(TrackData* trackData);
+void TrackData_linkGroups(TrackData* trackData);
 
