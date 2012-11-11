@@ -175,7 +175,7 @@ static void renderText(const struct TrackInfo* info, struct sync_track* track, i
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int renderChannel(struct TrackInfo* info, int startX, int editRow, int trackIndex)
+static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track* trackData)
 {
 	int y, y_offset;
 	int text_size = 0;
@@ -184,16 +184,16 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, int tr
 	const int endPos = info->endPos;
 	uint32_t borderColor = Emgui_color32(40, 40, 40, 255);
 	struct sync_track* track = 0;
-	const uint32_t color = info->trackData->tracks[trackIndex].color;
+	const uint32_t color = trackData->color;
 	bool folded;
 
 	Emgui_radioButtonImage(g_arrow_left_png, g_arrow_left_png_len,
 						   g_arrow_right_png, g_arrow_right_png_len,
 						   EMGUI_LOCATION_MEMORY, Emgui_color32(255, 255, 255, 255), 
 						   startX + 6, info->startY - (font_size + 5),
-						   &info->trackData->tracks[trackIndex].folded);
+						   &trackData->folded);
 
-	folded = info->trackData->tracks[trackIndex].folded;
+	folded = trackData->folded;
 	
 	if (info->trackData->syncData.tracks)
 		track = info->trackData->syncData.tracks[trackIndex];
@@ -265,8 +265,130 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, int tr
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
+{
+	struct TrackInfo info;
+	Group* groups = &trackData->groups;
+	const int sel_track = trackData->activeTrack;
+	int start_track = viewInfo->startTrack;
+	int x_pos = 40;
+	int end_track = 0;
+	int i = 0;
+	int adjust_top_size;
+	int mid_screen_y ;
+	int y_pos_row, end_row, y_end_border;
+
+	// Calc to position the selection in the ~middle of the screen 
+
+	adjust_top_size = 5 * font_size;
+	mid_screen_y = (viewInfo->windowSizeY / 2) & ~(font_size - 1);
+	y_pos_row = viewInfo->rowPos - (mid_screen_y / font_size);
+
+	// TODO: Calculate how many channels we can draw given the width
+
+	end_row = viewInfo->windowSizeY / font_size;
+	y_end_border = viewInfo->windowSizeY - 32; // adjust to have some space at the end of the screen
+
+	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, 8, y_end_border);
+
+	// Shared info for all tracks
+
+	info.selectLeft = emini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	info.selectRight = emaxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	info.selectTop  = emini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	info.selectBottom = emaxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	info.viewInfo = viewInfo;
+	info.trackData = trackData;
+	info.startY = adjust_top_size;
+	info.startPos = y_pos_row;
+	info.endPos = y_pos_row + end_row; 
+	info.endSizeY = y_end_border;
+
+	if (syncData->num_tracks == 0)
+	{
+		uint32_t color = Emgui_color32(127, 127, 127, 56);
+		renderChannel(&info, x_pos, 0, 0);
+		Emgui_fill(color, 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 2);
+		return;
+	}
+
+	for (i = 0; i < groups->groupCount; ++i)
+	{
+		Group* group = &groups[i];
+		
+		// 
+
+		if (group->trackCount == 1)
+		{
+			size = renderChannel(&info, x_pos, editRow, i);
+		}
+		else
+		{
+
+		}
+
+
+		x_pos += size;
+
+		if (x_pos >= viewInfo->windowSizeX)
+			break;
+	}
+
+	/*
+	end_track = syncData->num_tracks;
+
+	for (i = start_track; i < end_track; ++i)
+	{
+		int size, editRow = -1;
+
+		if (sel_track == i && trackData->editText)
+			editRow = viewInfo->rowPos;
+
+		size = renderChannel(&info, x_pos, editRow, i);
+
+		if (!Emgui_hasKeyboardFocus())
+		{
+			if (sel_track == i)
+			{
+				Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
+
+				if (trackData->editText)
+					Emgui_drawText(trackData->editText, x_pos, mid_screen_y + adjust_top_size, Emgui_color32(255, 255, 255, 255));
+			}
+		}
+		else
+		{
+			if (sel_track == i)
+			{
+				Emgui_fill(Emgui_color32(0x7f, 0x7f, 0x7f, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
+			}
+		}
+
+		x_pos += size;
+
+		if (x_pos >= viewInfo->windowSizeX)
+		{
+			if (sel_track + 1 >= i)
+				viewInfo->startTrack++;
+
+			break;
+		}
+	}	
+
+	if (sel_track < start_track)
+		viewInfo->startTrack = emaxi(viewInfo->startTrack - 1, 0);
+
+	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
+	*/
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 {
+	renderGroups(viewInfo, trackData);
+	/*
 	struct TrackInfo info;
 	struct sync_data* syncData = &trackData->syncData;
 	const int sel_track = trackData->activeTrack;
@@ -357,5 +479,6 @@ void TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 		viewInfo->startTrack = emaxi(viewInfo->startTrack - 1, 0);
 
 	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
+	*/
 }
 

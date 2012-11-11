@@ -152,6 +152,12 @@ void TrackData_linkGroups(TrackData* trackData)
 		group->trackCount = group_count;
 
 		insertTracksInGroup(group, group_name, processed_tracks, trackData, i);
+
+		current_group++;
 	}
+
+	trackData->groupCount = current_group;
+
+	rlog(R_DEBUG, "Total amount of groups (and separate tracks) %d\n", current_group);
 }
 
