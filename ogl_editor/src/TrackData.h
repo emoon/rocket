@@ -12,16 +12,42 @@ enum
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+enum GroupType
+{
+	GROUP_TYPE_TRACK,
+	GROUP_TYPE_GROUP,
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+typedef struct Track
+{
+	uint32_t color;
+	bool hidden;
+	bool folded;
+
+} Track;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Grouping (notice that even one track without group becomes it own group to keep the code easier)
+
+typedef struct Group
+{
+	enum GroupType type;
+	Track** track;
+	int trackCount;
+} Group;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 typedef struct TrackData
 {
 	struct sync_data syncData;
-	uint32_t colors[EDITOR_MAX_TRACKS];
-	bool folded[EDITOR_MAX_TRACKS];
-	bool hidden[EDITOR_MAX_TRACKS];
-	int order[EDITOR_MAX_TRACKS];
-	int orderCount;
+	Track tracks[EDITOR_MAX_TRACKS];
+	Group groups[EDITOR_MAX_TRACKS];
 	int activeTrack;
 	int lastColor;
+	int trackCount;
 	char* editText;
 } TrackData;
 

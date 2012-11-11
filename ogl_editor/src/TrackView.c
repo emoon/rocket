@@ -139,7 +139,7 @@ static void renderInterpolation(const struct TrackInfo* info, struct sync_track*
 	}
 
 	if (info->viewInfo)
-		Emgui_fill(color, x + (size - 4), y - font_size_half, 2, (info->endSizeY - y) + font_size - 1);
+		Emgui_fill(color, x + (size - 8), y - font_size_half, 2, (info->endSizeY - y) + font_size - 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -184,16 +184,16 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, int tr
 	const int endPos = info->endPos;
 	uint32_t borderColor = Emgui_color32(40, 40, 40, 255);
 	struct sync_track* track = 0;
-	const uint32_t color = info->trackData->colors[trackIndex];
+	const uint32_t color = info->trackData->tracks[trackIndex].color;
 	bool folded;
 
 	Emgui_radioButtonImage(g_arrow_left_png, g_arrow_left_png_len,
 						   g_arrow_right_png, g_arrow_right_png_len,
 						   EMGUI_LOCATION_MEMORY, Emgui_color32(255, 255, 255, 255), 
 						   startX + 6, info->startY - (font_size + 5),
-						   &info->trackData->folded[trackIndex]);
+						   &info->trackData->tracks[trackIndex].folded);
 
-	folded = info->trackData->folded[trackIndex];
+	folded = info->trackData->tracks[trackIndex].folded;
 	
 	if (info->trackData->syncData.tracks)
 		track = info->trackData->syncData.tracks[trackIndex];

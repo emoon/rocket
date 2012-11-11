@@ -8,9 +8,8 @@ int TrackData_createGetTrack(TrackData* trackData, const char* name)
 	if (index < 0)
 	{
         index = sync_create_track(&trackData->syncData, name);
-		trackData->colors[index] = TrackData_getNextColor(trackData); 
-		trackData->order[trackData->orderCount] = index;
-		trackData->orderCount++;
+		memset(&trackData->tracks[index], 0, sizeof(Track));
+		trackData->tracks[index].color = TrackData_getNextColor(trackData); 
 	}
 
 	return index;

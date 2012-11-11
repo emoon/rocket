@@ -224,19 +224,11 @@ static void drawStatus()
 	Emgui_setDefaultFont();
 }
 
-static bool flip = true;
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Editor_update()
 {
 	Emgui_begin();
-
-	Emgui_radioButtonImage("/Users/emoon/code/rocket/ogl_editor/data/images/arrow_left.png", 0,
-						   "/Users/emoon/code/rocket/ogl_editor/data/images/arrow_right.png", 0,
-						   EMGUI_LOCATION_FILE, Emgui_color32(255, 255, 255, 255), 10, 10, &flip);
-
-	rlog(R_INFO, "%d\n", flip);
 
 	drawStatus();
 
@@ -430,7 +422,7 @@ bool Editor_keyDown(int key, int modifiers)
 
 			if (modifiers & EMGUI_KEY_ALT)
 			{
-				trackData->folded[getActiveTrack()] = true;
+				trackData->tracks[getActiveTrack()].folded = true;
 				Editor_update();
 				return true;
 			}
@@ -461,7 +453,7 @@ bool Editor_keyDown(int key, int modifiers)
 
 			if (modifiers & EMGUI_KEY_ALT)
 			{
-				trackData->folded[getActiveTrack()] = false;
+				trackData->tracks[getActiveTrack()].folded = false;
 				Editor_update();
 				return true;
 			}

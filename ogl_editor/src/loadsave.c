@@ -59,6 +59,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 				{
 					int i;
 					struct sync_track* track;
+					Track* t;
 
 					// TODO: Create the new track/channel here
 			
@@ -69,24 +70,23 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					track_index = TrackData_createGetTrack(trackData, track_name);
 					printf("track_index %d\n", track_index);
 
+					t = &trackData->tracks[track_index];
 					track = trackData->syncData.tracks[track_index];
 
-					if (!color_text && trackData->colors[track_index] == 0)
+					if (!color_text && t->color == 0)
 					{
-						trackData->colors[track_index] = TrackData_getNextColor(trackData);
+						t->color = TrackData_getNextColor(trackData);
 					}
 					else
 					{
 						if (color_text)
-							trackData->colors[track_index] = atoi(color_text);
+							t->color = atoi(color_text);
 					}
-
-					trackData->folded[track_index] = false;
 
 					if (folded_text)
 					{
 						if (folded_text[0] == '1')
-							trackData->folded[track_index] = true;
+							t->folded = true;
 					}
 
 					// If we already have this track loaded we delete all the existing keys
@@ -191,13 +191,13 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 		mxml_node_t* track = mxmlNewElement(tracks, "track");
 
 		memset(temp, 0, sizeof(temp));
-		sprintf(temp, "%d", trackData->colors[p]); 
+		sprintf(temp, "%d", trackData->tracks[p].color); 
 
 		// setup the elements for the trak
 
 		mxmlElementSetAttr(track, "name", t->name); 
 		mxmlElementSetAttr(track, "color", temp); 
-		mxmlElementSetAttr(track, "folded", trackData->folded[p] ? "1" : "0"); 
+		mxmlElementSetAttr(track, "folded", trackData->tracks[p].folded ? "1" : "0"); 
 
 		for (i = 0; i < (int)t->num_keys; ++i) 
 		{
