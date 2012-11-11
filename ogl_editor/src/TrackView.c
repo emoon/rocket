@@ -6,6 +6,7 @@
 #include "TrackData.h"
 #include "rlog.h"
 #include "minmax.h"
+#include "ImageData.h"
 #include "../../sync/sync.h"
 #include "../../sync/data.h"
 #include "../../sync/track.h"
@@ -185,10 +186,10 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, int tr
 	struct sync_track* track = 0;
 	const uint32_t color = info->trackData->colors[trackIndex];
 	bool folded;
-	
-	Emgui_radioButtonImage("/Users/emoon/code/rocket/ogl_editor/data/images/arrow_right.png", 0,
-						   "/Users/emoon/code/rocket/ogl_editor/data/images/arrow_left.png", 0,
-						   EMGUI_LOCATION_FILE, Emgui_color32(255, 255, 255, 255), 
+
+	Emgui_radioButtonImage(g_arrow_left_png, g_arrow_left_png_len,
+						   g_arrow_right_png, g_arrow_right_png_len,
+						   EMGUI_LOCATION_MEMORY, Emgui_color32(255, 255, 255, 255), 
 						   startX + 6, info->startY - (font_size + 5),
 						   &info->trackData->folded[trackIndex]);
 
