@@ -35,6 +35,7 @@ typedef struct Track
 typedef struct Group
 {
 	const char* name;
+	bool folded;
 	union
 	{
 		Track* track;

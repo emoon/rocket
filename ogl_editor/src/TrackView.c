@@ -15,6 +15,8 @@ const int font_size = 8;
 const int font_size_half = font_size / 2;
 const int track_size_folded = 20;
 const int min_track_size = 100;
+const int colorbar_adjust = ((font_size * 3) + 2);
+static const int name_adjust = font_size * 2;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -81,6 +83,45 @@ struct TrackInfo
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static int renderName(const char* name, int x, int y, int minSize, bool folded)
+{
+	int size = min_track_size;
+	int text_size;
+	int x_adjust = 0;
+	int spacing = folded ? 0 : 30;
+
+	text_size = (Emgui_getTextSize(name) & 0xffff) + spacing;
+
+	if (text_size < minSize) 
+		x_adjust = (minSize - text_size) / 2;
+	else
+		size = text_size + 1; 
+
+	if (folded)
+	{
+		Emgui_drawTextFlipped(name, x, y + text_size, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+		size = text_size;
+	}
+	else
+	{
+		Emgui_drawText(name, x + x_adjust + 16, y, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+	}
+
+	return size;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int renderGroupHeader(Group* group, int x, int y, int groupSize)
+{
+	drawColorButton(Emgui_color32(127, 127, 127, 255), x + 3, y - colorbar_adjust, groupSize);
+	renderName(group->name, x, y - name_adjust, groupSize, group->folded);
+
+	return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static int renderTrackName(const struct TrackInfo* info, struct sync_track* track, int startX, bool folded)
 {
 	int size = min_track_size;
@@ -108,7 +149,7 @@ static int renderTrackName(const struct TrackInfo* info, struct sync_track* trac
 	}
 	else
 	{
-		Emgui_drawText(track->name, (startX + 3) + x_adjust + 16, info->startY - font_size * 2, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+		Emgui_drawText(track->name, (startX + 3) + x_adjust + 16, info->startY - name_adjust, Emgui_color32(0xff, 0xff, 0xff, 0xff));
 	}
 
 	Emgui_setDefaultFont();
@@ -175,6 +216,30 @@ static void renderText(const struct TrackInfo* info, struct sync_track* track, i
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static int getTrackSize(TrackData* trackData, Track* track)
+{
+	if (track->folded)
+		return track_size_folded; 
+
+	// TODO: Need to verify that this is correct
+
+	return (Emgui_getTextSize(trackData->syncData.tracks[track->index]->name) & 0xffff) + 31;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int getGroupSize(TrackData* trackData, Group* group)
+{
+	int i, size = 0, count = group->trackCount;
+
+	for (i = 0; i < count; ++i)
+		size += getTrackSize(trackData, group->t.tracks[i]);
+
+	return size;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track* trackData)
 {
 	int y, y_offset;
@@ -208,7 +273,7 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 
 	Emgui_drawBorder(borderColor, borderColor, startX, info->startY - font_size * 4, size, info->endSizeY);
 
-	if (drawColorButton(color, startX + 4, info->startY - ((font_size * 3) + 2), size))
+	if (drawColorButton(color, startX + 4, info->startY - colorbar_adjust, size))
 	{
 		printf("Yah!\n");
 	}
@@ -260,6 +325,37 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 			break;
 	}
 
+	return size;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int renderGroup(Group* group, int posX, struct TrackInfo* info, TrackData* trackData)
+{
+	int i, size, track_count = group->trackCount;
+	int oldY = info->startY;
+
+	Emgui_setFont(info->viewInfo->smallFontId);
+
+	size = getGroupSize(trackData, group);
+
+	printf("size %d\n", size);
+
+	// TODO: Draw the group name and such here
+
+	renderGroupHeader(group, posX, oldY, size);
+
+	// ----
+
+	info->startY += 40;
+
+	for (i = 0; i < track_count; ++i)
+		posX += renderChannel(info, posX, -1, group->t.tracks[i]);
+
+	info->startY = oldY;
+
+	Emgui_setDefaultFont();
+	
 	return size;
 }
 
@@ -326,9 +422,8 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 		}
 		else
 		{
-
+			size = renderGroup(group, x_pos, &info, trackData);
 		}
-
 
 		x_pos += size;
 

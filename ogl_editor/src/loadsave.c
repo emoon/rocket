@@ -68,7 +68,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
                     const char* folded_text = mxmlElementGetAttr(node, "folded");
                     
 					track_index = TrackData_createGetTrack(trackData, track_name);
-					printf("track_index %d\n", track_index);
+					//printf("track_index %d\n", track_index);
 
 					t = &trackData->tracks[track_index];
 					track = trackData->syncData.tracks[track_index];
@@ -102,7 +102,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					track->keys = 0;
 					track->num_keys = 0;
 
-					printf("Creating track/channel with name %s\n", track_name);
+					//printf("Creating track/channel with name %s\n", track_name);
 				}
 				else if (!strcmp("key", element_name))
 				{
@@ -121,7 +121,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					assert(!is_key);
 					sync_set_key(track, &k);
 
-					printf("Adding key: row %s | value %s | interpolation %s\n", row, value, interpolation);
+					//printf("Adding key: row %s | value %s | interpolation %s\n", row, value, interpolation);
 				}
 			}
 
