@@ -196,7 +196,7 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 	folded = trackData->folded;
 	
 	if (info->trackData->syncData.tracks)
-		track = info->trackData->syncData.tracks[trackIndex];
+		track = info->trackData->syncData.tracks[trackData->index];
 
 	size = renderTrackName(info, track, startX, folded);
 
@@ -240,7 +240,7 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 	{
 		int idx = -1;
 		int offset = startX + 6;
-		bool selected;
+		// bool selected;
 
 		if (track)
 			idx = sync_find_key(track, y);
@@ -248,11 +248,11 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 		renderInterpolation(info, track, size, idx, offset, y_offset, folded);
 		renderText(info, track, y, idx, offset, y_offset, y == editRow, folded);
 
-		selected = (trackIndex >= info->selectLeft && trackIndex <= info->selectRight) && 
-			       (y >= info->selectTop && y < info->selectBottom);
+		//selected = (trackIndex >= info->selectLeft && trackIndex <= info->selectRight) && 
+		//	       (y >= info->selectTop && y < info->selectBottom);
 
-		if (selected)
-			Emgui_fill(Emgui_color32(0x4f, 0x4f, 0x4f, 0x3f), startX, y_offset - font_size_half, size, font_size);  
+		//if (selected)
+		//	Emgui_fill(Emgui_color32(0x4f, 0x4f, 0x4f, 0x3f), startX, y_offset - font_size_half, size, font_size);  
 
 		y_offset += font_size;
 
@@ -268,11 +268,11 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 {
 	struct TrackInfo info;
-	Group* groups = &trackData->groups;
-	const int sel_track = trackData->activeTrack;
-	int start_track = viewInfo->startTrack;
+	Group* groups = trackData->groups;
+	//const int sel_track = trackData->activeTrack;
+	int start_track = 0; //viewInfo->startTrack;
 	int x_pos = 40;
-	int end_track = 0;
+	//int end_track = 0;
 	int i = 0;
 	int adjust_top_size;
 	int mid_screen_y ;
@@ -304,23 +304,25 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 	info.endPos = y_pos_row + end_row; 
 	info.endSizeY = y_end_border;
 
-	if (syncData->num_tracks == 0)
+	if (trackData->groupCount == 0)
 	{
 		uint32_t color = Emgui_color32(127, 127, 127, 56);
-		renderChannel(&info, x_pos, 0, 0);
+		//renderChannel(&info, x_pos, 0, 0);
 		Emgui_fill(color, 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 2);
 		return;
 	}
 
-	for (i = 0; i < groups->groupCount; ++i)
+	for (i = start_track; i < trackData->groupCount; ++i)
 	{
+		int size;
+
 		Group* group = &groups[i];
 		
 		// 
 
 		if (group->trackCount == 1)
 		{
-			size = renderChannel(&info, x_pos, editRow, i);
+			size = renderChannel(&info, x_pos, -1, group->t.track);
 		}
 		else
 		{

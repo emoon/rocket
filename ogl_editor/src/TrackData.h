@@ -22,6 +22,7 @@ enum GroupType
 
 typedef struct Track
 {
+	uint32_t index;
 	uint32_t color;
 	bool hidden;
 	bool folded;

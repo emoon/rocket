@@ -10,6 +10,7 @@ int TrackData_createGetTrack(TrackData* trackData, const char* name)
 	{
         index = sync_create_track(&trackData->syncData, name);
 		memset(&trackData->tracks[index], 0, sizeof(Track));
+		trackData->tracks[index].index = index;
 		trackData->tracks[index].color = TrackData_getNextColor(trackData); 
 	}
 
