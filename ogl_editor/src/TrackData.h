@@ -18,14 +18,20 @@ enum GroupType
 	GROUP_TYPE_GROUP,
 };
 
+struct Group;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct Track
 {
+	char* displayName;
+	struct Group* group;
+
 	uint32_t index;
 	uint32_t color;
 	bool hidden;
 	bool folded;
+	bool selected;
 
 } Track;
 
@@ -35,6 +41,8 @@ typedef struct Track
 typedef struct Group
 {
 	const char* name;
+	char* displayName;
+
 	bool folded;
 	union
 	{

@@ -58,6 +58,9 @@ static inline struct sync_track** getTracks()
 
 static inline void setActiveTrack(int track)
 {
+	const int current_track = s_editorData.trackData.activeTrack;
+	s_editorData.trackData.tracks[current_track].selected = false;
+	s_editorData.trackData.tracks[track].selected = true;
 	s_editorData.trackData.activeTrack = track;
 }
 
@@ -68,12 +71,58 @@ static inline int getActiveTrack()
 	return s_editorData.trackData.activeTrack;
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static inline int getTrackCount()
 {
 	return s_editorData.trackData.syncData.num_tracks;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int getNextTrack()
+{
+	TrackData* trackData = &s_editorData.trackData;
+	int i, track_count = getTrackCount(); 
+	int active_track = getActiveTrack();
+
+	for (i = active_track + 1; i < track_count; ++i)
+	{
+		// if track has no group its always safe to assume that can select the track
+
+		if (!trackData->tracks[i].group)
+			return i;
+
+		if (!trackData->tracks[i].group->folded)
+			return i;
+	}
+
+	return active_track;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int getPrevTrack()
+{
+	TrackData* trackData = &s_editorData.trackData;
+	int i, active_track = getActiveTrack();
+
+	for (i = active_track - 1; i >= 0; --i)
+	{
+		// if track has no group its always safe to assume that can select the track
+
+		if (!trackData->tracks[i].group)
+			return i;
+
+		if (!trackData->tracks[i].group->folded)
+			return i;
+	}
+
+	return active_track;
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -225,16 +274,29 @@ static void drawStatus()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// In some cases we need an extra update in case some controls has been re-arranged in such fashion so
+// the trackview will report back if that is needed (usually happens if tracks gets resized)
+
+static bool internalUpdate()
+{
+	int refresh;
+
+	Emgui_begin();
+	drawStatus();
+	refresh = TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
+	Emgui_end();
+
+	return refresh; 
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Editor_update()
 {
-	Emgui_begin();
+	bool need_update = internalUpdate();
 
-	drawStatus();
-
-	TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
-
-	Emgui_end();
+	if (need_update)
+		internalUpdate();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -418,7 +480,7 @@ bool Editor_keyDown(int key, int modifiers)
 
 		case EMGUI_ARROW_LEFT:
 		{
-			int track = getActiveTrack() - 1;
+			int track = getPrevTrack();
 
 			if (modifiers & EMGUI_KEY_ALT)
 			{
@@ -448,7 +510,7 @@ bool Editor_keyDown(int key, int modifiers)
 
 		case EMGUI_ARROW_RIGHT:
 		{
-			int track = getActiveTrack() + 1;
+			int track = getNextTrack();
 			int track_count = getTrackCount();
 
 			if (modifiers & EMGUI_KEY_ALT)
@@ -463,7 +525,6 @@ bool Editor_keyDown(int key, int modifiers)
 
 			if (modifiers & EMGUI_KEY_COMMAND)
 				track = track_count - 1;
-
 
 			setActiveTrack(track);
 

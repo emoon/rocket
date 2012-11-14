@@ -130,6 +130,8 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 	}
 
 	TrackData_linkGroups(trackData);
+
+	trackData->tracks[0].selected = true;
 }
 
 

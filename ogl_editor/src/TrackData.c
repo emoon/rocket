@@ -78,13 +78,19 @@ static void insertTracksInGroup(Group* group, const char* name, bool* processedT
 
 	for (i = index; i < count; ++i)
 	{
+		char* split_name;
+
 		if (processedTracks[i])
 			continue;
 
-		if (strstr(sync->tracks[i]->name, name))
+		if ((split_name = strstr(sync->tracks[i]->name, name)))
 		{
-			rlog(R_DEBUG, "Inserted track %s into group %s\n", sync->tracks[i]->name, group->name);
-			group->t.tracks[group_index++] = &trackData->tracks[i];
+			Track* t = &trackData->tracks[i];
+			int sep = findSeparator(sync->tracks[i]->name);
+			rlog(R_DEBUG, "Inserted track %s into group %s (%s)\n", sync->tracks[i]->name, group->name, split_name);
+			t->displayName = strdup(&split_name[sep + 1]);
+			t->group = group; 
+			group->t.tracks[group_index++] = t;
 			processedTracks[i] = true;
 		}
 	}
@@ -139,7 +145,9 @@ void TrackData_linkGroups(TrackData* trackData)
 		memcpy(group_name, track_name, found + 1); 
 
 		group->name = strdup(group_name);
+		group->displayName = strdup(group_name);
 		group->type = GROUP_TYPE_GROUP;
+		group->displayName[found] = 0;
 
 		rlog(R_DEBUG, "Group name %s\n", group_name);
 
