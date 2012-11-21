@@ -133,6 +133,7 @@ void TrackData_linkGroups(TrackData* trackData)
 			group->t.track = track;
 			group->trackCount = 1;
 			processed_tracks[i] = true;
+			track->group = group;
 			current_group++;
 			continue;
 		}

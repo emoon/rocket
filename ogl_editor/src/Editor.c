@@ -83,46 +83,15 @@ static inline int getTrackCount()
 
 static int getNextTrack()
 {
-	TrackData* trackData = &s_editorData.trackData;
-	int i, track_count = getTrackCount(); 
-	int active_track = getActiveTrack();
-
-	for (i = active_track + 1; i < track_count; ++i)
-	{
-		// if track has no group its always safe to assume that can select the track
-
-		if (!trackData->tracks[i].group)
-			return i;
-
-		if (!trackData->tracks[i].group->folded)
-			return i;
-	}
-
-	return active_track;
+	return emini(getActiveTrack() + 1, getTrackCount());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int getPrevTrack()
 {
-	TrackData* trackData = &s_editorData.trackData;
-	int i, active_track = getActiveTrack();
-
-	for (i = active_track - 1; i >= 0; --i)
-	{
-		// if track has no group its always safe to assume that can select the track
-
-		if (!trackData->tracks[i].group)
-			return i;
-
-		if (!trackData->tracks[i].group->folded)
-			return i;
-	}
-
-	return active_track;
+	return emaxi(getActiveTrack() - 1, 0);
 }
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

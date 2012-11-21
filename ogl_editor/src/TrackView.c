@@ -97,6 +97,23 @@ struct TrackInfo
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+
+static void updateStartTrack(Track* track, int posX, TrackViewInfo* view)
+{
+	float delta_pos = (float)posX / (float)view->windowSizeX;
+
+	if (delta_pos < 0.2f)
+	{
+		if (view->startTrack > 0)
+			view->startTrack--;
+	}
+	else if (delta_pos > 0.8f)
+		view->startTrack++;
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int renderName(const char* name, int x, int y, int minSize, bool folded)
 {
@@ -194,6 +211,21 @@ static void renderText(const struct TrackInfo* info, struct sync_track* track, i
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static int findStartTrack(Group* group, Track* startTrack)
+{
+	int i, track_count = group->trackCount;
+
+	for (i = 0; i < track_count; ++i)
+	{
+		if (group->t.tracks[i] == startTrack)
+			return i;
+	}
+
+	return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static int getTrackSize(TrackData* trackData, Track* track)
 {
 	int size = 0;
@@ -209,7 +241,7 @@ static int getTrackSize(TrackData* trackData, Track* track)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int getGroupSize(TrackData* trackData, Group* group)
+int getGroupSize(TrackData* trackData, Group* group, int startTrack)
 {
 	int i, size = 0, count = group->trackCount;
 	int text_size = (Emgui_getTextSize(group->name) & 0xffff) + 40;
@@ -217,7 +249,7 @@ int getGroupSize(TrackData* trackData, Group* group)
 	if (group->folded)
 		return track_size_folded; 
 
-	for (i = 0; i < count; ++i)
+	for (i = startTrack; i < count; ++i)
 		size += getTrackSize(trackData, group->t.tracks[i]);
 
 	size = emaxi(size, text_size);
@@ -242,6 +274,7 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 	if (trackData->selected)
 	{
 		Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), startX, info->midPos, size, font_size + 1);
+		//updateStartTrack(trackData, startX, info->viewInfo);
 
 		//if (trackData->editText)
 		//	Emgui_drawText(trackData->editText, x_pos, info->midPos, Emgui_color32(255, 255, 255, 255));
@@ -328,16 +361,19 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int renderGroup(Group* group, int posX, struct TrackInfo info, TrackData* trackData)
+static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffset, struct TrackInfo info, TrackData* trackData)
 {
-	int i, size, track_count = group->trackCount;
-	int oldY = info.startY;
+	int i, startTrackIndex = 0, size, track_count = group->trackCount;
+	const int oldY = info.startY;
+	const int windowSizeX = info.viewInfo->windowSizeX;
 
 	drawFoldButton(posX + 6, oldY - (font_size + 5), &group->folded);
 
 	Emgui_setFont(info.viewInfo->smallFontId);
 
-	size = getGroupSize(trackData, group);
+	startTrackIndex = findStartTrack(group, startTrack);
+
+	size = getGroupSize(trackData, group, startTrackIndex);
 
 	printf("size %d\n", size);
 
@@ -345,21 +381,30 @@ static int renderGroup(Group* group, int posX, struct TrackInfo info, TrackData*
 
 	renderGroupHeader(group, posX, oldY, size);
 
-	// ----
-
 	info.startPos += 5;
 	info.startY += 40;
 
+	*trackOffset += (track_count - startTrackIndex);
+
 	if (!group->folded)
 	{
-		for (i = 0; i < track_count; ++i)
-			posX += renderChannel(&info, posX, -1, group->t.tracks[i]);
+		for (i = startTrackIndex; i < track_count; ++i)
+		{
+			Track* t = group->t.tracks[i];
+			posX += renderChannel(&info, posX, -1, t);
+
+			if (posX >= windowSizeX)
+			{
+				if (trackData->activeTrack >= i)
+					info.viewInfo->startTrack++;
+				return posX;
+			}
+		}
 	}
 
-
 	Emgui_setDefaultFont();
-	
-	return size;
+
+	return posX;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -367,9 +412,8 @@ static int renderGroup(Group* group, int posX, struct TrackInfo info, TrackData*
 void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 {
 	struct TrackInfo info;
-	Group* groups = trackData->groups;
-	//const int sel_track = trackData->activeTrack;
-	int start_track = 0; //viewInfo->startTrack;
+	const int sel_track = trackData->activeTrack;
+	int start_track = viewInfo->startTrack;
 	int x_pos = 40;
 	//int end_track = 0;
 	int i = 0;
@@ -412,28 +456,32 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 		return;
 	}
 
-	for (i = start_track; i < trackData->groupCount; ++i)
+	for (i = start_track; i < trackData->syncData.num_tracks; )
 	{
-		int size;
-
-		Group* group = &groups[i];
+		Track* track = &trackData->tracks[i];
+		Group* group = track->group; 
 		
-		// 
-
 		if (group->trackCount == 1)
 		{
-			size = renderChannel(&info, x_pos, -1, group->t.track);
+			++i;
+			x_pos += renderChannel(&info, x_pos, -1, track);
 		}
 		else
-		{
-			size = renderGroup(group, x_pos, info, trackData);
-		}
+			x_pos += renderGroup(group, track, x_pos, &i, info, trackData);
 
-		x_pos += size;
+		//i += group->trackCount;
 
 		if (x_pos >= viewInfo->windowSizeX)
+		{
+			if (sel_track >= i)
+				viewInfo->startTrack++;
+
 			break;
+		}
 	}
+
+	if (sel_track < start_track)
+		viewInfo->startTrack = emaxi(viewInfo->startTrack - 1, 0);
 
 	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
 	/*
