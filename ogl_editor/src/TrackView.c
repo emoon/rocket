@@ -22,6 +22,23 @@ static bool s_needsUpdate = false;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+struct TrackInfo
+{
+	TrackViewInfo* viewInfo;
+	TrackData* trackData;
+	int selectLeft;
+	int selectRight;
+	int selectTop;
+	int selectBottom;
+	int startY;
+	int startPos;
+	int endPos; 
+	int endSizeY;
+	int midPos;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void TrackView_init()
 {
 }
@@ -81,40 +98,6 @@ static void drawFoldButton(int x, int y, bool* fold)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct TrackInfo
-{
-	TrackViewInfo* viewInfo;
-	TrackData* trackData;
-	int selectLeft;
-	int selectRight;
-	int selectTop;
-	int selectBottom;
-	int startY;
-	int startPos;
-	int endPos; 
-	int endSizeY;
-	int midPos;
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-
-static void updateStartTrack(Track* track, int posX, TrackViewInfo* view)
-{
-	float delta_pos = (float)posX / (float)view->windowSizeX;
-
-	if (delta_pos < 0.2f)
-	{
-		if (view->startTrack > 0)
-			view->startTrack--;
-	}
-	else if (delta_pos > 0.8f)
-		view->startTrack++;
-}
-*/
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int renderName(const char* name, int x, int y, int minSize, bool folded)
 {
 	int size = min_track_size;
@@ -144,8 +127,13 @@ static int renderName(const char* name, int x, int y, int minSize, bool folded)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int renderGroupHeader(Group* group, int x, int y, int groupSize)
+static int renderGroupHeader(Group* group, int x, int y, int groupSize, int windowSizeX)
 {
+	// If the group size is larger than the actual screen we adjust it a bit to make the text more visible
+
+	if (x + groupSize > windowSizeX)
+		groupSize = windowSizeX - x;
+
 	drawColorButton(Emgui_color32(127, 127, 127, 255), x + 3, y - colorbar_adjust, groupSize);
 	renderName(group->displayName, x, y - name_adjust, groupSize, group->folded);
 
@@ -259,7 +247,7 @@ int getGroupSize(TrackData* trackData, Group* group, int startTrack)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track* trackData)
+static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track* trackData, bool valuesOnly)
 {
 	int y, y_offset;
 	int text_size = 0;
@@ -271,36 +259,42 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 	const uint32_t color = trackData->color;
 	bool folded;
 
-	drawFoldButton(startX + 6, info->startY - (font_size + 5), &trackData->folded);
+	if (!valuesOnly)
+	{
+		drawFoldButton(startX + 6, info->startY - (font_size + 5), &trackData->folded);
 
-	folded = trackData->folded;
-	
-	if (info->trackData->syncData.tracks)
-		track = info->trackData->syncData.tracks[trackData->index];
+		folded = trackData->folded;
+		
+		if (info->trackData->syncData.tracks)
+			track = info->trackData->syncData.tracks[trackData->index];
 
-	Emgui_setFont(info->viewInfo->smallFontId);
+		Emgui_setFont(info->viewInfo->smallFontId);
 
-	if (trackData->displayName)
-		size = renderName(trackData->displayName, startX, info->startY - (font_size * 2), min_track_size, trackData->folded);
-	else
-		size = renderName(track->name, startX, info->startY - (font_size * 2), min_track_size, trackData->folded);
+		if (trackData->displayName)
+			size = renderName(trackData->displayName, startX, info->startY - (font_size * 2), min_track_size, trackData->folded);
+		else
+			size = renderName(track->name, startX, info->startY - (font_size * 2), min_track_size, trackData->folded);
+
+		if (folded)
+		{
+			text_size = size;
+			size = track_size_folded;
+		}
+
+		Emgui_drawBorder(borderColor, borderColor, startX, info->startY - font_size * 4, size, (info->endSizeY - info->startY) + 40);
+
+		if (drawColorButton(color, startX + 4, info->startY - colorbar_adjust, size))
+		{
+			printf("Yah!\n");
+		}
+	}
 
 	Emgui_setDefaultFont();
 
-	if (folded)
-	{
-		text_size = size;
-		size = track_size_folded;
-	}
-
-	Emgui_drawBorder(borderColor, borderColor, startX, info->startY - font_size * 4, size, info->endSizeY);
-
-	if (drawColorButton(color, startX + 4, info->startY - colorbar_adjust, size))
-	{
-		printf("Yah!\n");
-	}
-
 	y_offset = info->startY;
+
+	folded = valuesOnly ? true : folded;
+	size = valuesOnly ? track_size_folded : size;
 
 	// if folded we should skip rendering the rows that are covered by the text
 
@@ -379,7 +373,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 
 	// TODO: Draw the group name and such here
 
-	renderGroupHeader(group, posX, oldY, size);
+	renderGroupHeader(group, posX, oldY, size, info.viewInfo->windowSizeX);
 
 	info.startPos += 5;
 	info.startY += 40;
@@ -391,7 +385,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 		for (i = startTrackIndex; i < track_count; ++i)
 		{
 			Track* t = group->t.tracks[i];
-			posX += renderChannel(&info, posX, -1, t);
+			posX += renderChannel(&info, posX, -1, t, false);
 
 			if (posX >= windowSizeX)
 			{
@@ -401,6 +395,10 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 				return size;
 			}
 		}
+	}
+	else
+	{
+		renderChannel(&info, posX, -1, group->t.tracks[0], true);
 	}
 
 	Emgui_setDefaultFont();
@@ -462,7 +460,7 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 	{
 		Track* track = &trackData->tracks[i];
 		Group* group = track->group; 
-		track_size = getTrackSize(trackData, track) - 5;
+		track_size = getTrackSize(trackData, track);
 
 		if (x_pos + track_size >= viewInfo->windowSizeX)
 		{
@@ -474,11 +472,12 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 		
 		if (group->trackCount == 1)
 		{
-			++i;
-			x_pos += renderChannel(&info, x_pos, -1, track);
+			x_pos += renderChannel(&info, x_pos, -1, track, false); ++i;
 		}
 		else
+		{
 			x_pos += renderGroup(group, track, x_pos, &i, info, trackData);
+		}
 	}
 
 	if (sel_track < start_track)

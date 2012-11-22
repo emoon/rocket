@@ -83,14 +83,57 @@ static inline int getTrackCount()
 
 static int getNextTrack()
 {
-	return emini(getActiveTrack() + 1, getTrackCount());
+	TrackData* trackData = &s_editorData.trackData;
+	int i, track_count = getTrackCount(); 
+	int active_track = getActiveTrack();
+ 
+	for (i = active_track + 1; i < track_count; ++i)
+	{
+		Track* t = &trackData->tracks[i];
+
+		// if track has no group its always safe to assume that can select the track
+ 
+		if (!t->group)
+			return i;
+ 
+		if (!t->group->folded)
+			return i;
+
+		// if the track is the first in the group (and group is folded) we use that as the display track
+
+		if (t->group->t.tracks[0] == t)
+			return i;
+	}
+ 
+	return active_track;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int getPrevTrack()
 {
-	return emaxi(getActiveTrack() - 1, 0);
+	TrackData* trackData = &s_editorData.trackData;
+	int i, active_track = getActiveTrack();
+ 
+	for (i = active_track - 1; i >= 0; --i)
+	{
+		Track* t = &trackData->tracks[i];
+
+		// if track has no group its always safe to assume that can select the track
+ 
+		if (!trackData->tracks[i].group)
+			return i;
+ 
+		if (!trackData->tracks[i].group->folded)
+			return i;
+
+		// if the track is the first in the group (and group is folded) we use that as the display track
+
+		if (t->group->t.tracks[0] == t)
+			return i;
+	}
+ 
+	return active_track;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -453,7 +496,13 @@ bool Editor_keyDown(int key, int modifiers)
 
 			if (modifiers & EMGUI_KEY_ALT)
 			{
-				trackData->tracks[getActiveTrack()].folded = true;
+				Track* t = &trackData->tracks[getActiveTrack()];
+
+				if (modifiers & EMGUI_KEY_CTRL) 
+					t->group->folded = true;
+				else
+					t->folded = true;
+
 				Editor_update();
 				return true;
 			}
@@ -484,7 +533,13 @@ bool Editor_keyDown(int key, int modifiers)
 
 			if (modifiers & EMGUI_KEY_ALT)
 			{
-				trackData->tracks[getActiveTrack()].folded = false;
+				Track* t = &trackData->tracks[getActiveTrack()];
+
+				if (modifiers & EMGUI_KEY_CTRL) 
+					t->group->folded = false;
+				else
+					t->folded = false;
+
 				Editor_update();
 				return true;
 			}
