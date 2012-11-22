@@ -271,15 +271,6 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 	const uint32_t color = trackData->color;
 	bool folded;
 
-	if (trackData->selected)
-	{
-		Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), startX, info->midPos, size, font_size + 1);
-		//updateStartTrack(trackData, startX, info->viewInfo);
-
-		//if (trackData->editText)
-		//	Emgui_drawText(trackData->editText, x_pos, info->midPos, Emgui_color32(255, 255, 255, 255));
-	}
-
 	drawFoldButton(startX + 6, info->startY - (font_size + 5), &trackData->folded);
 
 	folded = trackData->folded;
@@ -356,6 +347,15 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 			break;
 	}
 
+	if (trackData->selected)
+	{
+		Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), startX, info->midPos, size, font_size + 1);
+		//if (trackData->editText)
+		//	Emgui_drawText(trackData->editText, x_pos, info->midPos, Emgui_color32(255, 255, 255, 255));
+	}
+
+	Emgui_setFont(info->viewInfo->smallFontId);
+
 	return size;
 }
 
@@ -397,14 +397,15 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 			{
 				if (trackData->activeTrack >= i)
 					info.viewInfo->startTrack++;
-				return posX;
+
+				return size;
 			}
 		}
 	}
 
 	Emgui_setDefaultFont();
 
-	return posX;
+	return size;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -417,6 +418,7 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 	int x_pos = 40;
 	//int end_track = 0;
 	int i = 0;
+	int track_size;
 	int adjust_top_size;
 	int mid_screen_y ;
 	int y_pos_row, end_row, y_end_border;
@@ -460,6 +462,15 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 	{
 		Track* track = &trackData->tracks[i];
 		Group* group = track->group; 
+		track_size = getTrackSize(trackData, track) - 5;
+
+		if (x_pos + track_size >= viewInfo->windowSizeX)
+		{
+			if (sel_track >= i)
+				viewInfo->startTrack++;
+
+			break;
+		}
 		
 		if (group->trackCount == 1)
 		{
@@ -468,16 +479,6 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 		}
 		else
 			x_pos += renderGroup(group, track, x_pos, &i, info, trackData);
-
-		//i += group->trackCount;
-
-		if (x_pos >= viewInfo->windowSizeX)
-		{
-			if (sel_track >= i)
-				viewInfo->startTrack++;
-
-			break;
-		}
 	}
 
 	if (sel_track < start_track)

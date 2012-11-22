@@ -134,6 +134,7 @@ void TrackData_linkGroups(TrackData* trackData)
 			group->trackCount = 1;
 			processed_tracks[i] = true;
 			track->group = group;
+			track->displayName = (char*)track_name; 
 			current_group++;
 			continue;
 		}
