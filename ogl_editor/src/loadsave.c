@@ -165,7 +165,7 @@ int LoadSave_loadRocketXMLDialog(TrackData* trackData)
 {
 	char path[512];
 
-	//if (!Dialog_open(path))
+	if (!Dialog_open(path))
 		return false;
 
 	return LoadSave_loadRocketXML(path, trackData);
@@ -242,7 +242,7 @@ int LoadSave_saveRocketXMLDialog(TrackData* trackData)
 {
 	char path[512];
 
-	//if (!Dialog_save(path))
+	if (!Dialog_save(path))
 		return false;
 
 
