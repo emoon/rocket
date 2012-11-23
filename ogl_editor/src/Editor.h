@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Types.h"
+
 void Editor_create();
 void Editor_destroy();
 void Editor_init();

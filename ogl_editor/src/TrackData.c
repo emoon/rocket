@@ -117,13 +117,14 @@ void TrackData_linkGroups(TrackData* trackData)
 	for (i = 0, track_count = sync->num_tracks; i < track_count; ++i)
 	{
 		int group_count;
+		Track* track;
 		const char* track_name = sync->tracks[i]->name;
 		Group* group = &trackData->groups[current_group];
 
 		if (processed_tracks[i])
 			continue;
 
-		Track* track = &trackData->tracks[i];
+		track = &trackData->tracks[i];
 		found = findSeparator(track_name);
 
 		if (found == -1)

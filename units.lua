@@ -2,7 +2,7 @@ StaticLibrary {
 	Name = "mxml",
 
 	Env = {
-		CPPPATH = { ".", "ogl_rocket/src/External/mxml" },
+		CPPPATH = { ".", "ogl_rocket/external/mxml" },
 		PROGOPTS = {
 			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
 		},
@@ -18,8 +18,43 @@ StaticLibrary {
 
 	Sources = { 
 		Glob {
-			Dir = "ogl_editor/src/External/mxml",
+			Dir = "ogl_editor/external/mxml",
 			Extensions = { ".c" },
+		},
+	},
+}
+
+StaticLibrary {
+	Name = "glfw",
+
+	Env = {
+		CPPPATH = { ".", 
+			 "ogl_editor/external/glfw/include", 
+			 "ogl_editor/external/glfw/lib", 
+			 { "ogl_editor/external/glfw/lib/win32" ; Config = "win32-*-*" } 
+		 },
+		PROGOPTS = {
+			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
+		},
+
+		CPPDEFS = {
+			{"_THREAD_SAFE", "_REENTRANT"; Config = "macosx-*-*" }
+		},
+
+		CCOPTS = {
+			{ "-Wall"; Config = "macosx-clang-*" },
+		},
+	},
+
+	Sources = { 
+		FGlob {
+			Dir = "ogl_editor/external/glfw/lib",
+			Extensions = { ".c" },
+			Filters = {
+				{ Pattern = "x11"; Config = "linux-*-*" },
+				{ Pattern = "cocoa"; Config = "macosx-*-*" },
+				{ Pattern = "win32"; Config = { "win32-*-*", "win64-*-*" } },
+			},
 		},
 	},
 }
@@ -73,11 +108,12 @@ Program {
 
 	Env = {
 		CPPPATH = { ".", "ogl_editor/src", 
+						 "ogl_editor/external/glfw/include", 
 						 "../emgui/src", 
 						 "../../../../../emgui/src",
 					     "ogl_editor/External/mxml" },
 		PROGOPTS = {
-			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
+			{ "/SUBSYSTEM:WINDOWS", "/ENTRY:mainCRTStartup", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
 		},
 
 		CPPDEFS = {
@@ -90,20 +126,23 @@ Program {
 		},
 	},
 
-	Depends = { "sync", "mxml", "emgui" },
-
-	Frameworks = { "Cocoa", "OpenGL"  },
-
 	Sources = { 
 		FGlob {
 			Dir = "ogl_editor/src",
-			Extensions = { ".c", ".m" },
+			Extensions = { ".c", { ".m"; Config = "macosx-*-*" } },
 			Filters = {
 				{ Pattern = "macosx"; Config = "macosx-*-*" },
 				{ Pattern = "windows"; Config = { "win32-*-*", "win64-*-*" } },
 			},
 		},
 	},
+
+	Depends = { "sync", "mxml", "emgui", "glfw" },
+
+	Libs = { { "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib", "user32.lib", "gdi32.lib" ; Config = "win32-*-*" } },
+
+	Frameworks = { "Cocoa", "OpenGL"  },
+
 }
 
 local rocketBundle = OsxBundle 
@@ -121,9 +160,9 @@ local rocketBundle = OsxBundle
 --local native = require('tundra.native')
 
 --if native.host_platform == "macosx" then
-	Default(rocketBundle)
+--	Default(rocketBundle)
 --#else
---	Default "editor"
+	Default "editor"
 --end
 
 

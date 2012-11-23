@@ -11,12 +11,12 @@
 #include "../../sync/data.h"
 #include "../../sync/track.h"
 
-const int font_size = 8;
-const int font_size_half = font_size / 2;
-const int track_size_folded = 20;
-const int min_track_size = 100;
-const int colorbar_adjust = ((font_size * 3) + 2);
-static const int name_adjust = font_size * 2;
+#define font_size 8
+int track_size_folded = 20;
+int min_track_size = 100;
+int name_adjust = font_size * 2;
+int font_size_half = font_size / 2;
+int colorbar_adjust = ((font_size * 3) + 2);
 
 static bool s_needsUpdate = false;
 
@@ -414,7 +414,7 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 	const int sel_track = trackData->activeTrack;
 	int start_track = viewInfo->startTrack;
 	int x_pos = 40;
-	//int end_track = 0;
+	int end_track = 0;
 	int i = 0;
 	int track_size;
 	int adjust_top_size;
@@ -456,7 +456,7 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 		return;
 	}
 
-	for (i = start_track; i < trackData->syncData.num_tracks; )
+	for (i = start_track, end_track = (int)trackData->syncData.num_tracks; i < end_track; )
 	{
 		Track* track = &trackData->tracks[i];
 		Group* group = track->group; 
