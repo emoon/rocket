@@ -25,42 +25,6 @@ StaticLibrary {
 }
 
 StaticLibrary {
-	Name = "glfw",
-
-	Env = {
-		CPPPATH = { ".", 
-			 "ogl_editor/external/glfw/include", 
-			 "ogl_editor/external/glfw/lib", 
-			 { "ogl_editor/external/glfw/lib/cocoa" ; Config = "macosx-*-*" },
-			 { "ogl_editor/external/glfw/lib/win32" ; Config = "win32-*-*" } 
-		 },
-		PROGOPTS = {
-			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
-		},
-
-		CPPDEFS = {
-			{"_THREAD_SAFE", "_REENTRANT"; Config = "macosx-*-*" }
-		},
-
-		CCOPTS = {
-			{ "-Wall"; Config = "macosx-clang-*" },
-		},
-	},
-
-	Sources = { 
-		FGlob {
-			Dir = "ogl_editor/external/glfw/lib",
-			Extensions = { ".c" },
-			Filters = {
-				{ Pattern = "x11"; Config = "linux-*-*" },
-				{ Pattern = "cocoa"; Config = "macosx-*-*" },
-				{ Pattern = "win32"; Config = { "win32-*-*", "win64-*-*" } },
-			},
-		},
-	},
-}
-
-StaticLibrary {
 	Name = "emgui",
 
 	Env = {
@@ -109,7 +73,6 @@ Program {
 
 	Env = {
 		CPPPATH = { ".", "ogl_editor/src", 
-						 "ogl_editor/external/glfw/include", 
 						 "../emgui/src", 
 						 "../../../../../emgui/src",
 					     "ogl_editor/External/mxml" },
@@ -130,7 +93,8 @@ Program {
 	Sources = { 
 		FGlob {
 			Dir = "ogl_editor/src",
-			Extensions = { ".c", { ".m"; Config = "macosx-*-*" } },
+			--Extensions = { ".c", { ".m"; Config = "macosx-*-*" } },
+			Extensions = { ".c", ".m" },
 			Filters = {
 				{ Pattern = "macosx"; Config = "macosx-*-*" },
 				{ Pattern = "windows"; Config = { "win32-*-*", "win64-*-*" } },
@@ -138,7 +102,7 @@ Program {
 		},
 	},
 
-	Depends = { "sync", "mxml", "emgui", "glfw" },
+	Depends = { "sync", "mxml", "emgui" },
 
 	Libs = { { "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib", "user32.lib", "gdi32.lib" ; Config = "win32-*-*" } },
 
@@ -161,9 +125,9 @@ local rocketBundle = OsxBundle
 --local native = require('tundra.native')
 
 --if native.host_platform == "macosx" then
---	Default(rocketBundle)
+	Default(rocketBundle)
 --#else
-	Default "editor"
+--	Default "editor"
 --end
 
 
