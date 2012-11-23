@@ -31,6 +31,7 @@ StaticLibrary {
 		CPPPATH = { ".", 
 			 "ogl_editor/external/glfw/include", 
 			 "ogl_editor/external/glfw/lib", 
+			 { "ogl_editor/external/glfw/lib/cocoa" ; Config = "macosx-*-*" },
 			 { "ogl_editor/external/glfw/lib/win32" ; Config = "win32-*-*" } 
 		 },
 		PROGOPTS = {
