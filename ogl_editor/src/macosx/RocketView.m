@@ -4,6 +4,8 @@
 #include <Emgui.h> 
 #include <GFXBackend.h> 
 
+NSOpenGLContext* g_context = 0;
+
 @implementation RocketView
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,9 +22,18 @@
     self = [super initWithFrame:frame];
     if (self == nil)
         return nil;
-    
-	oglContext = [[NSOpenGLContext alloc] initWithFormat: [NSOpenGLView defaultPixelFormat] shareContext: nil];
+
+    NSOpenGLPixelFormatAttribute attributes[4];
+
+    attributes[0] = NSOpenGLPFADoubleBuffer;
+    attributes[1] = 0;
+
+    NSOpenGLPixelFormat* format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+    oglContext = [[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];
+	//oglContext = [[NSOpenGLContext alloc] initWithFormat: [NSOpenGLView defaultPixelFormat] shareContext: nil];
 	[oglContext makeCurrentContext];
+
+	g_context = oglContext;
 
 	EMGFXBackend_create();
 	Editor_create();
@@ -167,3 +178,9 @@
 
 @end
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void swapBuffers()
+{
+	[g_context flushBuffer];
+}
