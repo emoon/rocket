@@ -74,4 +74,5 @@ typedef struct TrackData
 int TrackData_createGetTrack(TrackData* trackData, const char* name);
 uint32_t TrackData_getNextColor(TrackData* trackData);
 void TrackData_linkGroups(TrackData* trackData);
+void TrackData_linkTrack(int index, const char* name, TrackData* trackData);
 

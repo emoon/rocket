@@ -70,7 +70,6 @@ static inline int getActiveTrack()
 	return s_editorData.trackData.activeTrack;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static inline int getTrackCount()
@@ -165,6 +164,8 @@ void Editor_setWindowSize(int x, int y)
 void Editor_init()
 {
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static char s_currentTrack[64] = "0";
 static char s_currentRow[64] = "0";
@@ -438,6 +439,13 @@ bool Editor_keyDown(int key, int modifiers)
 
 	switch (key)
 	{
+		case EMGUI_KEY_BACKSPACE:
+		{
+			deleteArea(row_pos, active_track, 1, 1);
+			break;
+		}
+
+
 		case EMGUI_ARROW_DOWN:
 		{
 			int row = row_pos;
@@ -491,14 +499,18 @@ bool Editor_keyDown(int key, int modifiers)
 
 		case EMGUI_ARROW_LEFT:
 		{
+			const int current_track = getActiveTrack();
 			int track = getPrevTrack();
 
 			if (modifiers & EMGUI_KEY_ALT)
 			{
-				Track* t = &trackData->tracks[getActiveTrack()];
+				Track* t = &trackData->tracks[current_track];
 
 				if (modifiers & EMGUI_KEY_CTRL) 
-					t->group->folded = true;
+				{
+					if (t->group->trackCount > 1)
+						t->group->folded = true;
+				}
 				else
 					t->folded = true;
 
@@ -513,7 +525,15 @@ bool Editor_keyDown(int key, int modifiers)
 
 			if (modifiers & EMGUI_KEY_SHIFT)
 			{
-				viewInfo->selectStopTrack = track;
+				Track* t = &trackData->tracks[track];
+
+				// if this track has a folded group we can't select it so set back the selection to the old one
+
+				if (t->group->folded)
+					setActiveTrack(current_track);
+				else
+					viewInfo->selectStopTrack = track;
+
 				break;
 			}
 
@@ -527,15 +547,19 @@ bool Editor_keyDown(int key, int modifiers)
 
 		case EMGUI_ARROW_RIGHT:
 		{
+			const int current_track = getActiveTrack();
 			int track = getNextTrack();
 			int track_count = getTrackCount();
 
 			if (modifiers & EMGUI_KEY_ALT)
 			{
-				Track* t = &trackData->tracks[getActiveTrack()];
+				Track* t = &trackData->tracks[current_track];
 
 				if (modifiers & EMGUI_KEY_CTRL) 
-					t->group->folded = false;
+				{
+					if (t->group->trackCount > 1)
+						t->group->folded = false;
+				}
 				else
 					t->folded = false;
 
@@ -553,7 +577,11 @@ bool Editor_keyDown(int key, int modifiers)
 
 			if (modifiers & EMGUI_KEY_SHIFT)
 			{
-				viewInfo->selectStopTrack = track;
+				Track* t = &trackData->tracks[track];
+				if (t->group->folded)
+					setActiveTrack(current_track);
+				else
+					viewInfo->selectStopTrack = track;
 				break;
 			}
 
@@ -780,6 +808,8 @@ static int processCommands()
 				// setup remap and send the keyframes to the demo
 				RemoteConnection_mapTrackName(trackName);
 				RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncData.tracks[serverIndex]);
+				TrackData_linkTrack(serverIndex, trackName, &s_editorData.trackData);
+
 				ret = 1;
 
 				break;
