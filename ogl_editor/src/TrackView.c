@@ -121,15 +121,12 @@ static int renderName(const char* name, int x, int y, int minSize, bool folded)
 
 	if (folded)
 	{
-		//x_adjust = (track_size_folded - (text_size_full >> 16)) / 2;
-		Emgui_drawTextFlipped(name, x + 4, y + text_size - 20, Emgui_color32(0xff, 0xff, 0xff, 0xff));
-		//Emgui_fill(0xffffffff, x + 20, y + text_size - 20, 10, text_size - spacing);
-		size = text_size;
+		Emgui_drawTextFlipped(name, x + 4, y + text_size - 10, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+		size = text_size - 30;
 	}
 	else
 	{
 		Emgui_drawText(name, x + x_adjust + 16, y, Emgui_color32(0xff, 0xff, 0xff, 0xff));
-		//Emgui_fill(0xffffffff, x + x_adjust + 16, y + 14, text_size - spacing, 10);
 	}
 
 	return size;
