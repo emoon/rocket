@@ -349,9 +349,12 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 			break;
 	}
 
-	if (trackData->selected)
+	if (!Emgui_hasKeyboardFocus())
 	{
-		Emgui_fill(trackData->group->folded ? dark_active_track_color : active_track_color, startX, info->midPos, size, font_size + 1);
+		if (trackData->selected)
+		{
+			Emgui_fill(trackData->group->folded ? dark_active_track_color : active_track_color, startX, info->midPos, size, font_size + 1);
+		}
 	}
 
 	Emgui_setFont(info->viewInfo->smallFontId);
