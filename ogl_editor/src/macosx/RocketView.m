@@ -37,6 +37,7 @@ NSOpenGLContext* g_context = 0;
 
 	EMGFXBackend_create();
 	Editor_create();
+	Editor_update();
 
 	const float framerate = 60;
 	const float frequency = 1.0f/framerate;
