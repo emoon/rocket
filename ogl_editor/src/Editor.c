@@ -448,7 +448,23 @@ bool Editor_keyDown(int key, int modifiers)
 
 		case EMGUI_ARROW_DOWN:
 		{
+			const int active_track = getActiveTrack();
 			int row = row_pos;
+
+			if (modifiers & EMGUI_KEY_CTRL)
+			{
+				struct sync_track* t = getTracks()[active_track];
+
+				if (t->keys)
+				{
+					int idx = key_idx_floor(t, row);
+
+					if (idx >= 0)
+						viewInfo->rowPos = t->keys[emini(idx + 1, t->num_keys - 1)].row;
+				}
+
+				break;
+			}
 
 			row += modifiers & EMGUI_KEY_ALT ? 8 : 1;
 
@@ -474,6 +490,19 @@ bool Editor_keyDown(int key, int modifiers)
 		case EMGUI_ARROW_UP:
 		{
 			int row = row_pos;
+
+			if (modifiers & EMGUI_KEY_CTRL)
+			{
+				struct sync_track* t = getTracks()[active_track];
+
+				if (t->keys)
+				{
+					int idx = key_idx_floor(t, row);
+					viewInfo->rowPos = t->keys[emaxi(idx - 1, 0)].row;
+				}
+
+				break;
+			}
 
 			row -= modifiers & EMGUI_KEY_ALT ? 8 : 1;
 
