@@ -79,8 +79,9 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					}
 					else
 					{
+						char* end;
 						if (color_text)
-							t->color = atoi(color_text);
+							t->color = strtol(color_text, &end, 16);
 					}
 
 					if (folded_text)
@@ -195,7 +196,7 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 		mxml_node_t* track = mxmlNewElement(tracks, "track");
 
 		memset(temp, 0, sizeof(temp));
-		sprintf(temp, "%d", trackData->tracks[p].color); 
+		sprintf(temp, "%08x", trackData->tracks[p].color); 
 
 		// setup the elements for the trak
 
