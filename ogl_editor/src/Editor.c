@@ -837,14 +837,25 @@ bool Editor_keyDown(int key, int modifiers)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_scrollRow(int delta)
+void Editor_scroll(int deltaX, int deltaY)
 {
-	int current_row = s_editorData.trackViewInfo.rowPos;
+	int i, current_row = s_editorData.trackViewInfo.rowPos;
 	TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
 
-	current_row += delta;
+	current_row += deltaY;
 
 	s_editorData.trackViewInfo.rowPos = eclampi(current_row, viewInfo->startRow, viewInfo->endRow);
+
+	if (deltaX < 0)
+	{
+		for (i = 0; i < -deltaX; ++i)
+			setActiveTrack(getPrevTrack());
+	}
+	else if (deltaX > 0)
+	{
+		for (i = 0; i < deltaX; ++i)
+			setActiveTrack(getNextTrack());
+	}
 
 	Editor_update();
 }

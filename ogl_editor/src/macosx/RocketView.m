@@ -150,8 +150,11 @@ NSOpenGLContext* g_context = 0;
 
 - (void)scrollWheel:(NSEvent *)theEvent
 {
-	float f = (float)[theEvent deltaY];
-	Editor_scrollRow((int)-f);
+	float x = (float)[theEvent deltaX];
+	float y = (float)[theEvent deltaY];
+
+	printf("%f %f\n", x, y);
+	Editor_scroll((int)-x, (int)-y);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
