@@ -277,7 +277,7 @@ static void drawStatus()
 
 	size = drawConnectionStatus(0, sizeY);
 	size += drawCurrentValue(size, sizeY);
-	size += drawNameValue("Track", size, sizeY, &s_editorData.trackData.activeTrack, 0, getTrackCount() - 1, s_currentTrack);
+	size += drawNameValue("Track", size, sizeY, &s_editorData.trackData.activeTrack, 0, emaxi(0, getTrackCount() - 1), s_currentTrack);
 	size += drawNameValue("Row", size, sizeY, &s_editorData.trackViewInfo.rowPos, 0, 20000 - 1, s_currentRow);
 	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackViewInfo.startRow, 0, 10000000, s_startRow);
 	size += drawNameValue("End Row", size, sizeY, &s_editorData.trackViewInfo.endRow, 0, 10000000, s_endRow);
