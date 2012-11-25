@@ -31,6 +31,7 @@ struct TrackInfo
 {
 	TrackViewInfo* viewInfo;
 	TrackData* trackData;
+	char* editText;
 	int selectLeft;
 	int selectRight;
 	int selectTop;
@@ -41,6 +42,8 @@ struct TrackInfo
 	int endSizeY;
 	int midPos;
 };
+
+extern void Dialog_showColorPicker(uint32_t* color);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -194,8 +197,7 @@ static void renderText(const struct TrackInfo* info, struct sync_track* track, i
 			float value = track->keys[idx].value;
 			snprintf(temp, 256, "% .2f", value);
 
-			if (!editRow)
-				Emgui_drawText(temp, x, y - font_size_half, Emgui_color32(255, 255, 255, 255));
+			Emgui_drawText(temp, x, y - font_size_half, Emgui_color32(255, 255, 255, 255));
 		}
 		else
 		{
@@ -288,7 +290,10 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 
 		if (drawColorButton(color, startX + 4, info->startY - colorbar_adjust, size))
 		{
-			printf("Yah!\n");
+			Dialog_showColorPicker(&trackData->color);
+
+			if (trackData->color != color)
+				s_needsUpdate = true;
 		}
 	}
 
@@ -332,7 +337,9 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 			idx = sync_find_key(track, y);
 
 		renderInterpolation(info, track, size, idx, offset, y_offset, folded);
-		renderText(info, track, y, idx, offset, y_offset, y == editRow, folded);
+
+		if (!(trackData->selected && info->viewInfo->rowPos == y && info->editText))
+			renderText(info, track, y, idx, offset, y_offset, y == editRow, folded);
 
 		selected = (trackIndex >= info->selectLeft && trackIndex <= info->selectRight) && 
 			       (y >= info->selectTop && y < info->selectBottom);
@@ -351,6 +358,9 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 		if (trackData->selected)
 		{
 			Emgui_fill(trackData->group->folded ? dark_active_track_color : active_track_color, startX, info->midPos, size, font_size + 1);
+
+			if (info->editText)
+				Emgui_drawText(info->editText, startX + 2, info->midPos, Emgui_color32(255, 255, 255, 255));
 		}
 	}
 
@@ -442,6 +452,7 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 
 	// Shared info for all tracks
 
+	info.editText = trackData->editText;
 	info.selectLeft = emini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
 	info.selectRight = emaxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
 	info.selectTop  = emini(viewInfo->selectStartRow, viewInfo->selectStopRow);
