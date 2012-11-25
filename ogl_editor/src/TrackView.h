@@ -16,6 +16,7 @@ typedef struct TrackViewInfo
 	int startRow;
 	int endRow;
 	int startTrack;
+	int startPixel;
 	int smallFontId;
 	int selectStartTrack;
 	int selectStopTrack;
@@ -28,4 +29,5 @@ typedef struct TrackViewInfo
 
 void TrackView_init();
 bool TrackView_render(TrackViewInfo* viewInfo, struct TrackData* trackData);
+int TrackView_getWidth(TrackViewInfo* viewInfo, struct TrackData* trackData);
 

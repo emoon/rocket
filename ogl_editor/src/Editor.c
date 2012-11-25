@@ -56,6 +56,20 @@ static inline struct sync_track** getTracks()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static inline TrackViewInfo* getTrackViewInfo()
+{
+	return &s_editorData.trackViewInfo;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static inline TrackData* getTrackData()
+{
+	return &s_editorData.trackData;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static inline void setActiveTrack(int track)
 {
 	const int current_track = s_editorData.trackData.activeTrack;
@@ -281,22 +295,30 @@ static void drawStatus()
 	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackViewInfo.startRow, 0, 10000000, s_startRow);
 	size += drawNameValue("End Row", size, sizeY, &s_editorData.trackViewInfo.endRow, 0, 10000000, s_endRow);
 
+	printf("activeTrack %d\n", getActiveTrack());
+
 	Emgui_setDefaultFont();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
 static void drawHorizonalSlider()
 {
-	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
-	const int sizeX = s_editorData.trackViewInfo.windowSizeX;
+	int track_size; 
+	TrackViewInfo* info = getTrackViewInfo();
+	const int old_start = s_editorData.trackViewInfo.startTrack;
+	const int total_track_width = TrackView_getWidth(getTrackViewInfo(), getTrackData());
 
-	static int value = 0;
+	track_size = emaxi(total_track_width - info->windowSizeX, 0) / 128;
 
-	Emgui_slider(sizeX - 20, 2, 14, sizeY - 20, 0, 40, EMGUI_SLIDERDIR_VERTICAL, 1, &value);
+	Emgui_slider(0, info->windowSizeY - 36, info->windowSizeX, 14, 0, track_size, EMGUI_SLIDERDIR_HORIZONTAL, 1, 
+				&s_editorData.trackViewInfo.startPixel);
+
+	if (old_start != s_editorData.trackViewInfo.startTrack)
+	{
+		setActiveTrack(s_editorData.trackViewInfo.startTrack);
+	}
 }
-*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // In some cases we need an extra update in case some controls has been re-arranged in such fashion so
@@ -308,7 +330,7 @@ static bool internalUpdate()
 
 	Emgui_begin();
 	drawStatus();
-	//drawHorizonalSlider();
+	drawHorizonalSlider();
 
 	refresh = TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
 	Emgui_end();

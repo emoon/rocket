@@ -148,6 +148,20 @@ NSOpenGLContext* g_context = 0;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+- (void)mouseDragged:(NSEvent *)event
+{
+	NSWindow* window = [self window];
+	NSRect originalFrame = [window frame];
+	NSPoint location = [window mouseLocationOutsideOfEventStream];
+	NSRect adjustFrame = [NSWindow contentRectForFrameRect: originalFrame styleMask: NSTitledWindowMask];
+
+	Emgui_setMousePos((int)location.x, (int)adjustFrame.size.height - (int)location.y);
+	Editor_update();
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 - (void)scrollWheel:(NSEvent *)theEvent
 {
 	float x = (float)[theEvent deltaX];

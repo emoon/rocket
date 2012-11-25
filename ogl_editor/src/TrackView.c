@@ -11,6 +11,15 @@
 #include "../../sync/data.h"
 #include "../../sync/track.h"
 
+#if defined(__APPLE__)
+#include <OpenGL/OpenGL.h>
+#include <OpenGL/gl.h>
+#else
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <gl/gl.h>
+#endif
+
 #define font_size 8
 int track_size_folded = 20;
 int min_track_size = 100;
@@ -229,33 +238,36 @@ static int findStartTrack(Group* group, Track* startTrack)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int getTrackSize(TrackData* trackData, Track* track)
+static int getTrackSize(Track* track)
 {
-	int size = 0;
-
 	if (track->folded)
 		return track_size_folded; 
 
-	size = (Emgui_getTextSize(track->displayName) & 0xffff) + 31; 
-	size = emaxi(size, min_track_size);
+	if (track->width == 0)
+	{
+		track->width = (Emgui_getTextSize(track->displayName) & 0xffff) + 31; 
+		track->width = emaxi(track->width, min_track_size);
+	}
 
-	return size;
+	return track->width;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int getGroupSize(TrackData* trackData, Group* group, int startTrack)
+int getGroupSize(Group* group, int startTrack)
 {
 	int i, size = 0, count = group->trackCount;
-	int text_size = (Emgui_getTextSize(group->name) & 0xffff) + 40;
+
+	if (group->width == 0)
+		group->width = (Emgui_getTextSize(group->name) & 0xffff) + 40;
 
 	if (group->folded)
 		return track_size_folded; 
 
 	for (i = startTrack; i < count; ++i)
-		size += getTrackSize(trackData, group->t.tracks[i]);
+		size += getTrackSize(group->t.tracks[i]);
 
-	size = emaxi(size, text_size);
+	size = emaxi(size, group->width);
 
 	return size;
 }
@@ -395,7 +407,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 
 	startTrackIndex = findStartTrack(group, startTrack);
 
-	size = getGroupSize(trackData, group, startTrackIndex);
+	size = getGroupSize(group, startTrackIndex);
 
 	printf("size %d\n", size);
 
@@ -444,7 +456,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	int x_pos = 40;
 	int end_track = 0;
 	int i = 0;
-	int track_size;
+	//int track_size;
 	int adjust_top_size;
 	int mid_screen_y ;
 	int y_pos_row, end_row, y_end_border;
@@ -460,9 +472,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	// TODO: Calculate how many channels we can draw given the width
 
 	end_row = viewInfo->windowSizeY / font_size;
-	y_end_border = viewInfo->windowSizeY - 32; // adjust to have some space at the end of the screen
-
-	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, 8, y_end_border);
+	y_end_border = viewInfo->windowSizeY - 48; // adjust to have some space at the end of the screen
 
 	// Shared info for all tracks
 
@@ -482,23 +492,25 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	if (trackData->groupCount == 0)
 		return false;
 
-	for (i = start_track, end_track = (int)trackData->syncData.num_tracks; i < end_track; )
+	for (i = start_track, end_track = trackData->syncData.num_tracks; i < end_track; )
 	{
 		Track* track = &trackData->tracks[i];
 		Group* group = track->group; 
-		track_size = getTrackSize(trackData, track);
+		//track_size = getTrackSize(trackData, track);
 
 		if (group->trackCount == 1)
 		{
-			x_pos += renderChannel(&info, x_pos, track, false); ++i;
-
-			if (x_pos + track_size >= viewInfo->windowSizeX)
+			if (x_pos >= viewInfo->windowSizeX)
 			{
 				if (sel_track >= i)
 					viewInfo->startTrack++;
 
 				break;
 			}
+
+			x_pos += renderChannel(&info, x_pos, track, false);
+
+			++i;
 		}
 		else
 		{
@@ -506,11 +518,38 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 		}
 	}
 
+	Emgui_setDefaultFont();
+
+	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, 8, y_end_border);
+
 	if (sel_track < start_track)
 		viewInfo->startTrack = emaxi(viewInfo->startTrack - 1, 0);
 
 	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
 
 	return s_needsUpdate;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int TrackView_getWidth(TrackViewInfo* viewInfo, struct TrackData* trackData)
+{
+	int i, size = 0, group_count = trackData->groupCount;
+
+	if (trackData->groupCount == 0)
+		return 0;
+
+	for (i = 0; i < group_count; ++i)
+	{
+		Group* group = &trackData->groups[i];
+
+		if (group->trackCount == 1)
+			size += getTrackSize(group->t.track);
+		else
+			size += getGroupSize(group, 0);
+	}
+
+	return size;
 }
 

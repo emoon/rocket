@@ -28,6 +28,7 @@ typedef struct Track
 	struct Group* group;
 	uint32_t color;
 
+	int width;           // width in pixels of the track
 	int index;
 	bool hidden;
 	bool folded;
@@ -43,6 +44,7 @@ typedef struct Group
 {
 	const char* name;
 	char* displayName;
+	int width;
 
 	bool folded;
 	union
