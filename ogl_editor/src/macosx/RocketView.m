@@ -30,7 +30,6 @@ NSOpenGLContext* g_context = 0;
 
     NSOpenGLPixelFormat* format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
     oglContext = [[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];
-	//oglContext = [[NSOpenGLContext alloc] initWithFormat: [NSOpenGLView defaultPixelFormat] shareContext: nil];
 	[oglContext makeCurrentContext];
 
 	g_context = oglContext;

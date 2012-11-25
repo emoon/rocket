@@ -56,7 +56,7 @@ static int findSeparator(const char* name)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Group* findOrCreateGroup(const char* name, TrackData* trackData)
+static Group* findOrCreateGroup(const char* name, TrackData* trackData)
 {
 	Group* group;
 	int i, group_count = trackData->groupCount;

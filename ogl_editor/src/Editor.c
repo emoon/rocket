@@ -45,6 +45,7 @@ typedef struct EditorData
 
 static EditorData s_editorData;
 static CopyData s_copyData;
+static bool reset_tracks = true;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -397,10 +398,11 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 		{
 			int row = rowPos + j;
 
-			RemoteConnection_sendDeleteKeyCommand(t->name, row);
-
 			if (is_key_frame(t, row))
+			{
 				sync_del_key(t, row);
+				RemoteConnection_sendDeleteKeyCommand(t->name, row);
+			}
 		}
 	}
 }
@@ -789,6 +791,12 @@ bool Editor_keyDown(int key, int modifiers)
 			key.value = (float)atof(s_editBuffer);
 			key.type = 0;
 
+			if (is_key_frame(track, row_pos))
+			{
+				int idx = key_idx_floor(track, row_pos);
+				key.type = track->keys[idx].type;
+			}
+
 			track_name = track->name; 
 
 			sync_set_key(track, &key);
@@ -845,6 +853,8 @@ static int processCommands()
 			{
 				char trackName[4096];
 
+				reset_tracks = true;	
+
 				memset(trackName, 0, sizeof(trackName));
 
 				RemoteConnection_recv((char *)&strLen, sizeof(int), 0);
@@ -866,6 +876,8 @@ static int processCommands()
 				RemoteConnection_mapTrackName(trackName);
 				RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncData.tracks[serverIndex]);
 				TrackData_linkTrack(serverIndex, trackName, &s_editorData.trackData);
+
+				s_editorData.trackData.tracks[serverIndex].active = true;
 
 				setActiveTrack(0);
 
@@ -909,6 +921,27 @@ static int processCommands()
 	return ret;
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void updateTrackStatus()
+{
+	int i, track_count = getTrackCount();
+
+	if (RemoteConnection_connected())
+		return;
+
+	if (reset_tracks)
+	{
+		for (i = 0; i < track_count; ++i)
+			s_editorData.trackData.tracks[i].active = false;
+
+		Editor_update();
+
+		reset_tracks = false;
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Editor_timedUpdate()
@@ -916,6 +949,8 @@ void Editor_timedUpdate()
 	int processed_commands = 0;
 
 	RemoteConnection_updateListner();
+
+	updateTrackStatus();
 
 	while (RemoteConnection_pollRead())
 		processed_commands |= processCommands();

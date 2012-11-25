@@ -22,6 +22,10 @@ int colorbar_adjust = ((font_size * 3) + 2);
 
 const uint32_t active_track_color = EMGUI_COLOR32(0x5f, 0x6f, 0x40, 0x80);
 const uint32_t dark_active_track_color = EMGUI_COLOR32(0xaf, 0x1f, 0x10, 0x80);
+const uint32_t active_text_color = EMGUI_COLOR32(0xff, 0xff, 0xff, 0xff);
+const uint32_t inactive_text_color = EMGUI_COLOR32(0x5f, 0x5f, 0x5f, 0xff);
+const uint32_t border_color = EMGUI_COLOR32(40, 40, 40, 255);
+const uint32_t selection_color = EMGUI_COLOR32(0x5f, 0x5f, 0x5f, 0x4f);
 
 static bool s_needsUpdate = false;
 
@@ -94,25 +98,27 @@ static bool drawColorButton(uint32_t color, int x, int y, int size)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void drawFoldButton(int x, int y, bool* fold)
+static void drawFoldButton(int x, int y, bool* fold, bool active)
 {
 	bool old_state = *fold;
+	uint32_t color = active ? active_text_color : inactive_text_color;
 
 	Emgui_radioButtonImage(g_arrow_left_png, g_arrow_left_png_len, g_arrow_right_png, g_arrow_right_png_len,
-							EMGUI_LOCATION_MEMORY, Emgui_color32(255, 255, 255, 255), x, y, fold);
+							EMGUI_LOCATION_MEMORY, color, x, y, fold);
 
 	s_needsUpdate = old_state != *fold ? true : s_needsUpdate;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int renderName(const char* name, int x, int y, int minSize, bool folded)
+static int renderName(const char* name, int x, int y, int minSize, bool folded, bool active)
 {
 	int size = min_track_size;
 	int text_size_full;
 	int text_size;
 	int x_adjust = 0;
 	int spacing = 30;
+	const uint32_t color = active ? active_text_color : inactive_text_color;
 
 	text_size_full = Emgui_getTextSize(name);
 	text_size = (text_size_full & 0xffff) + spacing;
@@ -124,12 +130,12 @@ static int renderName(const char* name, int x, int y, int minSize, bool folded)
 
 	if (folded)
 	{
-		Emgui_drawTextFlipped(name, x + 4, y + text_size - 10, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+		Emgui_drawTextFlipped(name, x + 4, y + text_size - 10, color);
 		size = text_size - 30;
 	}
 	else
 	{
-		Emgui_drawText(name, x + x_adjust + 16, y, Emgui_color32(0xff, 0xff, 0xff, 0xff));
+		Emgui_drawText(name, x + x_adjust + 16, y, color);
 	}
 
 	return size;
@@ -145,7 +151,7 @@ static int renderGroupHeader(Group* group, int x, int y, int groupSize, int wind
 		groupSize = windowSizeX - x;
 
 	drawColorButton(Emgui_color32(127, 127, 127, 255), x + 3, y - colorbar_adjust, groupSize);
-	renderName(group->displayName, x, y - name_adjust, groupSize, group->folded);
+	renderName(group->displayName, x, y - name_adjust, groupSize, group->folded, true);
 
 	return 0;
 }
@@ -178,7 +184,7 @@ static void renderInterpolation(const struct TrackInfo* info, struct sync_track*
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void renderText(const struct TrackInfo* info, struct sync_track* track, int row, int idx, int x, int y, bool editRow, bool folded)
+static void renderText(const struct TrackInfo* info, struct sync_track* track, int row, int idx, int x, int y, bool folded)
 {
 	uint32_t color = (row & 7) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff); 
 
@@ -256,7 +262,7 @@ int getGroupSize(TrackData* trackData, Group* group, int startTrack)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track* trackData, bool valuesOnly)
+static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, bool valuesOnly)
 {
 	int y, y_offset;
 	int text_size = 0;
@@ -264,14 +270,13 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 	int startPos = info->startPos;
 	const int trackIndex = trackData->index;
 	const int endPos = info->endPos;
-	uint32_t borderColor = Emgui_color32(40, 40, 40, 255);
 	struct sync_track* track = 0;
 	const uint32_t color = trackData->color;
 	bool folded;
 
 	if (!valuesOnly)
 	{
-		drawFoldButton(startX + 6, info->startY - (font_size + 5), &trackData->folded);
+		drawFoldButton(startX + 6, info->startY - (font_size + 5), &trackData->folded, trackData->active);
 
 		folded = trackData->folded;
 		
@@ -280,7 +285,7 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 
 		Emgui_setFont(info->viewInfo->smallFontId);
 
-		size = renderName(trackData->displayName, startX, info->startY - (font_size * 2), min_track_size, trackData->folded);
+		size = renderName(trackData->displayName, startX, info->startY - (font_size * 2), min_track_size, folded, trackData->active);
 
 		if (folded)
 		{
@@ -288,12 +293,19 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 			size = track_size_folded;
 		}
 
-		if (drawColorButton(color, startX + 4, info->startY - colorbar_adjust, size))
+		if (trackData->active)
 		{
-			Dialog_showColorPicker(&trackData->color);
+			if (drawColorButton(color, startX + 4, info->startY - colorbar_adjust, size))
+			{
+				Dialog_showColorPicker(&trackData->color);
 
-			if (trackData->color != color)
-				s_needsUpdate = true;
+				if (trackData->color != color)
+					s_needsUpdate = true;
+			}
+		}
+		else
+		{
+			Emgui_fill(border_color, startX + 4, info->startY - colorbar_adjust, size - 8, 8);
 		}
 	}
 
@@ -304,7 +316,7 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 	folded = valuesOnly ? true : folded;
 	size = valuesOnly ? track_size_folded : size;
 
-	Emgui_drawBorder(borderColor, borderColor, startX, info->startY - font_size * 4, size, (info->endSizeY - info->startY) + 40);
+	Emgui_drawBorder(border_color, border_color, startX, info->startY - font_size * 4, size, (info->endSizeY - info->startY) + 40);
 
 	// if folded we should skip rendering the rows that are covered by the text
 
@@ -339,13 +351,13 @@ static int renderChannel(struct TrackInfo* info, int startX, int editRow, Track*
 		renderInterpolation(info, track, size, idx, offset, y_offset, folded);
 
 		if (!(trackData->selected && info->viewInfo->rowPos == y && info->editText))
-			renderText(info, track, y, idx, offset, y_offset, y == editRow, folded);
+			renderText(info, track, y, idx, offset, y_offset, folded);
 
 		selected = (trackIndex >= info->selectLeft && trackIndex <= info->selectRight) && 
 			       (y >= info->selectTop && y < info->selectBottom);
 
 		if (selected)
-			Emgui_fill(Emgui_color32(0x4f, 0x4f, 0x4f, 0x3f), startX, y_offset - font_size_half, size, font_size);  
+			Emgui_fill(selection_color, startX, y_offset - font_size_half, size, font_size);  
 
 		y_offset += font_size;
 
@@ -377,7 +389,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 	const int oldY = info.startY;
 	const int windowSizeX = info.viewInfo->windowSizeX;
 
-	drawFoldButton(posX + 6, oldY - (font_size + 5), &group->folded);
+	drawFoldButton(posX + 6, oldY - (font_size + 5), &group->folded, true);
 
 	Emgui_setFont(info.viewInfo->smallFontId);
 
@@ -401,7 +413,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 		for (i = startTrackIndex; i < track_count; ++i)
 		{
 			Track* t = group->t.tracks[i];
-			posX += renderChannel(&info, posX, -1, t, false);
+			posX += renderChannel(&info, posX, t, false);
 
 			if (posX >= windowSizeX)
 			{
@@ -414,7 +426,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 	}
 	else
 	{
-		renderChannel(&info, posX, -1, group->t.tracks[0], true);
+		renderChannel(&info, posX, group->t.tracks[0], true);
 	}
 
 	Emgui_setDefaultFont();
@@ -424,7 +436,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
+bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 {
 	struct TrackInfo info;
 	const int sel_track = trackData->activeTrack;
@@ -436,6 +448,8 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 	int adjust_top_size;
 	int mid_screen_y ;
 	int y_pos_row, end_row, y_end_border;
+
+	s_needsUpdate = false;
 
 	// Calc to position the selection in the ~middle of the screen 
 
@@ -466,12 +480,7 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 	info.midPos = mid_screen_y + adjust_top_size;
 
 	if (trackData->groupCount == 0)
-	{
-		uint32_t color = Emgui_color32(127, 127, 127, 56);
-		//renderChannel(&info, x_pos, 0, 0);
-		Emgui_fill(color, 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 2);
-		return;
-	}
+		return false;
 
 	for (i = start_track, end_track = (int)trackData->syncData.num_tracks; i < end_track; )
 	{
@@ -479,17 +488,17 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 		Group* group = track->group; 
 		track_size = getTrackSize(trackData, track);
 
-		if (x_pos + track_size >= viewInfo->windowSizeX)
-		{
-			if (sel_track >= i)
-				viewInfo->startTrack++;
-
-			break;
-		}
-		
 		if (group->trackCount == 1)
 		{
-			x_pos += renderChannel(&info, x_pos, -1, track, false); ++i;
+			x_pos += renderChannel(&info, x_pos, track, false); ++i;
+
+			if (x_pos + track_size >= viewInfo->windowSizeX)
+			{
+				if (sel_track >= i)
+					viewInfo->startTrack++;
+
+				break;
+			}
 		}
 		else
 		{
@@ -501,156 +510,7 @@ void renderGroups(TrackViewInfo* viewInfo, TrackData* trackData)
 		viewInfo->startTrack = emaxi(viewInfo->startTrack - 1, 0);
 
 	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
-	/*
-	end_track = syncData->num_tracks;
-
-	for (i = start_track; i < end_track; ++i)
-	{
-		int size, editRow = -1;
-
-		if (sel_track == i && trackData->editText)
-			editRow = viewInfo->rowPos;
-
-		size = renderChannel(&info, x_pos, editRow, i);
-
-		if (!Emgui_hasKeyboardFocus())
-		{
-			if (sel_track == i)
-			{
-				Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
-
-				if (trackData->editText)
-					Emgui_drawText(trackData->editText, x_pos, mid_screen_y + adjust_top_size, Emgui_color32(255, 255, 255, 255));
-			}
-		}
-		else
-		{
-			if (sel_track == i)
-			{
-				Emgui_fill(Emgui_color32(0x7f, 0x7f, 0x7f, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
-			}
-		}
-
-		x_pos += size;
-
-		if (x_pos >= viewInfo->windowSizeX)
-		{
-			if (sel_track + 1 >= i)
-				viewInfo->startTrack++;
-
-			break;
-		}
-	}	
-
-	if (sel_track < start_track)
-		viewInfo->startTrack = emaxi(viewInfo->startTrack - 1, 0);
-
-	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
-	*/
-
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
-{
-	s_needsUpdate = false;
-
-	renderGroups(viewInfo, trackData);
 
 	return s_needsUpdate;
-
-	/*
-	struct TrackInfo info;
-	struct sync_data* syncData = &trackData->syncData;
-	const int sel_track = trackData->activeTrack;
-	//uint32_t color = Emgui_color32(127, 127, 127, 56);
-	int start_track = viewInfo->startTrack;
-	int x_pos = 40;
-	int end_track = 0;
-	int i = 0;
-	int adjust_top_size;
-	int mid_screen_y ;
-	int y_pos_row, end_row, y_end_border;
-
-	// Calc to position the selection in the ~middle of the screen 
-
-	adjust_top_size = 5 * font_size;
-	mid_screen_y = (viewInfo->windowSizeY / 2) & ~(font_size - 1);
-	y_pos_row = viewInfo->rowPos - (mid_screen_y / font_size);
-
-	// TODO: Calculate how many channels we can draw given the width
-
-	end_row = viewInfo->windowSizeY / font_size;
-	y_end_border = viewInfo->windowSizeY - 32; // adjust to have some space at the end of the screen
-
-	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, 8, y_end_border);
-
-	// Shared info for all tracks
-
-	info.selectLeft = emini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	info.selectRight = emaxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	info.selectTop  = emini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	info.selectBottom = emaxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	info.viewInfo = viewInfo;
-	info.trackData = trackData;
-	info.startY = adjust_top_size;
-	info.startPos = y_pos_row;
-	info.endPos = y_pos_row + end_row; 
-	info.endSizeY = y_end_border;
-
-	if (syncData->num_tracks == 0)
-	{
-		uint32_t color = Emgui_color32(127, 127, 127, 56);
-		renderChannel(&info, x_pos, 0, 0);
-		Emgui_fill(color, 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 2);
-		return;
-	}
-
-	end_track = syncData->num_tracks;
-
-	for (i = start_track; i < end_track; ++i)
-	{
-		int size, editRow = -1;
-
-		if (sel_track == i && trackData->editText)
-			editRow = viewInfo->rowPos;
-
-		size = renderChannel(&info, x_pos, editRow, i);
-
-		if (!Emgui_hasKeyboardFocus())
-		{
-			if (sel_track == i)
-			{
-				Emgui_fill(Emgui_color32(0xff, 0xff, 0x00, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
-
-				if (trackData->editText)
-					Emgui_drawText(trackData->editText, x_pos, mid_screen_y + adjust_top_size, Emgui_color32(255, 255, 255, 255));
-			}
-		}
-		else
-		{
-			if (sel_track == i)
-			{
-				Emgui_fill(Emgui_color32(0x7f, 0x7f, 0x7f, 0x80), x_pos, mid_screen_y + adjust_top_size, size, font_size + 1);
-			}
-		}
-
-		x_pos += size;
-
-		if (x_pos >= viewInfo->windowSizeX)
-		{
-			if (sel_track + 1 >= i)
-				viewInfo->startTrack++;
-
-			break;
-		}
-	}	
-
-	if (sel_track < start_track)
-		viewInfo->startTrack = emaxi(viewInfo->startTrack - 1, 0);
-
-	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
-	*/
 }
 
