@@ -1,4 +1,3 @@
-
 #import "delegate.h"
 #include "../Editor.h"
 #include "../RemoteConnection.h"
