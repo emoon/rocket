@@ -168,7 +168,6 @@ void Editor_init()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static char s_currentTrack[64] = "0";
 static char s_currentRow[64] = "0";
 static char s_startRow[64] = "0";
 static char s_endRow[64] = "10000";
@@ -278,7 +277,6 @@ static void drawStatus()
 
 	size = drawConnectionStatus(0, sizeY);
 	size += drawCurrentValue(size, sizeY);
-	size += drawNameValue("Track", size, sizeY, &s_editorData.trackData.activeTrack, 0, emaxi(0, getTrackCount() - 1), s_currentTrack);
 	size += drawNameValue("Row", size, sizeY, &s_editorData.trackViewInfo.rowPos, 0, 20000 - 1, s_currentRow);
 	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackViewInfo.startRow, 0, 10000000, s_startRow);
 	size += drawNameValue("End Row", size, sizeY, &s_editorData.trackViewInfo.endRow, 0, 10000000, s_endRow);
@@ -835,6 +833,20 @@ bool Editor_keyDown(int key, int modifiers)
 		Editor_update();
 
 	return handled_key;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Editor_scrollRow(int delta)
+{
+	int current_row = s_editorData.trackViewInfo.rowPos;
+	TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
+
+	current_row += delta;
+
+	s_editorData.trackViewInfo.rowPos = eclampi(current_row, viewInfo->startRow, viewInfo->endRow);
+
+	Editor_update();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
