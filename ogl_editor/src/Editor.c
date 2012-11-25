@@ -286,6 +286,20 @@ static void drawStatus()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+static void drawHorizonalSlider()
+{
+	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
+	const int sizeX = s_editorData.trackViewInfo.windowSizeX;
+
+	static int value = 0;
+
+	Emgui_slider(sizeX - 20, 2, 14, sizeY - 20, 0, 40, EMGUI_SLIDERDIR_VERTICAL, 1, &value);
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // In some cases we need an extra update in case some controls has been re-arranged in such fashion so
 // the trackview will report back if that is needed (usually happens if tracks gets resized)
 
@@ -295,6 +309,8 @@ static bool internalUpdate()
 
 	Emgui_begin();
 	drawStatus();
+	//drawHorizonalSlider();
+
 	refresh = TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
 	Emgui_end();
 
@@ -457,10 +473,16 @@ bool Editor_keyDown(int key, int modifiers)
 
 				if (t->keys)
 				{
-					int idx = key_idx_floor(t, row);
+					int idx = key_idx_floor(t, row_pos);
 
-					if (idx >= 0)
-						viewInfo->rowPos = t->keys[emini(idx + 1, t->num_keys - 1)].row;
+					if (idx < 0)
+						row = t->keys[0].row;
+					else if (idx > (int)t->num_keys - 2)
+						row = t->keys[t->num_keys - 1].row;
+					else
+						row = t->keys[idx + 1].row;
+
+					viewInfo->rowPos = row; 
 				}
 
 				break;
@@ -497,7 +519,10 @@ bool Editor_keyDown(int key, int modifiers)
 
 				if (t->keys)
 				{
-					int idx = key_idx_floor(t, row);
+					int idx = sync_find_key(t, row);
+					if (idx < 0)
+						idx = -idx - 1;
+
 					viewInfo->rowPos = t->keys[emaxi(idx - 1, 0)].row;
 				}
 
@@ -751,6 +776,9 @@ bool Editor_keyDown(int key, int modifiers)
 	{
 		// if we press esc we discard the value
 
+		if (!tracks)
+			return true;
+
 		if (key != 27)
 		{
 			const char* track_name;
@@ -838,6 +866,8 @@ static int processCommands()
 				RemoteConnection_mapTrackName(trackName);
 				RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncData.tracks[serverIndex]);
 				TrackData_linkTrack(serverIndex, trackName, &s_editorData.trackData);
+
+				setActiveTrack(0);
 
 				ret = 1;
 
