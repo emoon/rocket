@@ -156,7 +156,6 @@ void Editor_create()
 	int id;
 	Emgui_create("foo");
 	id = Emgui_loadFontBitmap(g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_LOCATION_MEMORY, 32, 128, g_minecraftiaFontLayout);
-	memset(&s_editorData, 0, sizeof(s_editorData));
 
 	RemoteConnection_createListner();
 
@@ -335,7 +334,7 @@ static bool internalUpdate()
 	refresh = TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
 	Emgui_end();
 
-	return refresh; 
+	return !!refresh; 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
