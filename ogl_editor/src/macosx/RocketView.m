@@ -168,7 +168,7 @@ NSOpenGLContext* g_context = 0;
 	float y = (float)[theEvent deltaY];
 
 	printf("%f %f\n", x, y);
-	Editor_scroll((int)-x, (int)-y);
+	Editor_scroll(-x, -y);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

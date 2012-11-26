@@ -72,10 +72,7 @@ static inline TrackData* getTrackData()
 
 static inline void setActiveTrack(int track)
 {
-	const int current_track = s_editorData.trackData.activeTrack;
-	s_editorData.trackData.tracks[current_track].selected = false;
-	s_editorData.trackData.tracks[track].selected = true;
-	s_editorData.trackData.activeTrack = track;
+	TrackData_setActiveTrack(getTrackData(), track);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -163,6 +160,8 @@ void Editor_create()
 	s_editorData.trackViewInfo.endRow = 10000;
 
 	Emgui_setDefaultFont();
+
+	LoadSave_loadRocketXML("/Users/emoon/code/amiga/tbl-newage/OriginalData/Demo4.rocket", getTrackData());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -303,20 +302,23 @@ static void drawStatus()
 
 static void drawHorizonalSlider()
 {
-	int track_size; 
+	int track_size, large_val; 
 	TrackViewInfo* info = getTrackViewInfo();
-	const int old_start = s_editorData.trackViewInfo.startTrack;
+	//const int old_start = s_editorData.trackViewInfo.startTrack;
 	const int total_track_width = TrackView_getWidth(getTrackViewInfo(), getTrackData());
 
-	track_size = emaxi(total_track_width - info->windowSizeX, 0) / 128;
+	track_size = emaxi(total_track_width - info->windowSizeX, 0);
+	large_val = emaxi(track_size / 10, 1);
 
-	Emgui_slider(0, info->windowSizeY - 36, info->windowSizeX, 14, 0, track_size, EMGUI_SLIDERDIR_HORIZONTAL, 1, 
-				&s_editorData.trackViewInfo.startPixel);
+	Emgui_slider(0, info->windowSizeY - 36, info->windowSizeX, 14, 0, track_size, large_val, 
+				EMGUI_SLIDERDIR_HORIZONTAL, 1, &s_editorData.trackViewInfo.startPixel);
 
+	/*
 	if (old_start != s_editorData.trackViewInfo.startTrack)
 	{
 		setActiveTrack(s_editorData.trackViewInfo.startTrack);
 	}
+	*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -858,25 +860,18 @@ bool Editor_keyDown(int key, int modifiers)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_scroll(int deltaX, int deltaY)
+void Editor_scroll(float deltaX, float deltaY)
 {
-	int i, current_row = s_editorData.trackViewInfo.rowPos;
+	int current_row = s_editorData.trackViewInfo.rowPos;
+	int pixel_offset = s_editorData.trackViewInfo.startPixel;
 	TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
+	const int total_track_width = TrackView_getWidth(getTrackViewInfo(), getTrackData());
 
-	current_row += deltaY;
+	current_row += (int)deltaY;
+	pixel_offset += (int)(deltaX * 4.0f);
 
 	s_editorData.trackViewInfo.rowPos = eclampi(current_row, viewInfo->startRow, viewInfo->endRow);
-
-	if (deltaX < 0)
-	{
-		for (i = 0; i < -deltaX; ++i)
-			setActiveTrack(getPrevTrack());
-	}
-	else if (deltaX > 0)
-	{
-		for (i = 0; i < deltaX; ++i)
-			setActiveTrack(getNextTrack());
-	}
+	s_editorData.trackViewInfo.startPixel = eclampi(pixel_offset, 0, total_track_width); 
 
 	Editor_update();
 }

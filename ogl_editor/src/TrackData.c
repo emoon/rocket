@@ -140,3 +140,13 @@ void TrackData_linkGroups(TrackData* trackData)
 		TrackData_linkTrack(i, sync->tracks[i]->name, trackData); 
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void TrackData_setActiveTrack(TrackData* trackData, int track)
+{
+	const int current_track = trackData->activeTrack;
+	trackData->tracks[current_track].selected = false;
+	trackData->tracks[track].selected = true;
+	trackData->activeTrack = track;
+}
+

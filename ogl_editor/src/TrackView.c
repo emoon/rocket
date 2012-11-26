@@ -80,7 +80,7 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 	{
 		char rowText[16];
 		memset(rowText, 0, sizeof(rowText));
-		sprintf(rowText, "%04d", rowOffset);
+		sprintf(rowText, "%05d", rowOffset);
 
 		if (rowOffset % maskBpm)
 			Emgui_drawText(rowText, x, y, Emgui_color32(0xa0, 0xa0, 0xa0, 0xff));
@@ -140,7 +140,7 @@ static int renderName(const char* name, int x, int y, int minSize, bool folded, 
 	if (folded)
 	{
 		Emgui_drawTextFlipped(name, x + 4, y + text_size - 10, color);
-		size = text_size - 30;
+		size = text_size - spacing;
 	}
 	else
 	{
@@ -238,13 +238,14 @@ static int findStartTrack(Group* group, Track* startTrack)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int getTrackSize(Track* track)
+static int getTrackSize(TrackViewInfo* viewInfo, Track* track)
 {
 	if (track->folded)
 		return track_size_folded; 
 
 	if (track->width == 0)
 	{
+		Emgui_setFont(viewInfo->smallFontId);
 		track->width = (Emgui_getTextSize(track->displayName) & 0xffff) + 31; 
 		track->width = emaxi(track->width, min_track_size);
 	}
@@ -254,7 +255,7 @@ static int getTrackSize(Track* track)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int getGroupSize(Group* group, int startTrack)
+int getGroupSize(TrackViewInfo* viewInfo, Group* group, int startTrack)
 {
 	int i, size = 0, count = group->trackCount;
 
@@ -265,7 +266,7 @@ int getGroupSize(Group* group, int startTrack)
 		return track_size_folded; 
 
 	for (i = startTrack; i < count; ++i)
-		size += getTrackSize(group->t.tracks[i]);
+		size += getTrackSize(viewInfo, group->t.tracks[i]);
 
 	size = emaxi(size, group->width);
 
@@ -295,7 +296,6 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 		if (info->trackData->syncData.tracks)
 			track = info->trackData->syncData.tracks[trackData->index];
 
-		Emgui_setFont(info->viewInfo->smallFontId);
 
 		size = renderName(trackData->displayName, startX, info->startY - (font_size * 2), min_track_size, folded, trackData->active);
 
@@ -328,7 +328,7 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 	folded = valuesOnly ? true : folded;
 	size = valuesOnly ? track_size_folded : size;
 
-	Emgui_drawBorder(border_color, border_color, startX, info->startY - font_size * 4, size, (info->endSizeY - info->startY) + 40);
+	Emgui_fill(border_color, startX + size, info->startY - font_size * 4, 2, (info->endSizeY - info->startY) + 40);
 
 	// if folded we should skip rendering the rows that are covered by the text
 
@@ -407,7 +407,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 
 	startTrackIndex = findStartTrack(group, startTrack);
 
-	size = getGroupSize(group, startTrackIndex);
+	size = getGroupSize(info.viewInfo, group, startTrackIndex);
 
 	printf("size %d\n", size);
 
@@ -448,12 +448,86 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static int processTrack(Track* track, int posX, int* startTrack, int* endTrack, TrackViewInfo* viewInfo)
+{
+	int track_size = getTrackSize(viewInfo, track);
+
+	if (posX > 0 && *startTrack == -1)
+		*startTrack = track->index;
+
+	if (((posX + 50 + track_size) > (viewInfo->windowSizeX - 80)) && *endTrack == -1)
+		*endTrack = track->index;
+
+	return track_size;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int setActiveTrack(TrackViewInfo* viewInfo, TrackData* trackData, int activeTrack, int posX)
+{
+	int i, j,  track_count = trackData->syncData.num_tracks;
+	int start_track = -1, end_track = -1;
+
+	posX -= 40;
+
+	for (i = 0; i < track_count; )
+	{
+		Track* track = &trackData->tracks[i];
+		Group* group = track->group; 
+
+		if (group->trackCount == 1)
+		{
+			posX += processTrack(track, posX, &start_track, &end_track, viewInfo);
+		}
+		else
+		{
+			if (group->folded)
+			{
+				posX += processTrack(group->t.tracks[0], posX, &start_track, &end_track, viewInfo);
+			}
+			else
+			{
+				for (j = 0; j < group->trackCount; ++j)
+					posX += processTrack(group->t.tracks[j], posX, &start_track, &end_track, viewInfo);
+			}
+		}
+
+		i += group->trackCount;
+	}
+
+	if (activeTrack > start_track && activeTrack < end_track)
+	{
+		if (activeTrack == -1)
+			__asm__ ("int $3");
+		return activeTrack;
+	}
+
+	if (activeTrack < start_track)
+	{
+		if (start_track == -1)
+			__asm__ ("int $3");
+
+		return start_track;
+	}
+
+	if (activeTrack > end_track)
+	{
+		if (end_track == -1)
+			__asm__ ("int $3");
+		return end_track;
+	}
+
+	return activeTrack;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 {
 	struct TrackInfo info;
-	const int sel_track = trackData->activeTrack;
-	int start_track = viewInfo->startTrack;
-	int x_pos = 40;
+	int sel_track = 0; //trackData->activeTrack;
+	int start_track = 0; //viewInfo->startTrack;
+	int x_pos = 128;
 	int end_track = 0;
 	int i = 0;
 	//int track_size;
@@ -492,24 +566,37 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	if (trackData->groupCount == 0)
 		return false;
 
+	x_pos = 50 + -viewInfo->startPixel;
+
+	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, 8, y_end_border);
+	Emgui_drawBorder(border_color, border_color, 48, info.startY - font_size * 4, viewInfo->windowSizeX - 80, (info.endSizeY - info.startY) + 40);
+
+	Emgui_setLayer(1);
+	Emgui_setScissor(48, 0, viewInfo->windowSizeX - 80, viewInfo->windowSizeY);
+	Emgui_setFont(viewInfo->smallFontId);
+
+	sel_track = setActiveTrack(viewInfo, trackData, trackData->activeTrack, x_pos);
+
+	if (sel_track != trackData->activeTrack)
+		TrackData_setActiveTrack(trackData, sel_track);
+
 	for (i = start_track, end_track = trackData->syncData.num_tracks; i < end_track; )
 	{
 		Track* track = &trackData->tracks[i];
 		Group* group = track->group; 
-		//track_size = getTrackSize(trackData, track);
 
 		if (group->trackCount == 1)
 		{
-			if (x_pos >= viewInfo->windowSizeX)
+			int track_size = getTrackSize(viewInfo, track);
+		
+			if ((x_pos + track_size > 0) && (x_pos < viewInfo->windowSizeX))
 			{
-				if (sel_track >= i)
-					viewInfo->startTrack++;
+				// if selected track is less than the first rendered track then we need to reset it to this one
 
-				break;
+				renderChannel(&info, x_pos, track, false);
 			}
 
-			x_pos += renderChannel(&info, x_pos, track, false);
-
+			x_pos += track_size;
 			++i;
 		}
 		else
@@ -520,12 +607,9 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 
 	Emgui_setDefaultFont();
 
-	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, 8, y_end_border);
-
-	if (sel_track < start_track)
-		viewInfo->startTrack = emaxi(viewInfo->startTrack - 1, 0);
-
 	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
+
+	Emgui_setLayer(0);
 
 	return s_needsUpdate;
 }
@@ -545,9 +629,9 @@ int TrackView_getWidth(TrackViewInfo* viewInfo, struct TrackData* trackData)
 		Group* group = &trackData->groups[i];
 
 		if (group->trackCount == 1)
-			size += getTrackSize(group->t.track);
+			size += getTrackSize(viewInfo, group->t.track);
 		else
-			size += getGroupSize(group, 0);
+			size += getGroupSize(viewInfo, group, 0);
 	}
 
 	return size;
