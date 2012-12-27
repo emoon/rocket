@@ -7,10 +7,11 @@ void Editor_destroy();
 void Editor_init();
 void Editor_update();
 void Editor_timedUpdate();
-bool Editor_keyDown(int keyCode, int mod);
+bool Editor_keyDown(int key, int keyCode, int mod);
+void Editor_keyUp();
 void Editor_setWindowSize(int x, int y);
 void Editor_menuEvent(int menuItem);
-void Editor_scroll(float deltaX, float deltaY);
+void Editor_scroll(float deltaX, float deltaY, int flags);
 void Editor_updateTrackScroll();
 
 enum

@@ -45,6 +45,7 @@ typedef struct EditorData
 	int copyCount;
 } EditorData;
 
+static char s_currentFile[2048];
 static EditorData s_editorData;
 static CopyData s_copyData;
 static bool reset_tracks = true;
@@ -288,6 +289,7 @@ static void drawStatus()
 	int size = 0;
 	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
 	const int sizeX = s_editorData.trackViewInfo.windowSizeX;
+	const int prevRow = getRowPos(); 
 
 	Emgui_setFont(s_editorData.trackViewInfo.smallFontId);
 
@@ -299,6 +301,9 @@ static void drawStatus()
 	size += drawNameValue("Row", size, sizeY, &s_editorData.trackViewInfo.rowPos, 0, 20000 - 1, s_currentRow);
 	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackViewInfo.startRow, 0, 10000000, s_startRow);
 	size += drawNameValue("End Row", size, sizeY, &s_editorData.trackViewInfo.endRow, 0, 10000000, s_endRow);
+
+	if (getRowPos() != prevRow)
+		RemoteConnection_sendSetRowCommand(getRowPos());
 
 	Emgui_setDefaultFont();
 }
@@ -456,10 +461,38 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void biasSelection(float value, int selectLeft, int selectRight, int selectTop, int selectBottom)
+{
+	int track, row;
+	struct sync_track** tracks = getTracks();
+
+	for (track = selectLeft; track <= selectRight; ++track) 
+	{
+		struct sync_track* t = tracks[track];
+
+		for (row = selectTop; row <= selectBottom; ++row) 
+		{
+			struct track_key newKey;
+			int idx = sync_find_key(t, row);
+			if (idx < 0) 
+				continue;
+
+			newKey = t->keys[idx];
+			newKey.value += value;
+
+			sync_set_key(t, &newKey);
+
+			RemoteConnection_sendSetKeyCommand(t->name, &newKey);
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static char s_editBuffer[512];
 static bool is_editing = false;
 
-bool Editor_keyDown(int key, int modifiers)
+bool Editor_keyDown(int key, int keyCode, int modifiers)
 {
 	bool handled_key = true;
 	TrackData* trackData = &s_editorData.trackData;
@@ -776,46 +809,27 @@ bool Editor_keyDown(int key, int modifiers)
 
 	// Handle biasing of values
 
-	if ((key >= '1' && key <= '9') && ((modifiers & EMGUI_KEY_CTRL) || (modifiers & EMGUI_KEY_ALT)))
+	if ((keyCode >=  0 && keyCode <=  6) || (keyCode >= 12 && keyCode <= 17))
 	{
-		struct sync_track** tracks;
-		int track, row;
-
 		float bias_value = 0.0f;
-		tracks = getTracks();
 
-		switch (key)
+		switch (keyCode)
 		{
-			case '1' : bias_value = 0.01f; break;
-			case '2' : bias_value = 0.1f; break;
-			case '3' : bias_value = 1.0f; break;
-			case '4' : bias_value = 10.f; break;
-			case '5' : bias_value = 100.0f; break;
-			case '6' : bias_value = 1000.0f; break;
-			case '7' : bias_value = 10000.0f; break;
+			case 0 : bias_value = -0.01f; break;
+			case 1 : bias_value = -0.1f; break;
+			case 2 : bias_value = -1.0f; break;
+			case 3 : bias_value = -10.f; break;
+			case 5 : bias_value = -100.0f; break;
+			case 4 : bias_value = -1000.0f; break;
+			case 12 : bias_value = 0.01f; break;
+			case 13 : bias_value = 0.1f; break;
+			case 14 : bias_value = 1.0f; break;
+			case 15 : bias_value = 10.f; break;
+			case 17 : bias_value = 100.0f; break;
+			case 16 : bias_value = 1000.0f; break;
 		}
 
-		bias_value = modifiers & EMGUI_KEY_ALT ? -bias_value : bias_value;
-
-		for (track = selectLeft; track <= selectRight; ++track) 
-		{
-			struct sync_track* t = tracks[track];
-
-			for (row = selectTop; row <= selectBottom; ++row) 
-			{
-				struct track_key newKey;
-				int idx = sync_find_key(t, row);
-				if (idx < 0) 
-					continue;
-
-				newKey = t->keys[idx];
-				newKey.value += bias_value;
-
-				sync_set_key(t, &newKey);
-
-				RemoteConnection_sendSetKeyCommand(t->name, &newKey);
-			}
-		}
+		biasSelection(bias_value, selectLeft, selectRight, selectTop, selectBottom);
 
 		Editor_update();
 
@@ -902,11 +916,27 @@ bool Editor_keyDown(int key, int modifiers)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_scroll(float deltaX, float deltaY)
+void Editor_scroll(float deltaX, float deltaY, int flags)
 {
 	int current_row = s_editorData.trackViewInfo.rowPos;
 	int old_offset = s_editorData.trackViewInfo.startPixel;
 	TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
+
+	if (flags & EMGUI_KEY_ALT)
+	{
+		TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
+		const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+		const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+		const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+		const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+		const float multiplier = flags & EMGUI_KEY_SHIFT ? 0.1f : 0.01f;
+
+		biasSelection(-deltaY * multiplier, selectLeft, selectRight, selectTop, selectBottom);
+
+		Editor_update();
+
+		return;
+	}
 
 	current_row += (int)deltaY;
 
@@ -1061,12 +1091,10 @@ static void setWindowTitle(const char* path)
 
 static void onOpen()
 {
-	char path[2048];
-
-	if (LoadSave_loadRocketXMLDialog(path, &s_editorData.trackData))
+	if (LoadSave_loadRocketXMLDialog(s_currentFile, getTrackData()))
 	{
 		Editor_update();
-		setWindowTitle(path);
+		setWindowTitle(s_currentFile);
 	}
 }
 
@@ -1074,8 +1102,15 @@ static void onOpen()
 
 static void onSave()
 {
+	LoadSave_saveRocketXML(s_currentFile, getTrackData()); 
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onSaveDialog()
+{
 	char path[2048];
-	if (!LoadSave_saveRocketXMLDialog(path, &s_editorData.trackData))
+	if (!LoadSave_saveRocketXMLDialog(path, getTrackData())) 
 		return;
 
 	setWindowTitle(path);
@@ -1089,8 +1124,8 @@ void Editor_menuEvent(int menuItem)
 	switch (menuItem)
 	{
 		case EDITOR_MENU_OPEN : onOpen(); break;
-		case EDITOR_MENU_SAVE : 
-		case EDITOR_MENU_SAVE_AS : onSave(); break;
+		case EDITOR_MENU_SAVE : onSave(); break;
+		case EDITOR_MENU_SAVE_AS : onSaveDialog(); break;
 	}
 }
 

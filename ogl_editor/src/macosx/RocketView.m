@@ -77,6 +77,27 @@ NSWindow* g_window = 0;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static int getModifierFlags(int flags)
+{
+	int specialKeys = 0;
+
+	if (flags & NSShiftKeyMask)
+		specialKeys |= EMGUI_KEY_SHIFT;
+
+	if (flags & NSAlternateKeyMask)
+		specialKeys |= EMGUI_KEY_ALT;
+
+	if (flags & NSControlKeyMask)
+		specialKeys |= EMGUI_KEY_CTRL;
+
+	if (flags & NSCommandKeyMask)
+		specialKeys |= EMGUI_KEY_COMMAND;
+
+	return specialKeys;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 - (void)keyDown:(NSEvent *)theEvent 
 {
 	NSString* key = [theEvent charactersIgnoringModifiers];
@@ -87,19 +108,7 @@ NSWindow* g_window = 0;
 	keyChar = [key characterAtIndex:0];
 
 	int keyCode = keyChar;
-	int specialKeys = 0;
-
-	if ([theEvent modifierFlags] & NSShiftKeyMask)
-		specialKeys |= EMGUI_KEY_SHIFT;
-
-	if ([theEvent modifierFlags] & NSAlternateKeyMask)
-		specialKeys |= EMGUI_KEY_ALT;
-
-	if ([theEvent modifierFlags] & NSControlKeyMask)
-		specialKeys |= EMGUI_KEY_CTRL;
-
-	if ([theEvent modifierFlags] & NSCommandKeyMask)
-		specialKeys |= EMGUI_KEY_COMMAND;
+	int specialKeys = getModifierFlags([theEvent modifierFlags]);
 
 	Emgui_sendKeyinput(keyChar, specialKeys);
 
@@ -114,7 +123,7 @@ NSWindow* g_window = 0;
 		}
 	}
 
-	if (!Editor_keyDown(keyCode, specialKeys))
+	if (!Editor_keyDown(keyCode, [theEvent keyCode], specialKeys))
     	[super keyDown:theEvent];
 
 	Editor_update();
@@ -168,9 +177,10 @@ NSWindow* g_window = 0;
 {
 	float x = (float)[theEvent deltaX];
 	float y = (float)[theEvent deltaY];
+	int flags = getModifierFlags([theEvent modifierFlags]);
 
-	printf("%f %f\n", x, y);
-	Editor_scroll(-x, -y);
+	printf("%f %f %d\n", x, y, flags);
+	Editor_scroll(-x, -y, flags);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
