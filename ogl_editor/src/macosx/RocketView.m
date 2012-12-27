@@ -5,6 +5,7 @@
 #include <GFXBackend.h> 
 
 NSOpenGLContext* g_context = 0;
+NSWindow* g_window = 0;
 
 @implementation RocketView
 
@@ -33,6 +34,7 @@ NSOpenGLContext* g_context = 0;
 	[oglContext makeCurrentContext];
 
 	g_context = oglContext;
+	g_window = [self window];
 
 	EMGFXBackend_create();
 	Editor_create();
@@ -66,6 +68,7 @@ NSOpenGLContext* g_context = 0;
 - (void)drawRect:(NSRect)frameRect 
 {
     [oglContext update];
+	g_window = [self window];
 
 	EMGFXBackend_updateViewPort((int)frameRect.size.width, (int)frameRect.size.height);
 	Editor_setWindowSize((int)frameRect.size.width, (int)frameRect.size.height);
@@ -159,7 +162,6 @@ NSOpenGLContext* g_context = 0;
 	Editor_update();
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (void)scrollWheel:(NSEvent *)theEvent
@@ -209,3 +211,11 @@ void swapBuffers()
 {
 	[g_context flushBuffer];
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Window_setTitle(const char* title)
+{
+	[g_window setTitle:[NSString stringWithUTF8String:title]];
+}
+

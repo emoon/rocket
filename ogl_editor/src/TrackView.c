@@ -463,7 +463,7 @@ static int processTrack(Track* track, int posX, int* startTrack, int* endTrack, 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int setActiveTrack(TrackViewInfo* viewInfo, TrackData* trackData, int activeTrack, int posX)
+int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, int activeTrack, int posX)
 {
 	int i, j,  track_count = trackData->syncData.num_tracks;
 	int start_track = -1, end_track = -1;
@@ -496,25 +496,15 @@ static int setActiveTrack(TrackViewInfo* viewInfo, TrackData* trackData, int act
 	}
 
 	if (activeTrack > start_track && activeTrack < end_track)
-	{
-		if (activeTrack == -1)
-			__asm__ ("int $3");
 		return activeTrack;
-	}
 
 	if (activeTrack < start_track)
-	{
-		if (start_track == -1)
-			__asm__ ("int $3");
-
 		return start_track;
-	}
 
 	if (activeTrack > end_track)
 	{
-		if (end_track == -1)
-			__asm__ ("int $3");
-		return end_track;
+		if (end_track != -1)
+			return end_track;
 	}
 
 	return activeTrack;
@@ -525,7 +515,6 @@ static int setActiveTrack(TrackViewInfo* viewInfo, TrackData* trackData, int act
 bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 {
 	struct TrackInfo info;
-	int sel_track = 0; //trackData->activeTrack;
 	int start_track = 0; //viewInfo->startTrack;
 	int x_pos = 128;
 	int end_track = 0;
@@ -566,7 +555,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	if (trackData->groupCount == 0)
 		return false;
 
-	x_pos = 50 + -viewInfo->startPixel;
+	x_pos = TrackView_getStartOffset() + -viewInfo->startPixel;
 
 	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, 8, y_end_border);
 	Emgui_drawBorder(border_color, border_color, 48, info.startY - font_size * 4, viewInfo->windowSizeX - 80, (info.endSizeY - info.startY) + 40);
@@ -575,10 +564,10 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	Emgui_setScissor(48, 0, viewInfo->windowSizeX - 80, viewInfo->windowSizeY);
 	Emgui_setFont(viewInfo->smallFontId);
 
-	sel_track = setActiveTrack(viewInfo, trackData, trackData->activeTrack, x_pos);
+	///sel_track = setActiveTrack(viewInfo, trackData, trackData->activeTrack, x_pos);
 
-	if (sel_track != trackData->activeTrack)
-		TrackData_setActiveTrack(trackData, sel_track);
+	//if (sel_track != trackData->activeTrack)
+	//	TrackData_setActiveTrack(trackData, sel_track);
 
 	for (i = start_track, end_track = trackData->syncData.num_tracks; i < end_track; )
 	{
@@ -635,5 +624,75 @@ int TrackView_getWidth(TrackViewInfo* viewInfo, struct TrackData* trackData)
 	}
 
 	return size;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int TrackView_getStartOffset()
+{
+	return 50;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool TrackView_isSelectedTrackVisible(TrackViewInfo* viewInfo, TrackData* trackData, int track)
+{
+	return TrackView_getScrolledTrack(viewInfo, trackData, track, TrackView_getStartOffset() - viewInfo->startPixel) == track;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int TrackView_getTracksOffset(TrackViewInfo* viewInfo, TrackData* trackData, int prevTrack, int nextTrack)
+{
+	int i, j, size = 0;
+	bool flip = false;
+
+	if (prevTrack == nextTrack)
+		return 0;
+
+	// handle the case when tracks are flipped
+
+	if (prevTrack > nextTrack)
+	{
+		int temp = nextTrack;
+		nextTrack = prevTrack;
+		prevTrack = temp;
+		flip = true;
+	}
+
+	for (i = prevTrack; i < nextTrack; )
+	{
+		Track* t = &trackData->tracks[i];
+
+		// if track has no group its always safe to assume that can select the track
+ 
+		if (t->group->trackCount == 1)
+		{
+			size += getTrackSize(viewInfo, t); ++i;
+			continue;
+		}
+ 
+		if (t->group->folded)
+		{
+			size += track_size_folded;
+			i += t->group->trackCount;
+			continue;
+		}
+
+		for (j = 0; j < t->group->trackCount; ++j)
+		{
+			if (i + j == nextTrack)
+				goto end;
+			
+			size += getTrackSize(viewInfo, t->group->t.tracks[j]); 
+
+		}
+
+		i += t->group->trackCount;
+	}
+
+end:;
+
+	return flip ? -size : size; 
 }
 

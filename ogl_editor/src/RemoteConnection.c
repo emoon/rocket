@@ -205,7 +205,7 @@ static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_updateListner()
+void RemoteConnection_updateListner(int currentRow)
 {
 	SOCKET clientSocket;
 	struct sockaddr_in client;
@@ -225,7 +225,7 @@ void RemoteConnection_updateListner()
 			s_socket = clientSocket; 
 			s_clientIndex = 0;
 			RemoteConnection_sendPauseCommand(true);
-			//RemoteConnection_sendSetRowCommand(trackView->getEditRow());
+			RemoteConnection_sendSetRowCommand(currentRow);
 		}
 		else 
 		{

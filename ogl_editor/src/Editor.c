@@ -16,6 +16,8 @@
 #include "../../sync/base.h"
 #include "../../sync/data.h"
 
+extern void Window_setTitle(const char* title);
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef struct CopyEntry
@@ -91,6 +93,13 @@ static inline int getTrackCount()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static inline int getRowPos()
+{
+	return s_editorData.trackViewInfo.rowPos;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static int getNextTrack()
 {
 	TrackData* trackData = &s_editorData.trackData;
@@ -160,8 +169,6 @@ void Editor_create()
 	s_editorData.trackViewInfo.endRow = 10000;
 
 	Emgui_setDefaultFont();
-
-	LoadSave_loadRocketXML("/Users/emoon/code/amiga/tbl-newage/OriginalData/Demo4.rocket", getTrackData());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -170,6 +177,7 @@ void Editor_setWindowSize(int x, int y)
 {
 	s_editorData.trackViewInfo.windowSizeX = x;
 	s_editorData.trackViewInfo.windowSizeY = y;
+	Editor_updateTrackScroll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -210,13 +218,12 @@ static int drawCurrentValue(int posX, int sizeY)
 	struct sync_track** tracks = getTracks();
 
 	active_track = getActiveTrack();
-	current_row = s_editorData.trackViewInfo.rowPos;
+	current_row = getRowPos();
 
 	if (tracks)
 	{
 		const struct sync_track* track = tracks[active_track];
-		int row = s_editorData.trackViewInfo.rowPos;
-		int idx = key_idx_floor(track, row);
+		int idx = key_idx_floor(track, current_row);
 
 		if (idx >= 0) 
 		{
@@ -230,7 +237,7 @@ static int drawCurrentValue(int posX, int sizeY)
 			}
 		}
 
-		value = sync_get_val(track, row);
+		value = sync_get_val(track, current_row);
 	}
 
 	snprintf(valueText, 256, "%f", value);
@@ -293,32 +300,48 @@ static void drawStatus()
 	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackViewInfo.startRow, 0, 10000000, s_startRow);
 	size += drawNameValue("End Row", size, sizeY, &s_editorData.trackViewInfo.endRow, 0, 10000000, s_endRow);
 
-	printf("activeTrack %d\n", getActiveTrack());
-
 	Emgui_setDefaultFont();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Editor_updateTrackScroll()
+{
+	int track_start_offset, sel_track, total_track_width = 0;
+	int track_start_pixel = s_editorData.trackViewInfo.startPixel;
+	TrackData* track_data = getTrackData();
+	TrackViewInfo* view_info = getTrackViewInfo(); 
+
+	total_track_width = TrackView_getWidth(getTrackViewInfo(), getTrackData());
+	track_start_offset = TrackView_getStartOffset();
+
+	track_start_pixel = eclampi(track_start_pixel, 0, emaxi(total_track_width - (view_info->windowSizeX / 2), 0)); 
+
+	sel_track = TrackView_getScrolledTrack(view_info, track_data, track_data->activeTrack, 
+										   track_start_offset - track_start_pixel);
+
+	if (sel_track != track_data->activeTrack)
+		TrackData_setActiveTrack(track_data, sel_track);
+
+	s_editorData.trackViewInfo.startPixel = track_start_pixel;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void drawHorizonalSlider()
 {
-	int track_size, large_val; 
+	int large_val; 
 	TrackViewInfo* info = getTrackViewInfo();
-	//const int old_start = s_editorData.trackViewInfo.startTrack;
-	const int total_track_width = TrackView_getWidth(getTrackViewInfo(), getTrackData());
+	const int old_start = s_editorData.trackViewInfo.startPixel;
+	const int total_track_width = TrackView_getWidth(info, getTrackData()) - (info->windowSizeX / 2);
 
-	track_size = emaxi(total_track_width - info->windowSizeX, 0);
-	large_val = emaxi(track_size / 10, 1);
+	large_val = emaxi(total_track_width / 10, 1);
 
-	Emgui_slider(0, info->windowSizeY - 36, info->windowSizeX, 14, 0, track_size, large_val, 
+	Emgui_slider(0, info->windowSizeY - 36, info->windowSizeX, 14, 0, total_track_width, large_val, 
 				EMGUI_SLIDERDIR_HORIZONTAL, 1, &s_editorData.trackViewInfo.startPixel);
 
-	/*
-	if (old_start != s_editorData.trackViewInfo.startTrack)
-	{
-		setActiveTrack(s_editorData.trackViewInfo.startTrack);
-	}
-	*/
+	if (old_start != s_editorData.trackViewInfo.startPixel)
+		Editor_updateTrackScroll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -346,7 +369,10 @@ void Editor_update()
 	bool need_update = internalUpdate();
 
 	if (need_update)
+	{
+		Editor_updateTrackScroll();
 		internalUpdate();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -591,6 +617,7 @@ bool Editor_keyDown(int key, int modifiers)
 				else
 					t->folded = true;
 
+				Editor_updateTrackScroll();
 				Editor_update();
 				return true;
 			}
@@ -598,7 +625,15 @@ bool Editor_keyDown(int key, int modifiers)
 			if (modifiers & EMGUI_KEY_COMMAND)
 				track = 0;
 
-			setActiveTrack(track < 0 ? 0 : track);
+			track = emaxi(0, track); 
+
+			setActiveTrack(track);
+
+			if (!TrackView_isSelectedTrackVisible(getTrackViewInfo(), getTrackData(), track))
+			{
+				s_editorData.trackViewInfo.startPixel += TrackView_getTracksOffset(getTrackViewInfo(), getTrackData(), current_track, track);
+				Editor_updateTrackScroll();
+			}
 
 			if (modifiers & EMGUI_KEY_SHIFT)
 			{
@@ -640,6 +675,7 @@ bool Editor_keyDown(int key, int modifiers)
 				else
 					t->folded = false;
 
+				Editor_updateTrackScroll();
 				Editor_update();
 				return true;
 			}
@@ -651,6 +687,12 @@ bool Editor_keyDown(int key, int modifiers)
 				track = track_count - 1;
 
 			setActiveTrack(track);
+
+			if (!TrackView_isSelectedTrackVisible(getTrackViewInfo(), getTrackData(), track))
+			{
+				s_editorData.trackViewInfo.startPixel += TrackView_getTracksOffset(getTrackViewInfo(), getTrackData(), current_track, track);
+				Editor_updateTrackScroll();
+			}
 
 			if (modifiers & EMGUI_KEY_SHIFT)
 			{
@@ -863,15 +905,21 @@ bool Editor_keyDown(int key, int modifiers)
 void Editor_scroll(float deltaX, float deltaY)
 {
 	int current_row = s_editorData.trackViewInfo.rowPos;
-	int pixel_offset = s_editorData.trackViewInfo.startPixel;
+	int old_offset = s_editorData.trackViewInfo.startPixel;
 	TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
-	const int total_track_width = TrackView_getWidth(getTrackViewInfo(), getTrackData());
 
 	current_row += (int)deltaY;
-	pixel_offset += (int)(deltaX * 4.0f);
 
+	if (current_row < viewInfo->startRow || current_row >= viewInfo->endRow)
+		return;
+
+	s_editorData.trackViewInfo.startPixel += (int)(deltaX * 4.0f);
 	s_editorData.trackViewInfo.rowPos = eclampi(current_row, viewInfo->startRow, viewInfo->endRow);
-	s_editorData.trackViewInfo.startPixel = eclampi(pixel_offset, 0, total_track_width); 
+
+	RemoteConnection_sendSetRowCommand(s_editorData.trackViewInfo.rowPos);
+
+	if (old_offset != s_editorData.trackViewInfo.startPixel)
+		Editor_updateTrackScroll(); 
 
 	Editor_update();
 }
@@ -987,7 +1035,7 @@ void Editor_timedUpdate()
 {
 	int processed_commands = 0;
 
-	RemoteConnection_updateListner();
+	RemoteConnection_updateListner(getRowPos());
 
 	updateTrackStatus();
 
@@ -1002,17 +1050,35 @@ void Editor_timedUpdate()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void setWindowTitle(const char* path)
+{
+	char windowTitle[4096];
+	sprintf(windowTitle, "RocketEditor - (%s)", path);
+	Window_setTitle(windowTitle);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void onOpen()
 {
-	if (LoadSave_loadRocketXMLDialog(&s_editorData.trackData))
+	char path[2048];
+
+	if (LoadSave_loadRocketXMLDialog(path, &s_editorData.trackData))
+	{
 		Editor_update();
+		setWindowTitle(path);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void onSave()
 {
-	LoadSave_saveRocketXMLDialog(&s_editorData.trackData);
+	char path[2048];
+	if (!LoadSave_saveRocketXMLDialog(path, &s_editorData.trackData))
+		return;
+
+	setWindowTitle(path);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1022,7 +1088,6 @@ void Editor_menuEvent(int menuItem)
 	printf("%d\n", menuItem);
 	switch (menuItem)
 	{
-		//case EDITOR_MENU_NEW : onNew(); break;
 		case EDITOR_MENU_OPEN : onOpen(); break;
 		case EDITOR_MENU_SAVE : 
 		case EDITOR_MENU_SAVE_AS : onSave(); break;

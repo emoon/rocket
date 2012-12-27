@@ -9,7 +9,7 @@ struct sync_track;
 // Listen for incoming connections
 
 bool RemoteConnection_createListner();
-void RemoteConnection_updateListner();
+void RemoteConnection_updateListner(int currentRow);
 void RemoteConnection_close();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

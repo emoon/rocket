@@ -162,10 +162,8 @@ int LoadSave_loadRocketXML(const char* path, TrackData* trackData)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int LoadSave_loadRocketXMLDialog(TrackData* trackData)
+int LoadSave_loadRocketXMLDialog(char* path, TrackData* trackData)
 {
-	char path[512];
-
 	if (!Dialog_open(path))
 		return false;
 
@@ -239,13 +237,10 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int LoadSave_saveRocketXMLDialog(TrackData* trackData)
+int LoadSave_saveRocketXMLDialog(char* path, TrackData* trackData)
 {
-	char path[512];
-
 	if (!Dialog_save(path))
 		return false;
-
 
 	return LoadSave_saveRocketXML(path, trackData);
 }
