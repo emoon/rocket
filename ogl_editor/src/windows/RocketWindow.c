@@ -282,6 +282,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 				{
 					Editor_menuEvent(EDITOR_MENU_OPEN);
 					Editor_update();
+					s_modifier = 0;
 					break;
 				}
 			}
@@ -330,12 +331,15 @@ static void CALLBACK timedCallback(HWND hwnd, UINT id, UINT_PTR ptr, DWORD meh)
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmndLine, int show)
 {
 	MSG	msg;
+	HACCEL accel;
 	bool done = false;	
 
 	memset(&msg, 0, sizeof(MSG));
 
 	if (!createWindow("RocketEditor", 800, 600))
 		return 0;
+
+	accel = LoadAccelerators(instance, MAKEINTRESOURCE(IDR_ACCELERATOR));
 
 	// Update timed function every 16 ms
 
@@ -345,14 +349,12 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmndLine, i
 	{
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
-			if (msg.message == WM_QUIT)
-			{
-				done = true;
-			}
-			else
+			if (!TranslateAccelerator(s_window, accel, &msg))
 			{
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
+				if (WM_QUIT == msg.message) 
+					done = true;
 			}
 		}
 	}
