@@ -2,6 +2,8 @@
 #include <windowsx.h>
 #include <gl/gl.h>
 #include "../Editor.h"
+#include "resource.h"
+#include "afxres.h"
 #include <string.h>
 #include <Emgui.h>
 #include <GFXBackend.h> 
@@ -82,15 +84,19 @@ bool createWindow(const char* title, int width, int height)
 	rect.top = 0;
 	rect.bottom= height;
 
+	EMGFXBackend_create();
+
 	s_instance = GetModuleHandle(0);
 	memset(&wc, 0, sizeof(wc));
 
 	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 	wc.lpfnWndProc	= (WNDPROC)WndProc;
 	wc.hInstance = s_instance;
-	wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.lpszClassName = "RocketEditor";
+	wc.hIcon = LoadIcon(s_instance, IDI_APPLICATION);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.lpszMenuName  = MAKEINTRESOURCE(IDR_MENU);
 
 	if (!RegisterClass(&wc))
 	{
@@ -144,13 +150,70 @@ bool createWindow(const char* title, int width, int height)
 	ShowWindow(s_window, SW_SHOW);
 	SetForegroundWindow(s_window);
 	SetFocus(s_window);
-
-	EMGFXBackend_create();
-	EMGFXBackend_updateViewPort(width, height);
+	Editor_create();
 
 	return TRUE;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Window_setTitle(const char* title)
+{
+	SetWindowText(s_window, title);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int s_modifier = 0;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int onKeyDown(WPARAM wParam, LPARAM lParam)
+{
+	int key = -1;
+
+    switch (wParam)
+    {
+		case VK_SHIFT: s_modifier |= EMGUI_KEY_SHIFT; break;
+		case VK_CONTROL: s_modifier |= EMGUI_KEY_CTRL; break;
+        case VK_MENU : s_modifier |= EMGUI_KEY_ALT; break;
+        case VK_LWIN : 
+        case VK_RWIN : s_modifier |= EMGUI_KEY_COMMAND; break;
+        case VK_LEFT : key = EMGUI_ARROW_LEFT; break;
+        case VK_UP : key = EMGUI_ARROW_UP; break;
+        case VK_RIGHT : key = EMGUI_ARROW_RIGHT; break;
+        case VK_DOWN : key = EMGUI_ARROW_DOWN; break;
+        case VK_SPACE : key = ' '; break;
+
+        default:
+        {
+            wParam = MapVirtualKey((UINT)wParam, 2) & 0x0000ffff;
+			wParam = (WPARAM) CharUpperA((LPSTR)wParam);
+
+            if((wParam >=  32 && wParam <= 126) ||
+               (wParam >= 160 && wParam <= 255) )
+            {
+                return (int)wParam;
+            }
+        }
+    }
+	
+	return key;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onKeyUp(WPARAM wParam, LPARAM lParam)
+{
+    switch (wParam)
+    {
+		case VK_SHIFT: s_modifier &= ~EMGUI_KEY_SHIFT; break;
+		case VK_CONTROL: s_modifier &= ~EMGUI_KEY_CTRL; break;
+        case VK_MENU : s_modifier &= ~EMGUI_KEY_ALT; break;
+        case VK_LWIN : 
+        case VK_RWIN : s_modifier &= ~EMGUI_KEY_COMMAND; break;
+    }
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
@@ -164,7 +227,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 			else
 				s_active = true;
 
-			return 0;
+			break;
 		}
 
 		case WM_LBUTTONDOWN:
@@ -186,6 +249,42 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 			const short pos_x = GET_X_LPARAM(lParam); 
 			const short pos_y = GET_Y_LPARAM(lParam);
 			Emgui_setMousePos(pos_x, pos_y);
+			break;
+		}
+
+        case WM_KEYDOWN:
+        case WM_SYSKEYDOWN:
+		{
+			int key = onKeyDown(wParam, lParam);
+
+			if (key != -1)
+			{
+				Emgui_sendKeyinput(key, s_modifier);
+				Editor_keyDown(key, -1, s_modifier);
+				Editor_update();
+			}
+
+			break;
+		}
+
+        case WM_KEYUP:
+        case WM_SYSKEYUP:
+		{
+			onKeyUp(wParam, lParam);
+			break;
+		}
+
+		case WM_COMMAND:
+		{
+			switch (LOWORD(wParam))
+			{
+				case ID_FILE_OPEN:
+				{
+					Editor_menuEvent(EDITOR_MENU_OPEN);
+					Editor_update();
+					break;
+				}
+			}
 			break;
 		}
 
@@ -211,6 +310,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 		{
 			EMGFXBackend_updateViewPort(LOWORD(lParam), HIWORD(lParam));
 			Editor_setWindowSize(LOWORD(lParam), HIWORD(lParam));
+			Editor_update();
 			return 0;
 		}
 	}
@@ -236,10 +336,6 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmndLine, i
 
 	if (!createWindow("RocketEditor", 800, 600))
 		return 0;
-
-	EMGFXBackend_create();
-	Editor_create();
-	Editor_update();
 
 	// Update timed function every 16 ms
 

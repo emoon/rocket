@@ -131,6 +131,12 @@ bool RemoteConnection_createListner()
 	struct sockaddr_in sin;
 	int yes = 1;
 
+#if defined(_WIN32)
+	 WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2,0),&wsaData) != 0)
+		return false;
+#endif
+
 	s_serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (s_serverSocket == INVALID_SOCKET)
@@ -264,7 +270,7 @@ int RemoteConnection_recv(char* buffer, size_t length, int flags)
 
 	ret = recv(s_socket, buffer, (int)length, flags);
 
-	if (ret == 0)
+	if (ret <= 0)
 	{
 		RemoteConnection_disconnect();
 		return false;

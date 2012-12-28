@@ -887,7 +887,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		s_editorData.trackData.editText = 0;
 	}
 
-	if (key == 'i')
+	if (key == 'i' || key == 'I')
 	{
 		struct track_key newKey;
 		struct sync_track* track = tracks[active_track];
