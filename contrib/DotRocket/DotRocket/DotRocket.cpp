@@ -4,21 +4,22 @@
 
 #include "DotRocket.h"
 
-#include "../../../sync/sync.h"
-#include "../../../sync/track.h"
+#include "../../../lib/sync.h"
+#include "../../../lib/track.h"
 
 using System::Runtime::InteropServices::Marshal;
 using DotRocket::Track;
 using DotRocket::PlayerDevice;
 
-private ref class PlayerTrack: public Track {
+private ref class PlayerTrack: public Track
+{
 	const sync_track *track;
 public:
 	PlayerTrack(const sync_track *track): track(track) {}
-	virtual float GetValue(double time) override
+	virtual double GetValue(double time) override
 	{
 		return sync_get_val(track, time);
-	};
+	}
 };
 
 PlayerDevice::PlayerDevice(System::String ^name)
