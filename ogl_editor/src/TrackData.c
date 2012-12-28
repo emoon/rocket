@@ -121,9 +121,10 @@ void TrackData_linkTrack(int index, const char* name, TrackData* trackData)
 	if (group->trackCount == 0)
 		group->t.tracks = (Track**)malloc(sizeof(Track**));
 	else
-		group->t.tracks = (Track**)realloc(group->t.tracks, sizeof(Track**) * group->trackCount + 1);
+		group->t.tracks = (Track**)realloc(group->t.tracks, sizeof(Track**) * (group->trackCount + 1));
 
-	group->t.tracks[group->trackCount++] = track;
+	group->t.tracks[group->trackCount] = track;
+	group->trackCount++;
 
 	track->group = group;
 	track->displayName = strdup(&name[found + 1]);
