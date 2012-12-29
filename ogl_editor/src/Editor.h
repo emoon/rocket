@@ -13,6 +13,9 @@ void Editor_setWindowSize(int x, int y);
 void Editor_menuEvent(int menuItem);
 void Editor_scroll(float deltaX, float deltaY, int flags);
 void Editor_updateTrackScroll();
+void Editor_loadRecentFile(int file);
+
+char** Editor_getRecentFiles();
 
 enum
 {

@@ -17,6 +17,7 @@
 #include "../../sync/data.h"
 
 extern void Window_setTitle(const char* title);
+extern void Window_populateRecentList(const char** files);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -45,10 +46,61 @@ typedef struct EditorData
 	int copyCount;
 } EditorData;
 
-static char s_currentFile[2048];
 static EditorData s_editorData;
 static CopyData s_copyData;
 static bool reset_tracks = true;
+static char s_filenames[5][2048];
+
+static char* s_recentFiles[] =
+{
+	s_filenames[0],
+	s_filenames[1],
+	s_filenames[2],
+	s_filenames[3],
+	s_filenames[4],
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+char** Editor_getRecentFiles()
+{
+	return (char**)s_recentFiles;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const char* getMostRecentFile()
+{
+	return s_recentFiles[0];
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void setMostRecentFile(const char* filename)
+{
+	int i;
+
+	// move down all files
+	for (i = 3; i >= 0; --i)
+		strcpy(s_recentFiles[i+1], s_recentFiles[i]);
+
+	strcpy(s_recentFiles[0], filename);
+
+	// check if the string was already present and remove it if that is the case by compacting the array
+	
+	for (i = 1; i < 5; ++i)
+	{
+		if (!strcmp(s_recentFiles[i], filename))
+		{
+			for (; i < 4; ++i)
+				strcpy(s_recentFiles[i], s_recentFiles[i + 1]);
+
+			break;
+		}
+	}
+
+	Window_populateRecentList((const char**)s_recentFiles);
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -565,6 +617,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 						row = t->keys[idx + 1].row;
 
 					viewInfo->rowPos = row; 
+					viewInfo->selectStartRow = viewInfo->selectStopRow = row;
 				}
 
 				break;
@@ -826,14 +879,9 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			case 14 : bias_value = 1.0f; break;
 			case 15 : bias_value = 10.f; break;
 			case 17 : bias_value = 100.0f; break;
-			case 16 : bias_value = 1000.0f; break;
 		}
 
 		biasSelection(bias_value, selectLeft, selectRight, selectTop, selectBottom);
-
-		Editor_update();
-
-		return true;
 	}
 
 	// do edit here and biasing here
@@ -1089,12 +1137,30 @@ static void setWindowTitle(const char* path)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onOpen()
+void Editor_loadRecentFile(int id)
 {
-	if (LoadSave_loadRocketXMLDialog(s_currentFile, getTrackData()))
+	char path[2048];
+	strcpy(path, s_recentFiles[id]);  // must be unique buffer when doing set mostRecent
+
+	if (LoadSave_loadRocketXML(path, getTrackData()))
 	{
 		Editor_update();
-		setWindowTitle(s_currentFile);
+		setWindowTitle(path);
+		setMostRecentFile(path);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onOpen()
+{
+	char currentFile[2048];
+
+	if (LoadSave_loadRocketXMLDialog(currentFile, getTrackData()))
+	{
+		Editor_update();
+		setWindowTitle(currentFile);
+		setMostRecentFile(currentFile);
 	}
 }
 
@@ -1102,7 +1168,7 @@ static void onOpen()
 
 static void onSave()
 {
-	LoadSave_saveRocketXML(s_currentFile, getTrackData()); 
+	LoadSave_saveRocketXML(getMostRecentFile(), getTrackData()); 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1110,9 +1176,11 @@ static void onSave()
 static void onSaveDialog()
 {
 	char path[2048];
+
 	if (!LoadSave_saveRocketXMLDialog(path, getTrackData())) 
 		return;
 
+	setMostRecentFile(path);
 	setWindowTitle(path);
 }
 
@@ -1120,7 +1188,6 @@ static void onSaveDialog()
 
 void Editor_menuEvent(int menuItem)
 {
-	printf("%d\n", menuItem);
 	switch (menuItem)
 	{
 		case EDITOR_MENU_OPEN : onOpen(); break;

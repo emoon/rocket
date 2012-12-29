@@ -213,6 +213,43 @@ static int getModifierFlags(int flags)
     return YES;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (void)onRecentFile:(id)sender 
+{
+	NSString* string = [sender representedObject];
+	Editor_loadRecentFile([string intValue]);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Window_populateRecentList(const char** files)
+{
+ 	NSMenu* fileMenu = [[[NSApp mainMenu] itemWithTitle:@"File"] submenu];
+	NSMenu* recentItems = [[fileMenu itemWithTitle:@"Recent Files"] submenu];
+
+	[recentItems removeAllItems];
+
+	for (int i = 0; i < 4; ++i)
+	{
+		const char* filename = files[i];
+
+		if (!strcmp(filename, ""))
+			continue;
+
+		NSString* name = [NSString stringWithUTF8String: filename];
+
+		NSMenuItem* newItem = [[NSMenuItem alloc] initWithTitle:name action:@selector(onRecentFile:) keyEquivalent:@""];
+		[newItem setRepresentedObject:[NSString stringWithFormat:@"%d",i]];
+		[newItem setKeyEquivalentModifierMask: NSCommandKeyMask];
+		[newItem setKeyEquivalent:[NSString stringWithFormat:@"%d",i + 1]];
+
+		[recentItems addItem:newItem];
+
+		[newItem release];
+	}
+}
+
 @end
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -228,4 +265,5 @@ void Window_setTitle(const char* title)
 {
 	[g_window setTitle:[NSString stringWithUTF8String:title]];
 }
+
 
