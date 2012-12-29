@@ -882,6 +882,10 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		}
 
 		biasSelection(bias_value, selectLeft, selectRight, selectTop, selectBottom);
+
+		Editor_update();
+
+		return true;
 	}
 
 	// do edit here and biasing here
@@ -935,7 +939,30 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		s_editorData.trackData.editText = 0;
 	}
 
-	if (key == 'i' || key == 'I')
+	if (key == EMGUI_KEY_TAB_ENTER)
+	{
+		struct sync_track* t = getTracks()[active_track];
+
+		if (t->keys)
+		{
+			struct track_key key;
+			int idx = sync_find_key(t, row_pos);
+			if (idx < 0)
+				idx = -idx - 1;
+
+			key.row = row_pos;
+			key.value = sync_get_val(t, row_pos);
+			key.type = t->keys[emaxi(idx - 1, 0)].type;
+
+			sync_set_key(t, &key);
+
+			RemoteConnection_sendSetKeyCommand(t->name, &key);
+		}
+
+		handled_key = true;
+	}
+
+	if (key == 'i' || key == 'I' || key == 'q')
 	{
 		struct track_key newKey;
 		struct sync_track* track = tracks[active_track];
