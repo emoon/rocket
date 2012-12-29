@@ -148,34 +148,6 @@
 										</object>
 									</object>
 								</object>
-								<object class="NSMenuItem" id="573637146">
-									<reference key="NSMenu" ref="720053764"/>
-									<string key="NSTitle">Open Recent</string>
-									<string key="NSKeyEquiv"/>
-									<int key="NSKeyEquivModMask">1048576</int>
-									<int key="NSMnemonicLoc">2147483647</int>
-									<reference key="NSOnImage" ref="35465992"/>
-									<reference key="NSMixedImage" ref="502551668"/>
-									<string key="NSAction">submenuAction:</string>
-									<object class="NSMenu" key="NSSubmenu" id="29659592">
-										<string key="NSTitle">Open Recent</string>
-										<object class="NSMutableArray" key="NSMenuItems">
-											<bool key="EncodedWithXMLCoder">YES</bool>
-											<object class="NSMenuItem" id="833175649">
-												<reference key="NSMenu" ref="29659592"/>
-												<string key="NSTitle">Clear Menu</string>
-												<string key="NSKeyEquiv"/>
-												<int key="NSKeyEquivModMask">1048576</int>
-												<int key="NSMnemonicLoc">2147483647</int>
-												<reference key="NSOnImage" ref="35465992"/>
-												<reference key="NSMixedImage" ref="502551668"/>
-											</object>
-										</object>
-										<string key="NSName">_NSRecentDocumentsMenu</string>
-										<bool key="NSNoAutoenable">YES</bool>
-										<bool key="NSMenuExcludeMarkColumn">YES</bool>
-									</object>
-								</object>
 								<object class="NSMenuItem" id="425164168">
 									<reference key="NSMenu" ref="720053764"/>
 									<bool key="NSIsDisabled">YES</bool>
@@ -335,7 +307,6 @@
 							<string key="NSFrameSize">{800, 600}</string>
 							<reference key="NSSuperview" ref="439893737"/>
 							<reference key="NSWindow"/>
-							<reference key="NSNextKeyView"/>
 							<string key="NSReuseIdentifierKey">_NS:9</string>
 							<string key="NSClassName">RocketView</string>
 						</object>
@@ -538,7 +509,6 @@
 							<reference ref="425164168"/>
 							<reference ref="49223823"/>
 							<reference ref="1010469920"/>
-							<reference ref="573637146"/>
 							<reference ref="752287694"/>
 						</object>
 						<reference key="parent" ref="379814623"/>
@@ -693,29 +663,6 @@
 						<reference key="parent" ref="720053764"/>
 					</object>
 					<object class="IBObjectRecord">
-						<int key="objectID">548</int>
-						<reference key="object" ref="573637146"/>
-						<object class="NSMutableArray" key="children">
-							<bool key="EncodedWithXMLCoder">YES</bool>
-							<reference ref="29659592"/>
-						</object>
-						<reference key="parent" ref="720053764"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">549</int>
-						<reference key="object" ref="29659592"/>
-						<object class="NSMutableArray" key="children">
-							<bool key="EncodedWithXMLCoder">YES</bool>
-							<reference ref="833175649"/>
-						</object>
-						<reference key="parent" ref="573637146"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">550</int>
-						<reference key="object" ref="833175649"/>
-						<reference key="parent" ref="29659592"/>
-					</object>
-					<object class="IBObjectRecord">
 						<int key="objectID">562</int>
 						<reference key="object" ref="752287694"/>
 						<object class="NSMutableArray" key="children">
@@ -765,9 +712,6 @@
 					<string>494.IBPluginDependency</string>
 					<string>5.IBPluginDependency</string>
 					<string>537.IBPluginDependency</string>
-					<string>548.IBPluginDependency</string>
-					<string>549.IBPluginDependency</string>
-					<string>550.IBPluginDependency</string>
 					<string>56.IBPluginDependency</string>
 					<string>562.IBPluginDependency</string>
 					<string>563.IBPluginDependency</string>
@@ -800,9 +744,6 @@
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>{{928, 459}, {480, 360}}</string>
 					<integer value="1"/>
-					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
-					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
 					<string>com.apple.InterfaceBuilder.CocoaPlugin</string>
