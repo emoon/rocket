@@ -912,6 +912,8 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 		deleteArea(row_pos, active_track, buffer_width, buffer_height);
 
+		Commands_beginMulti();
+
 		for (i = 0; i < buffer_size; ++i)
 		{
 			const CopyEntry* ce = &s_copyData.entries[i];
@@ -928,13 +930,11 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 				struct track_key key = ce->keyFrame;
 				key.row += row_pos;
 
-				rlog(R_INFO, "key.row %d\n", key.row);
-
-				sync_set_key(tracks[trackIndex], &key);
-
-				RemoteConnection_sendSetKeyCommand(tracks[trackIndex]->name, &key);
+				Commands_addOrUpdateKey(trackIndex, &key);
 			}
 		}
+
+		Commands_endMulti();
 
 		handled_key = true;
 	}
