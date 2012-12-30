@@ -270,7 +270,11 @@ int RemoteConnection_recv(char* buffer, size_t length, int flags)
 
 	ret = recv(s_socket, buffer, (int)length, flags);
 
+#if defined(_WIN32)
 	if (ret <= 0)
+#else
+	if (ret == 0)
+#endif
 	{
 		RemoteConnection_disconnect();
 		return false;
