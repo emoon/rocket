@@ -1,4 +1,5 @@
 #include "TrackData.h"
+#include "Commands.h"
 #include "rlog.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -13,6 +14,9 @@ int TrackData_createGetTrack(TrackData* trackData, const char* name)
 		trackData->tracks[index].index = index;
 		trackData->tracks[index].color = TrackData_getNextColor(trackData); 
 	}
+
+	if (trackData->syncData.tracks)
+		Commands_init(trackData->syncData.tracks, trackData);
 
 	return index;
 }

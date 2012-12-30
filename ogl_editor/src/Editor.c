@@ -11,6 +11,7 @@
 #include "minmax.h"
 #include "TrackData.h"
 #include "RemoteConnection.h"
+#include "Commands.h"
 #include "MinecraftiaFont.h"
 #include "../../sync/sync.h"
 #include "../../sync/base.h"
@@ -488,6 +489,8 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 	const int track_count = getTrackCount();
 	struct sync_track** tracks = getTracks();
 
+	Commands_beginMulti();
+
 	for (i = 0; i < bufferWidth; ++i) 
 	{
 		struct sync_track* t;
@@ -503,13 +506,11 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 		{
 			int row = rowPos + j;
 
-			if (is_key_frame(t, row))
-			{
-				sync_del_key(t, row);
-				RemoteConnection_sendDeleteKeyCommand(t->name, row);
-			}
+			Commands_deleteKey(trackIndex, row);
 		}
 	}
+
+	Commands_endMulti();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -518,6 +519,8 @@ static void biasSelection(float value, int selectLeft, int selectRight, int sele
 {
 	int track, row;
 	struct sync_track** tracks = getTracks();
+
+	Commands_beginMulti();
 
 	for (track = selectLeft; track <= selectRight; ++track) 
 	{
@@ -533,11 +536,11 @@ static void biasSelection(float value, int selectLeft, int selectRight, int sele
 			newKey = t->keys[idx];
 			newKey.value += value;
 
-			sync_set_key(t, &newKey);
-
-			RemoteConnection_sendSetKeyCommand(t->name, &newKey);
+			Commands_updateKey(track, &newKey);
 		}
 	}
+
+	Commands_endMulti();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -572,11 +575,15 @@ static void endEditing()
 
 	track_name = track->name; 
 
+	Commands_addOrUpdateKey(active_track, &key);
+
+	/*
 	sync_set_key(track, &key);
 
 	rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, active_track, key.row, track_name);
 
 	RemoteConnection_sendSetKeyCommand(track_name, &key);
+	*/
 
 	is_editing = false;
 	s_editorData.trackData.editText = 0;
@@ -873,6 +880,16 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 	{
 		copySelection(row_pos, active_track, selectLeft, selectRight, selectTop, selectBottom);
 		deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight);
+		handled_key = true;
+	}
+
+	if (key == 'z' || key == 'Z')
+	{
+		if (modifiers & EMGUI_KEY_SHIFT)
+			Commands_redo();
+		else
+			Commands_undo();
+
 		handled_key = true;
 	}
 
@@ -1204,17 +1221,23 @@ static void setWindowTitle(const char* path)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void onFinishedLoad(const char* path)
+{
+	Editor_update();
+	setWindowTitle(path);
+	setMostRecentFile(path);
+	//Commands_init(getTracks(), getTrackData());
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Editor_loadRecentFile(int id)
 {
 	char path[2048];
 	strcpy(path, s_recentFiles[id]);  // must be unique buffer when doing set mostRecent
 
 	if (LoadSave_loadRocketXML(path, getTrackData()))
-	{
-		Editor_update();
-		setWindowTitle(path);
-		setMostRecentFile(path);
-	}
+		onFinishedLoad(path);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1224,11 +1247,7 @@ static void onOpen()
 	char currentFile[2048];
 
 	if (LoadSave_loadRocketXMLDialog(currentFile, getTrackData()))
-	{
-		Editor_update();
-		setWindowTitle(currentFile);
-		setMostRecentFile(currentFile);
-	}
+		onFinishedLoad(currentFile);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
