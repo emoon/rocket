@@ -604,7 +604,12 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 						row = t->keys[idx + 1].row;
 
 					viewInfo->rowPos = row; 
-					viewInfo->selectStopRow = row;
+			
+					if (modifiers & EMGUI_KEY_SHIFT)
+						viewInfo->selectStopRow = row;
+					else
+						viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+
 					RemoteConnection_sendSetRowCommand(row);
 				}
 
@@ -647,7 +652,12 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 						idx = -idx - 1;
 
 					viewInfo->rowPos = row = t->keys[emaxi(idx - 1, 0)].row;
-					viewInfo->selectStartRow = row;
+
+					if (modifiers & EMGUI_KEY_SHIFT)
+						viewInfo->selectStartRow = row;
+					else
+						viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+
 					RemoteConnection_sendSetRowCommand(row);
 				}
 
