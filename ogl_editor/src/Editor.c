@@ -1076,6 +1076,13 @@ void Editor_scroll(float deltaX, float deltaY, int flags)
 {
 	int current_row = s_editorData.trackViewInfo.rowPos;
 	int old_offset = s_editorData.trackViewInfo.startPixel;
+	int start_row = 0, end_row = 10000;
+
+	if (trackData)
+	{
+		start_row = trackData->startRow;
+		end_row = trackData->endRow;
+	}
 
 	if (flags & EMGUI_KEY_ALT)
 	{
@@ -1095,11 +1102,11 @@ void Editor_scroll(float deltaX, float deltaY, int flags)
 
 	current_row += (int)deltaY;
 
-	if (current_row < trackData->startRow || current_row >= trackData->endRow)
+	if (current_row < start_row || current_row >= end_row)
 		return;
-
+    
 	s_editorData.trackViewInfo.startPixel += (int)(deltaX * 4.0f);
-	s_editorData.trackViewInfo.rowPos = eclampi(current_row, trackData->startRow, trackData->endRow);
+	s_editorData.trackViewInfo.rowPos = eclampi(current_row, start_row, end_row);
 
 	RemoteConnection_sendSetRowCommand(s_editorData.trackViewInfo.rowPos);
 
