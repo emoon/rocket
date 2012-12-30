@@ -70,6 +70,8 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 {
 	int i;
 
+	Emgui_setDefaultFont();
+
 	if (rowOffset < 0)
 	{
 		y += rowSpacing * -rowOffset;
