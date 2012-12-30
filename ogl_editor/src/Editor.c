@@ -958,6 +958,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			case 14 : bias_value = 1.0f; break;
 			case 15 : bias_value = 10.f; break;
 			case 17 : bias_value = 100.0f; break;
+			case 16 : bias_value = 1000.0f; break;
 		}
 
 		biasSelection(bias_value, selectLeft, selectRight, selectTop, selectBottom);
