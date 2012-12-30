@@ -365,7 +365,7 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 			renderText(info, track, y, idx, offset, y_offset, folded);
 
 		selected = (trackIndex >= info->selectLeft && trackIndex <= info->selectRight) && 
-			       (y >= info->selectTop && y < info->selectBottom);
+			       (y >= info->selectTop && y <= info->selectBottom);
 
 		if (selected)
 			Emgui_fill(selection_color, startX, y_offset - font_size_half, size, font_size);  
