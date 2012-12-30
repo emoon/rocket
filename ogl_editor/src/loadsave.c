@@ -172,6 +172,41 @@ int LoadSave_loadRocketXMLDialog(char* path, TrackData* trackData)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static const char* whitespace_cb(mxml_node_t *node, int where)
+{
+	const char* name = mxmlGetElement(node);
+
+	if (where == MXML_WS_BEFORE_CLOSE) 
+	{
+		if (!strcmp("tracks", name))
+			return NULL; 
+
+		return "\t";
+	}
+
+	if (where == MXML_WS_AFTER_CLOSE) 
+		return "\n";
+
+	if (where == MXML_WS_BEFORE_OPEN)
+	{
+		if (!strcmp("key", name))
+			return "\t\t";
+
+		if (!strcmp("tracks", name))
+			return NULL; 
+
+		if (!strcmp("track", name))
+			return "\t";
+	}
+
+	if (where == MXML_WS_AFTER_OPEN) 
+		return "\n";
+
+	return NULL;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 {
 	mxml_node_t* xml;
@@ -229,7 +264,7 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 	}
 
 	fp = fopen(path, "wt");
-    mxmlSaveFile(xml, fp, MXML_NO_CALLBACK);
+    mxmlSaveFile(xml, fp, whitespace_cb);
     fclose(fp);
 
     return true;
