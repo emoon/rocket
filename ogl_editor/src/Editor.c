@@ -559,19 +559,6 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
 	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
-	if (key == ' ')
-	{
-		// TODO: Don't start playing if we are in edit mode (but space shouldn't be added in edit mode but we still
-		// shouldn't start playing if we do
-
-		RemoteConnection_sendPauseCommand(!paused);
-		Editor_update();
-		return true;
-	}
-
-	if (!paused)
-		return false;
-
 	// If some emgui control has focus let it do its thing until its done
 
 	if (Emgui_hasKeyboardFocus())
@@ -617,7 +604,8 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 						row = t->keys[idx + 1].row;
 
 					viewInfo->rowPos = row; 
-					viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+					viewInfo->selectStopRow = row;
+					RemoteConnection_sendSetRowCommand(row);
 				}
 
 				break;
@@ -658,7 +646,9 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 					if (idx < 0)
 						idx = -idx - 1;
 
-					viewInfo->rowPos = t->keys[emaxi(idx - 1, 0)].row;
+					viewInfo->rowPos = row = t->keys[emaxi(idx - 1, 0)].row;
+					viewInfo->selectStartRow = row;
+					RemoteConnection_sendSetRowCommand(row);
 				}
 
 				break;
@@ -800,6 +790,19 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 		default : handled_key = false; break;
 	}
+
+	if (key == ' ')
+	{
+		// TODO: Don't start playing if we are in edit mode (but space shouldn't be added in edit mode but we still
+		// shouldn't start playing if we do
+
+		RemoteConnection_sendPauseCommand(!paused);
+		Editor_update();
+		return true;
+	}
+
+	if (!paused)
+		return true;
 
 	// handle copy of tracks/values
 
