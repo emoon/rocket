@@ -14,31 +14,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 {
 	struct track_key k;
 	int is_key, track_index = 0;
-	//struct sync_track** tracks = trackData->syncData.tracks;
 	mxml_node_t* node = rootNode;
-
-	// find the tracks element
-	
-	/*
-	mxml_node_t* node = mxmlFindElement(rootNode, rootNode, "tracks", NULL, NULL, MXML_NO_DESCEND);
-
-	if (!node)
-	{
-		node = mxmlFindElement(rootNode, rootNode, "tracks", NULL, NULL, MXML_DESCEND_FIRST);
-
-		if (!node)
-		{
-			// TODO: Report back that we couldn't find tracks in xml file
-			// Dialog_showError(...)
-		
-			printf("No tracks found\n");
-
-			return;
-		}
-	}
-	*/
-	
-
 
 	// Traverse the tracks node data
 
@@ -68,7 +44,6 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
                     const char* folded_text = mxmlElementGetAttr(node, "folded");
                     
 					track_index = TrackData_createGetTrack(trackData, track_name);
-					//printf("track_index %d\n", track_index);
 
 					t = &trackData->tracks[track_index];
 					track = trackData->syncData.tracks[track_index];
@@ -102,8 +77,6 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 
 					track->keys = 0;
 					track->num_keys = 0;
-
-					//printf("Creating track/channel with name %s\n", track_name);
 				}
 				else if (!strcmp("key", element_name))
 				{
@@ -121,8 +94,6 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 
 					assert(!is_key);
 					sync_set_key(track, &k);
-
-					//printf("Adding key: row %s | value %s | interpolation %s\n", row, value, interpolation);
 				}
 			}
 
