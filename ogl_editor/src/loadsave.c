@@ -106,6 +106,8 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 
 					assert(!is_key);
 					sync_set_key(track, &k);
+
+					RemoteConnection_sendSetKeyCommand(track->name, &k);
 				}
 			}
 
