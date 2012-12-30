@@ -12,6 +12,26 @@ void Window_populateRecentList(char** files);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
+{
+	int ret = NSRunAlertPanel(@"Save before exit?", @"Do you want save the work?", @"Yes", @"Cancel", @"No");
+
+	if (ret == NSAlertDefaultReturn)
+	{
+		if (!Editor_saveBeforeExit())
+        	return NSTerminateCancel;
+	
+		return NSTerminateNow;
+	}
+
+    if (ret == NSAlertAlternateReturn)
+        return NSTerminateCancel;
+    
+	return NSTerminateNow;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification 
 {
 	char** recent_list = Editor_getRecentFiles();

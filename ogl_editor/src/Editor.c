@@ -51,6 +51,7 @@ static EditorData s_editorData;
 static CopyData s_copyData;
 static bool reset_tracks = true;
 static char s_filenames[5][2048];
+static char* s_loadedFilename = 0;
 
 static char* s_recentFiles[] =
 {
@@ -86,6 +87,7 @@ void setMostRecentFile(const char* filename)
 		strcpy(s_recentFiles[i+1], s_recentFiles[i]);
 
 	strcpy(s_recentFiles[0], filename);
+	s_loadedFilename = s_recentFiles[0];
 
 	// check if the string was already present and remove it if that is the case by compacting the array
 	
@@ -1226,7 +1228,6 @@ static void onFinishedLoad(const char* path)
 	Editor_update();
 	setWindowTitle(path);
 	setMostRecentFile(path);
-	//Commands_init(getTracks(), getTrackData());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1252,22 +1253,41 @@ static void onOpen()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onSave()
+static bool onSaveDialog()
 {
-	LoadSave_saveRocketXML(getMostRecentFile(), getTrackData()); 
+	char path[2048];
+	int ret;
+
+	if (!(ret = LoadSave_saveRocketXMLDialog(path, getTrackData())))
+		return false;
+
+	setMostRecentFile(path);
+	setWindowTitle(path);
+
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onSaveDialog()
+static void onSave()
 {
-	char path[2048];
+	if (!s_loadedFilename)
+		onSaveDialog();
+	else
+		LoadSave_saveRocketXML(getMostRecentFile(), getTrackData()); 
+}
 
-	if (!LoadSave_saveRocketXMLDialog(path, getTrackData())) 
-		return;
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	setMostRecentFile(path);
-	setWindowTitle(path);
+bool Editor_saveBeforeExit()
+{
+	if (s_loadedFilename)
+	{
+		onSave();
+		return true;
+	}
+
+	return onSaveDialog();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
