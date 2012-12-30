@@ -885,6 +885,26 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		handled_key = true;
 	}
 
+	if (key == 't' && (modifiers & EMGUI_KEY_COMMAND))
+	{
+		struct sync_track* t = getTracks()[active_track];
+
+		viewInfo->selectStartTrack = viewInfo->selectStopTrack = active_track;
+
+		if (t->keys)
+		{
+			viewInfo->selectStartRow = t->keys[0].row;
+			viewInfo->selectStopRow = t->keys[t->num_keys - 1].row;
+	
+		}
+		else
+		{
+			viewInfo->selectStartRow = viewInfo->selectStopRow = row_pos;
+		}
+
+		handled_key = true;
+	}
+
 	if (key == 'z' || key == 'Z')
 	{
 		if (modifiers & EMGUI_KEY_SHIFT)
