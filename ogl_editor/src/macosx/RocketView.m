@@ -97,48 +97,6 @@ static int getModifierFlags(int flags)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-- (void)windowShouldClose:(NSNotification *)aNotification
-{
-	NSAlert *alert = [NSAlert alertWithMessageText:@"\nDo you really want exit?"
-									 defaultButton:@"Yes" alternateButton:NO otherButton:@"No"
-						 informativeTextWithFormat:@""];
-	
-	int result = [alert runModal];
-	
-	if(result == NSOKButton)
-	{
-		
-		[NSApp terminate:self];
-	}
-	else
-	{
-		[[NSNotificationCenter defaultCenter] removeObserver:self];
-		//return NSTerminateCancel;
-	}
-}
-
-- (void)windowWillClose:(NSNotification *)aNotification
-{
-	NSAlert *alert = [NSAlert alertWithMessageText:@"\nDo you really want exit?"
-									 defaultButton:@"Yes" alternateButton:NO otherButton:@"No"
-						 informativeTextWithFormat:@""];
-	
-	int result = [alert runModal];
-	
-	if(result == NSOKButton)
-	{
-		
-		[NSApp terminate:self];
-	}
-	else
-	{
-		[[NSNotificationCenter defaultCenter] removeObserver:self];
-		//return NSTerminateCancel;
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (void)keyDown:(NSEvent *)theEvent 
 {
