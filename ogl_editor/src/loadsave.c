@@ -172,7 +172,7 @@ int LoadSave_loadRocketXMLDialog(char* path, TrackData* trackData)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static const char* whitespace_cb(mxml_node_t *node, int where)
+static const char* whitespaceCallback(mxml_node_t* node, int where)
 {
 	const char* name = mxmlGetElement(node);
 
@@ -264,7 +264,7 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 	}
 
 	fp = fopen(path, "wt");
-    mxmlSaveFile(xml, fp, whitespace_cb);
+    mxmlSaveFile(xml, fp, whitespaceCallback);
     fclose(fp);
 
     return true;
