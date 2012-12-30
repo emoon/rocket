@@ -544,6 +544,46 @@ static void biasSelection(float value, int selectLeft, int selectRight, int sele
 static char s_editBuffer[512];
 static bool is_editing = false;
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void endEditing()
+{
+	const char* track_name;
+	struct track_key key;
+	struct sync_track* track;
+	int row_pos = getRowPos();
+	int active_track = getActiveTrack();
+
+	if (!is_editing || !getTracks())
+		return;
+
+	track = getTracks()[active_track];
+
+	key.row = row_pos;
+	key.value = (float)atof(s_editBuffer);
+	key.type = 0;
+
+	if (is_key_frame(track, row_pos))
+	{
+		int idx = key_idx_floor(track, row_pos);
+		key.type = track->keys[idx].type;
+	}
+
+	track_name = track->name; 
+
+	sync_set_key(track, &key);
+
+	rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, active_track, key.row, track_name);
+
+	RemoteConnection_sendSetKeyCommand(track_name, &key);
+
+	is_editing = false;
+	s_editorData.trackData.editText = 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 bool Editor_keyDown(int key, int keyCode, int modifiers)
 {
 	bool handled_key = true;
@@ -578,15 +618,17 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 	{
 		case EMGUI_KEY_BACKSPACE:
 		{
+			endEditing();
 			deleteArea(row_pos, active_track, 1, 1);
 			break;
 		}
-
 
 		case EMGUI_ARROW_DOWN:
 		{
 			const int active_track = getActiveTrack();
 			int row = row_pos;
+
+			endEditing();
 
 			if (modifiers & EMGUI_KEY_CTRL)
 			{
@@ -640,6 +682,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		case EMGUI_ARROW_UP:
 		{
 			int row = row_pos;
+			endEditing();
 
 			if (modifiers & EMGUI_KEY_CTRL)
 			{
@@ -690,6 +733,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		{
 			const int current_track = getActiveTrack();
 			int track = getPrevTrack();
+			endEditing();
 
 			if (modifiers & EMGUI_KEY_ALT)
 			{
@@ -748,6 +792,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			const int current_track = getActiveTrack();
 			int track = getNextTrack();
 			int track_count = getTrackCount();
+			endEditing();
 
 			if (modifiers & EMGUI_KEY_ALT)
 			{
@@ -806,6 +851,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		// TODO: Don't start playing if we are in edit mode (but space shouldn't be added in edit mode but we still
 		// shouldn't start playing if we do
 
+		endEditing();
 		RemoteConnection_sendPauseCommand(!paused);
 		Editor_update();
 		return true;
@@ -925,27 +971,8 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 		if (key != 27)
 		{
-			const char* track_name;
-			struct track_key key;
-			struct sync_track* track = tracks[active_track];
+			endEditing();
 
-			key.row = row_pos;
-			key.value = (float)atof(s_editBuffer);
-			key.type = 0;
-
-			if (is_key_frame(track, row_pos))
-			{
-				int idx = key_idx_floor(track, row_pos);
-				key.type = track->keys[idx].type;
-			}
-
-			track_name = track->name; 
-
-			sync_set_key(track, &key);
-
-			rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, active_track, key.row, track_name);
-
-			RemoteConnection_sendSetKeyCommand(track_name, &key);
 		}
 
 		is_editing = false;
