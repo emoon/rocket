@@ -31,6 +31,18 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 			{
 				const char* element_name = mxmlGetElement(node);
 
+				if (!strcmp("tracks", element_name))
+				{
+                    const char* start_row = mxmlElementGetAttr(node, "startRow");
+                    const char* end_row = mxmlElementGetAttr(node, "endRow");
+
+                    if (start_row)
+						trackData->startRow = atoi(start_row);
+
+                    if (end_row)
+						trackData->endRow = atoi(end_row);
+				}
+
 				if (!strcmp("track", element_name))
 				{
 					int i;
@@ -178,6 +190,26 @@ static const char* whitespaceCallback(mxml_node_t* node, int where)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void setElementInt(mxml_node_t* node, const char* attr, const char* format, int v)
+{
+	char temp[256];
+	memset(temp, 0, sizeof(temp));
+	sprintf(temp, format, v); 
+	mxmlElementSetAttr(node, attr, temp); 
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void setElementFloat(mxml_node_t* node, char* attr, float v)
+{
+	char temp[256];
+	memset(temp, 0, sizeof(temp));
+	sprintf(temp, "%f", v); 
+	mxmlElementSetAttr(node, attr, temp); 
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 {
 	mxml_node_t* xml;
@@ -190,47 +222,26 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 	xml = mxmlNewXML("1.0");	
 	tracks = mxmlNewElement(xml, "tracks");
 
-	mxmlElementSetAttr(tracks, "rows", "10000"); // TODO: Fix me
+	mxmlElementSetAttr(tracks, "rows", "10000");
+	setElementInt(tracks, "startRow", "%d", trackData->startRow); 
+	setElementInt(tracks, "endRow", "%d", trackData->endRow); 
 
 	for (p = 0; p < sync_data->num_tracks; ++p) 
 	{
 		int i;
-		char temp[256];
 		const struct sync_track* t = sync_data->tracks[p];
 		mxml_node_t* track = mxmlNewElement(tracks, "track");
 
-		memset(temp, 0, sizeof(temp));
-		sprintf(temp, "%08x", trackData->tracks[p].color); 
-
-		// setup the elements for the trak
-
 		mxmlElementSetAttr(track, "name", t->name); 
-		mxmlElementSetAttr(track, "color", temp); 
 		mxmlElementSetAttr(track, "folded", trackData->tracks[p].folded ? "1" : "0"); 
+		setElementInt(track, "color", "%08x", trackData->tracks[p].color);
 
 		for (i = 0; i < (int)t->num_keys; ++i) 
 		{
-			char temp0[256];
-			char temp1[256];
-			char temp2[256];
-
-			int row = (int)t->keys[i].row;
-			float value = t->keys[i].value;
-			char interpolationType = (char)t->keys[i].type;
-
 			mxml_node_t* key = mxmlNewElement(track, "key");
-
-			memset(temp0, 0, sizeof(temp0));
-			memset(temp1, 0, sizeof(temp1));
-			memset(temp2, 0, sizeof(temp2));
-
-			sprintf(temp0, "%d", row); 
-			sprintf(temp1, "%f", value); 
-			sprintf(temp2, "%d", interpolationType); 
-
-			mxmlElementSetAttr(key, "row", temp0); 
-			mxmlElementSetAttr(key, "value", temp1); 
-			mxmlElementSetAttr(key, "interpolation", temp2); 
+			setElementInt(key, "row", "%d", (int)t->keys[i].row);
+			setElementFloat(key, "value", t->keys[i].value);
+			setElementInt(key, "interpolation", "%d", (int)t->keys[i].type);
 		}
 	}
 

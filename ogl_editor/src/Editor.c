@@ -219,7 +219,8 @@ void Editor_create()
 	RemoteConnection_createListner();
 
 	s_editorData.trackViewInfo.smallFontId = id;
-	s_editorData.trackViewInfo.endRow = 10000;
+	s_editorData.trackData.startRow = 0;
+	s_editorData.trackData.endRow = 10000;
 
 	Emgui_setDefaultFont();
 }
@@ -351,8 +352,8 @@ static void drawStatus()
 	size = drawConnectionStatus(0, sizeY);
 	size += drawCurrentValue(size, sizeY);
 	size += drawNameValue("Row", size, sizeY, &s_editorData.trackViewInfo.rowPos, 0, 20000 - 1, s_currentRow);
-	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackViewInfo.startRow, 0, 10000000, s_startRow);
-	size += drawNameValue("End Row", size, sizeY, &s_editorData.trackViewInfo.endRow, 0, 10000000, s_endRow);
+	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackData.startRow, 0, 10000000, s_startRow);
+	size += drawNameValue("End Row", size, sizeY, &s_editorData.trackData.endRow, 0, 10000000, s_endRow);
 
 	if (getRowPos() != prevRow)
 		RemoteConnection_sendSetRowCommand(getRowPos());
@@ -660,8 +661,8 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 			row += modifiers & EMGUI_KEY_ALT ? 8 : 1;
 
-			if ((modifiers & EMGUI_KEY_COMMAND) || row > viewInfo->endRow)
-				row = viewInfo->endRow;
+			if ((modifiers & EMGUI_KEY_COMMAND) || row > trackData->endRow)
+				row = trackData->endRow;
 
 			viewInfo->rowPos = row;
 
@@ -709,8 +710,8 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 			row -= modifiers & EMGUI_KEY_ALT ? 8 : 1;
 
-			if ((modifiers & EMGUI_KEY_COMMAND) || row < viewInfo->startRow)
-				row = viewInfo->startRow;
+			if ((modifiers & EMGUI_KEY_COMMAND) || row < trackData->startRow)
+				row = trackData->startRow;
 
 			viewInfo->rowPos = row;
 
@@ -1035,7 +1036,6 @@ void Editor_scroll(float deltaX, float deltaY, int flags)
 {
 	int current_row = s_editorData.trackViewInfo.rowPos;
 	int old_offset = s_editorData.trackViewInfo.startPixel;
-	TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
 
 	if (flags & EMGUI_KEY_ALT)
 	{
@@ -1055,11 +1055,11 @@ void Editor_scroll(float deltaX, float deltaY, int flags)
 
 	current_row += (int)deltaY;
 
-	if (current_row < viewInfo->startRow || current_row >= viewInfo->endRow)
+	if (current_row < trackData->startRow || current_row >= trackData->endRow)
 		return;
 
 	s_editorData.trackViewInfo.startPixel += (int)(deltaX * 4.0f);
-	s_editorData.trackViewInfo.rowPos = eclampi(current_row, viewInfo->startRow, viewInfo->endRow);
+	s_editorData.trackViewInfo.rowPos = eclampi(current_row, trackData->startRow, trackData->endRow);
 
 	RemoteConnection_sendSetRowCommand(s_editorData.trackViewInfo.rowPos);
 

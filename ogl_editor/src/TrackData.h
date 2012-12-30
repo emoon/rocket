@@ -68,6 +68,8 @@ typedef struct TrackData
 	int activeTrack;
 	int lastColor;
 	int trackCount;
+	int startRow;
+	int endRow;
 	char* editText;
 } TrackData;
 
