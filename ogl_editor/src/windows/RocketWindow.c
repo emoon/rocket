@@ -244,12 +244,26 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 			break;
 		}
 
+		case WM_MOUSEWHEEL:
+		{
+			float delta = -((float)GET_WHEEL_DELTA_WPARAM(wParam) / 20);
+			Editor_scroll(0.0f, delta, getModifiers());
+			break;
+		}
+
 		case WM_MOUSEMOVE:
 		{
 			const short pos_x = GET_X_LPARAM(lParam); 
 			const short pos_y = GET_Y_LPARAM(lParam);
+
+			if (wParam & MK_LBUTTON)
+				Emgui_setMouseLmb(1);
+			else
+				Emgui_setMouseLmb(0);
+
 			Emgui_setMousePos(pos_x, pos_y);
-			break;
+			Editor_update();
+			return 0;
 		}
 
         case WM_KEYDOWN:
