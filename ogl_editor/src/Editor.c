@@ -410,6 +410,31 @@ static void drawHorizonalSlider()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void drawVerticalSlider()
+{
+	int start_row = 0, end_row = 10000, width, large_val; 
+	TrackData* trackData = getTrackData();
+	TrackViewInfo* info = getTrackViewInfo();
+	const int rowPos = getRowPos();
+
+	if (trackData) 
+	{
+		start_row = trackData->startRow;
+		end_row = trackData->endRow;
+	}
+
+	width = end_row - start_row;
+	large_val = emaxi(width / 10, 1);
+
+	Emgui_slider(info->windowSizeX - 26, 0, 20, info->windowSizeY, 0, width, large_val, 
+				EMGUI_SLIDERDIR_VERTICAL, 1, &s_editorData.trackViewInfo.rowPos);
+
+	if (rowPos != getRowPos())
+		Editor_updateTrackScroll();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // In some cases we need an extra update in case some controls has been re-arranged in such fashion so
 // the trackview will report back if that is needed (usually happens if tracks gets resized)
 
@@ -420,6 +445,7 @@ static bool internalUpdate()
 	Emgui_begin();
 	drawStatus();
 	drawHorizonalSlider();
+	drawVerticalSlider();
 
 	refresh = TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
 	Emgui_end();
