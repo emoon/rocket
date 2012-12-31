@@ -1301,6 +1301,7 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_OPEN : onOpen(); break;
 		case EDITOR_MENU_SAVE : onSave(); break;
 		case EDITOR_MENU_SAVE_AS : onSaveDialog(); break;
+		case EDITOR_MENU_REMOTE_EXPORT : RemoteConnection_sendSaveCommand(); break;
 	}
 }
 
