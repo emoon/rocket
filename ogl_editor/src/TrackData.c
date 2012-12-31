@@ -159,16 +159,26 @@ void TrackData_setActiveTrack(TrackData* trackData, int track)
 
 bool TrackData_hasBookmark(TrackData* trackData, int row)
 {
-	int i, count = trackData->bookmarkCount;
+	int middle, first, last;
 	int* bookmarks = trackData->bookmarks;
 
 	if (!bookmarks)
 		return false;
 
-	for (i = 0; i < count; ++i)
+	first = 0;
+	last = trackData->bookmarkCount - 1;
+	middle = (first + last) / 2;
+
+	while (first <= last)
 	{
-		if (bookmarks[i] == row)
+		if (bookmarks[middle] < row)
+			first = middle + 1;    
+		else if (bookmarks[middle] == row) 
 			return true;
+		else
+			last = middle - 1;
+
+		middle = (first + last) / 2;
 	}
 
 	return false;
@@ -242,13 +252,12 @@ int TrackData_getNextBookmark(TrackData* trackData, int row)
 	if (!bookmarks)
 		return trackData->endRow;
 
-	for (i = 0; i < count - 1; ++i)
+	for (i = 0; i < count; ++i)
 	{
-		const int v0 = bookmarks[i + 0]; 
-		const int v1 = bookmarks[i + 1]; 
+		const int v = bookmarks[i]; 
 
-		if (row >= v0 && row < v1)
-			return v1;
+		if (v > row)
+			return v;
 	}
 
 	return trackData->endRow;
@@ -264,12 +273,12 @@ int TrackData_getPrevBookmark(TrackData* trackData, int row)
 	if (!bookmarks)
 		return trackData->startRow;
 
-	for (i = count; i > 0; --i)
+	for (i = count; i >= 0; --i)
 	{
-		const int v0 = bookmarks[i]; 
+		const int v = bookmarks[i]; 
 
-		if (v0 < row)
-			return v0;
+		if (v < row)
+			return v;
 	}
 
 	return trackData->startRow;
