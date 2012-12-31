@@ -19,6 +19,7 @@
 
 extern void Window_setTitle(const char* title);
 extern void Window_populateRecentList(const char** files);
+static void updateNeedsSaving();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -47,8 +48,11 @@ typedef struct EditorData
 	int copyCount;
 } EditorData;
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static EditorData s_editorData;
 static CopyData s_copyData;
+static int s_undoLevel = 0;
 static bool reset_tracks = true;
 static char s_filenames[5][2048];
 static char* s_loadedFilename = 0;
@@ -513,6 +517,7 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 	}
 
 	Commands_endMulti();
+	updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -543,6 +548,7 @@ static void biasSelection(float value, int selectLeft, int selectRight, int sele
 	}
 
 	Commands_endMulti();
+	updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -578,6 +584,7 @@ static void endEditing()
 	track_name = track->name; 
 
 	Commands_addOrUpdateKey(active_track, &key);
+	updateNeedsSaving();
 
 	is_editing = false;
 	s_editorData.trackData.editText = 0;
@@ -887,6 +894,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		else
 			Commands_undo();
 
+		updateNeedsSaving();
 		Editor_update();
 
 		return true;
@@ -934,6 +942,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		}
 
 		Commands_endMulti();
+		updateNeedsSaving();
 
 		handled_key = true;
 	}
@@ -1015,6 +1024,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			key.type = t->keys[emaxi(idx - 1, 0)].type;
 
 			Commands_addOrUpdateKey(active_track, &key);
+			updateNeedsSaving();
 		}
 
 		handled_key = true;
@@ -1034,6 +1044,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
 
 		Commands_addOrUpdateKey(active_track, &newKey);
+		updateNeedsSaving();
 
 		handled_key = true;
 	}
@@ -1216,11 +1227,32 @@ void Editor_timedUpdate()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void setWindowTitle(const char* path)
+static void setWindowTitle(const char* path, bool needsSave)
 {
 	char windowTitle[4096];
-	sprintf(windowTitle, "RocketEditor - (%s)", path);
+	if (needsSave)
+		sprintf(windowTitle, "RocketEditor - (%s) *", path);
+	else
+		sprintf(windowTitle, "RocketEditor - (%s)", path);
+
 	Window_setTitle(windowTitle);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void updateNeedsSaving()
+{
+	int undoCount;
+
+	if (!s_loadedFilename)
+		return;
+
+	undoCount = Commands_undoCount();
+
+	if (s_undoLevel != undoCount)
+		setWindowTitle(s_loadedFilename, true);
+	else
+		setWindowTitle(s_loadedFilename, false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1228,8 +1260,9 @@ static void setWindowTitle(const char* path)
 static void onFinishedLoad(const char* path)
 {
 	Editor_update();
-	setWindowTitle(path);
+	setWindowTitle(path, false);
 	setMostRecentFile(path);
+	s_undoLevel = Commands_undoCount();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1264,7 +1297,8 @@ static bool onSaveDialog()
 		return false;
 
 	setMostRecentFile(path);
-	setWindowTitle(path);
+	setWindowTitle(path, false);
+	s_undoLevel = Commands_undoCount();
 
 	return true;
 }
@@ -1277,6 +1311,9 @@ static void onSave()
 		onSaveDialog();
 	else
 		LoadSave_saveRocketXML(getMostRecentFile(), getTrackData()); 
+
+	setWindowTitle(getMostRecentFile(), false);
+	s_undoLevel = Commands_undoCount();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
