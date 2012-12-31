@@ -922,11 +922,6 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		{
 			const CopyEntry* ce = &s_copyData.entries[i];
 			
-			assert(ce->track >= 0);
-			assert(ce->track < buffer_width);
-			assert(ce->keyFrame.row >= 0);
-			assert(ce->keyFrame.row < buffer_height);
-
 			trackPos = active_track + ce->track;
 			if (trackPos < track_count)
 			{
