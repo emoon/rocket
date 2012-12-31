@@ -164,7 +164,10 @@ void Window_setTitle(const char* title)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int s_modifier = 0;
+void Window_populateRecentList(char** files)
+{
+	(void)files;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -174,11 +177,6 @@ static int onKeyDown(WPARAM wParam, LPARAM lParam)
 
     switch (wParam)
     {
-		case VK_SHIFT: s_modifier |= EMGUI_KEY_SHIFT; break;
-		case VK_CONTROL: s_modifier |= EMGUI_KEY_CTRL; break;
-        case VK_MENU : s_modifier |= EMGUI_KEY_ALT; break;
-        case VK_LWIN : 
-        case VK_RWIN : s_modifier |= EMGUI_KEY_COMMAND; break;
         case VK_LEFT : key = EMGUI_ARROW_LEFT; break;
         case VK_UP : key = EMGUI_ARROW_UP; break;
         case VK_RIGHT : key = EMGUI_ARROW_RIGHT; break;
@@ -203,17 +201,19 @@ static int onKeyDown(WPARAM wParam, LPARAM lParam)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onKeyUp(WPARAM wParam, LPARAM lParam)
+static int getModifiers()
 {
-    switch (wParam)
-    {
-		case VK_SHIFT: s_modifier &= ~EMGUI_KEY_SHIFT; break;
-		case VK_CONTROL: s_modifier &= ~EMGUI_KEY_CTRL; break;
-        case VK_MENU : s_modifier &= ~EMGUI_KEY_ALT; break;
-        case VK_LWIN : 
-        case VK_RWIN : s_modifier &= ~EMGUI_KEY_COMMAND; break;
-    }
+	int modifiers = 0;
+
+	modifiers |= GetKeyState(VK_SHIFT) < 0 ? EMGUI_KEY_SHIFT : 0;
+	modifiers |= GetKeyState(VK_CONTROL) < 0 ? EMGUI_KEY_CTRL : 0;
+	modifiers |= GetKeyState(VK_MENU) < 0 ? EMGUI_KEY_ALT : 0;
+	modifiers |= GetKeyState(VK_LWIN) < 0 ? EMGUI_KEY_COMMAND : 0;
+	modifiers |= GetKeyState(VK_RWIN) < 0 ? EMGUI_KEY_COMMAND : 0;
+
+	return modifiers; 
 }
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
@@ -259,18 +259,12 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 
 			if (key != -1)
 			{
-				Emgui_sendKeyinput(key, s_modifier);
-				Editor_keyDown(key, -1, s_modifier);
+				int modifier = getModifiers();
+				Emgui_sendKeyinput(key, modifier);
+				Editor_keyDown(key, -1, modifier);
 				Editor_update();
 			}
 
-			break;
-		}
-
-        case WM_KEYUP:
-        case WM_SYSKEYUP:
-		{
-			onKeyUp(wParam, lParam);
 			break;
 		}
 
@@ -282,7 +276,6 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 				{
 					Editor_menuEvent(EDITOR_MENU_OPEN);
 					Editor_update();
-					s_modifier = 0;
 					break;
 				}
 			}

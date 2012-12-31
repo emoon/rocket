@@ -77,7 +77,7 @@ Program {
 						 "../../../../../emgui/src",
 					     "ogl_editor/External/mxml" },
 		PROGOPTS = {
-			{ "/SUBSYSTEM:WINDOWS", "/ENTRY:mainCRTStartup", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
+			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
 		},
 
 		CPPDEFS = {
@@ -100,11 +100,13 @@ Program {
 				{ Pattern = "windows"; Config = { "win32-*-*", "win64-*-*" } },
 			},
 		},
+
+		{ "ogl_editor/data/windows/editor.rc" ; Config = { "win32-*-*", "win64-*-*" } },
 	},
 
 	Depends = { "sync", "mxml", "emgui" },
 
-	Libs = { { "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib", "user32.lib", "gdi32.lib" ; Config = "win32-*-*" } },
+	Libs = { { "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib", "user32.lib", "gdi32.lib", "Comdlg32.lib" ; Config = "win32-*-*" } },
 
 	Frameworks = { "Cocoa", "OpenGL"  },
 
@@ -122,13 +124,13 @@ local rocketBundle = OsxBundle
 	},
 }
 
---local native = require('tundra.native')
+local native = require('tundra.native')
 
---if native.host_platform == "macosx" then
+if native.host_platform == "macosx" then
 	Default(rocketBundle)
---#else
---	Default "editor"
---end
+else
+	Default "editor"
+end
 
 
 
