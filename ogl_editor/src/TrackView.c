@@ -100,6 +100,7 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
 static void drawBookmarks(TrackData* trackData, int x, int y, int rowCount, int rowOffset, int width, int endY)
 {
 	int i;
@@ -124,6 +125,7 @@ static void drawBookmarks(TrackData* trackData, int x, int y, int rowCount, int 
 			break;
 	}
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -400,6 +402,12 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 		if (selected)
 			Emgui_fill(selection_color, startX, y_offset - font_size_half, size, font_size);  
 
+		if (y != 0)
+		{
+			if (TrackData_hasBookmark(info->trackData, y))
+				Emgui_fill(bookmark_color, startX, y_offset - font_size_half, size, 8); 
+		}
+		
 		y_offset += font_size;
 
 		if (y_offset > (info->endSizeY + font_size_half))
@@ -624,8 +632,8 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 
 	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
 
-	Emgui_setLayer(1);
-	drawBookmarks(trackData, 2, adjust_top_size, end_row, y_pos_row, viewInfo->windowSizeX, y_end_border);
+	//Emgui_setLayer(1);
+	//drawBookmarks(trackData, 2, adjust_top_size, end_row, y_pos_row, viewInfo->windowSizeX, y_end_border);
 
 	Emgui_setLayer(0);
 
