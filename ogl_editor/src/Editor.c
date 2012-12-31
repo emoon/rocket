@@ -579,133 +579,96 @@ static void endEditing()
 
 	Commands_addOrUpdateKey(active_track, &key);
 
-	/*
-	sync_set_key(track, &key);
-
-	rlog(R_INFO, "Setting key %f at %d row %d (name %s)\n", key.value, active_track, key.row, track_name);
-
-	RemoteConnection_sendSetKeyCommand(track_name, &key);
-	*/
-
 	is_editing = false;
 	s_editorData.trackData.editText = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onArrowLeft(int modifiers)
+enum ArrowDirection
 {
-	const int current_track = getActiveTrack();
-	int track = getPrevTrack();
-	endEditing();
+	ARROW_LEFT,
+	ARROW_RIGHT,
+};
 
-	if (modifiers & EMGUI_KEY_ALT)
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onArrowSide(enum ArrowDirection dir, int row, TrackData* trackData, int activeTrack, int keyMod)
+{
+	int track;
+	const bool shouldFold = dir == ARROW_LEFT ? true : false;
+	const int trackCount = getTrackCount();
+	TrackViewInfo* viewInfo = getTrackViewInfo(); 
+
+	if (keyMod & EMGUI_KEY_ALT)
 	{
-		Track* t = &trackData->tracks[current_track];
+		Track* t = &trackData->tracks[activeTrack];
 
-		if (modifiers & EMGUI_KEY_CTRL) 
+		if (keyMod & EMGUI_KEY_CTRL) 
 		{
 			if (t->group->trackCount > 1)
-				t->group->folded = true;
+				t->group->folded = shouldFold;
 		}
 		else
-			t->folded = true;
+			t->folded = shouldFold;
 
 		Editor_updateTrackScroll();
-		Editor_update();
-		return true;
+		return;
 	}
 
-	if (modifiers & EMGUI_KEY_COMMAND)
-		track = 0;
+	if (dir == ARROW_LEFT)
+	{
+		track = getPrevTrack();
 
-	track = emaxi(0, track); 
+		if (keyMod & EMGUI_KEY_COMMAND)
+			track = 0;
+
+		track = emaxi(0, track); 
+	}
+	else
+	{
+		track = getNextTrack();
+
+		if (track >= trackCount) 
+			track = trackCount - 1;
+
+		if (keyMod & EMGUI_KEY_COMMAND)
+			track = trackCount - 1;
+	}
 
 	setActiveTrack(track);
 
-	if (!TrackView_isSelectedTrackVisible(getTrackViewInfo(), getTrackData(), track))
+	if (!TrackView_isSelectedTrackVisible(viewInfo, trackData, track))
 	{
-		s_editorData.trackViewInfo.startPixel += TrackView_getTracksOffset(getTrackViewInfo(), getTrackData(), current_track, track);
+		s_editorData.trackViewInfo.startPixel += TrackView_getTracksOffset(viewInfo, trackData, activeTrack, track);
 		Editor_updateTrackScroll();
 	}
 
-	if (modifiers & EMGUI_KEY_SHIFT)
+	if (keyMod & EMGUI_KEY_SHIFT)
 	{
 		Track* t = &trackData->tracks[track];
 
 		// if this track has a folded group we can't select it so set back the selection to the old one
 
 		if (t->group->folded)
-			setActiveTrack(current_track);
+			setActiveTrack(activeTrack);
 		else
 			viewInfo->selectStopTrack = track;
-
-		break;
 	}
-
-	viewInfo->selectStartRow = viewInfo->selectStopRow = row_pos;
-	viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
-
-	handled_key = true;
+	else
+	{
+		viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+		viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
+	}
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onArrowRight(int row, sync_track* track, int activeTrack, int modifiers)
+static void onArrowUp(int row, TrackData* trackData, struct sync_track* track, int activeTrack, int modifiers)
 {
-	if (modifiers & EMGUI_KEY_ALT)
-	{
-		Track* t = getTrackData()[activeTrack];
+	TrackViewInfo* viewInfo = getTrackViewInfo(); 
 
-		if (modifiers & EMGUI_KEY_CTRL) 
-		{
-			if (t->group->trackCount > 1)
-				t->group->folded = false;
-		}
-		else
-			t->folded = false;
-
-		Editor_updateTrackScroll();
-		Editor_update();
-
-		return true;
-	}
-
-	if (track >= track_count) 
-		track = track_count - 1;
-
-	if (modifiers & EMGUI_KEY_COMMAND)
-		track = track_count - 1;
-
-	setActiveTrack(track);
-
-	if (!TrackView_isSelectedTrackVisible(getTrackViewInfo(), getTrackData(), track))
-	{
-		s_editorData.trackViewInfo.startPixel += TrackView_getTracksOffset(getTrackViewInfo(), getTrackData(), current_track, track);
-		Editor_updateTrackScroll();
-	}
-
-	if (modifiers & EMGUI_KEY_SHIFT)
-	{
-		Track* t = &trackData->tracks[track];
-		if (t->group->folded)
-			setActiveTrack(current_track);
-		else
-			viewInfo->selectStopTrack = track;
-		break;
-	}
-
-	viewInfo->selectStartRow = viewInfo->selectStopRow = row_pos;
-	viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
-
-	handled_key = true;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static void onArrowUp(int row, sync_track* track, int activeTrack, int modifiers)
-{
 	if (modifiers & EMGUI_KEY_CTRL)
 	{
 		if (track->keys)
@@ -734,11 +697,11 @@ static void onArrowUp(int row, sync_track* track, int activeTrack, int modifiers
 		if (modifiers & EMGUI_KEY_SHIFT)
 		{
 			viewInfo->selectStopRow = row;
-			break;
+			return;
 		}
 
 		viewInfo->selectStartRow = viewInfo->selectStopRow = row;
-		viewInfo->selectStartTrack = viewInfo->selectStopTrack = active_track;
+		viewInfo->selectStartTrack = viewInfo->selectStopTrack = activeTrack;
 	}
 
 	RemoteConnection_sendSetRowCommand(row);
@@ -746,25 +709,23 @@ static void onArrowUp(int row, sync_track* track, int activeTrack, int modifiers
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onArrowDown(int rowPos, sync_track* track, int activeTrack, int modifiers)
+static void onArrowDown(int rowPos, TrackData* trackData, struct sync_track* track, int activeTrack, int modifiers)
 {
-	const int active_track = getActiveTrack();
 	int row = getRowPos();
+	TrackViewInfo* viewInfo = getTrackViewInfo(); 
 
 	if (modifiers & EMGUI_KEY_CTRL)
 	{
-		struct sync_track* t = getTracks()[active_track];
-
-		if (t->keys)
+		if (track->keys)
 		{
-			int idx = key_idx_floor(t, row_pos);
+			int idx = key_idx_floor(track, rowPos);
 
 			if (idx < 0)
-				row = t->keys[0].row;
-			else if (idx > (int)t->num_keys - 2)
-				row = t->keys[t->num_keys - 1].row;
+				row = track->keys[0].row;
+			else if (idx > (int)track->num_keys - 2)
+				row = track->keys[track->num_keys - 1].row;
 			else
-				row = t->keys[idx + 1].row;
+				row = track->keys[idx + 1].row;
 
 			viewInfo->rowPos = row; 
 	
@@ -790,7 +751,7 @@ static void onArrowDown(int rowPos, sync_track* track, int activeTrack, int modi
 		}
 
 		viewInfo->selectStartRow = viewInfo->selectStopRow = row;
-		viewInfo->selectStartTrack = viewInfo->selectStopTrack = active_track;
+		viewInfo->selectStartTrack = viewInfo->selectStopTrack = activeTrack;
 	}
 
 	RemoteConnection_sendSetRowCommand(row);
@@ -798,16 +759,18 @@ static void onArrowDown(int rowPos, sync_track* track, int activeTrack, int modi
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onArrow(int key, int modifiers, int rowPos, sync_track* track, int activeTrack)
+static void onArrow(int key, int modifiers, int rowPos, struct sync_track* track, int activeTrack)
 {
+	TrackData* trackData = getTrackData();
+
 	endEditing();
 
 	switch (key)
 	{
-		case EMGUI_ARROW_DOWN:  onArrowDown(rowPos, track, activetrack, modifiers); break;
-		case EMGUI_ARROW_UP:    onArrowUp(rowPos, track, activetrack, modifiers); break;
-		case EMGUI_ARROW_RIGHT: onArrowRight(rowPos, track, activetrack, modifiers); break;
-		case EMGUI_ARROW_LEFT:  onArrowLeft(rowPos, track, activetrack, modifiers); break;
+		case EMGUI_ARROW_DOWN:  onArrowDown(rowPos, trackData, track, activeTrack, modifiers); break;
+		case EMGUI_ARROW_UP:    onArrowUp(rowPos, trackData, track, activeTrack, modifiers); break;
+		case EMGUI_ARROW_RIGHT: onArrowSide(ARROW_RIGHT, rowPos, trackData, activeTrack, modifiers); break;
+		case EMGUI_ARROW_LEFT:  onArrowSide(ARROW_LEFT, rowPos, trackData, activeTrack, modifiers); break;
 	}
 }
 
@@ -855,24 +818,14 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		case EMGUI_ARROW_DOWN:
 		case EMGUI_ARROW_UP:
 		case EMGUI_ARROW_RIGHT:
-		case EMGUI_ARROW_LEFT: onArrow(key, modifiers);
+		case EMGUI_ARROW_LEFT: 
 		{
-		}
+			onArrow(key, modifiers, row_pos, tracks[active_track], active_track);
 
-		case EMGUI_ARROW_UP:
-		{
+			if (paused)
+				Editor_update();
 
-			break;
-		}
-
-		case EMGUI_ARROW_LEFT:
-		{
-			break;
-		}
-
-		case EMGUI_ARROW_RIGHT:
-		{
-			break;
+			return true;
 		}
 
 		default : handled_key = false; break;
@@ -1082,13 +1035,10 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		if (idx < 0) 
 			return false;
 
-		// copy and modify
 		newKey = track->keys[idx];
 		newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
 
-		sync_set_key(track, &newKey);
-
-		RemoteConnection_sendSetKeyCommand(track->name, &newKey);
+		Commands_addOrUpdateKey(active_track, &newKey);
 
 		handled_key = true;
 	}
