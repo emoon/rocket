@@ -35,6 +35,7 @@ const uint32_t active_text_color = EMGUI_COLOR32(0xff, 0xff, 0xff, 0xff);
 const uint32_t inactive_text_color = EMGUI_COLOR32(0x5f, 0x5f, 0x5f, 0xff);
 const uint32_t border_color = EMGUI_COLOR32(40, 40, 40, 255);
 const uint32_t selection_color = EMGUI_COLOR32(0x5f, 0x5f, 0x5f, 0x4f);
+const uint32_t bookmark_color = EMGUI_COLOR32(0x3f, 0x2f, 0xaf, 0x7f);
 
 static bool s_needsUpdate = false;
 
@@ -75,7 +76,7 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 	if (rowOffset < 0)
 	{
 		y += rowSpacing * -rowOffset;
-		rowOffset  = 0;
+		rowOffset = 0;
 	}
 
 	for (i = 0; i < rowCount; ++i)
@@ -91,6 +92,33 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 
 		y += rowSpacing;
 		rowOffset++;
+
+		if (y > endY)
+			break;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void drawBookmarks(TrackData* trackData, int x, int y, int rowCount, int rowOffset, int width, int endY)
+{
+	int i;
+
+	if (rowOffset < 0)
+	{
+		y += 8 * -rowOffset;
+		rowOffset = 0;
+	}
+
+	for (i = 0; i < rowCount; ++i)
+	{
+		if (rowOffset != 0)
+		{
+			if (TrackData_hasBookmark(trackData, rowOffset))
+				Emgui_fill(bookmark_color, x, y, width, 8); 
+		}
+
+		y += 8; rowOffset++;
 
 		if (y > endY)
 			break;
@@ -410,10 +438,6 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 
 	size = getGroupSize(info.viewInfo, group, startTrackIndex);
 
-	printf("size %d\n", size);
-
-	// TODO: Draw the group name and such here
-
 	renderGroupHeader(group, posX, oldY, size, info.viewInfo->windowSizeX);
 
 	info.startPos += 5;
@@ -599,6 +623,9 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	Emgui_setDefaultFont();
 
 	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
+
+	Emgui_setLayer(1);
+	drawBookmarks(trackData, 2, adjust_top_size, end_row, y_pos_row, viewInfo->windowSizeX, y_end_border);
 
 	Emgui_setLayer(0);
 

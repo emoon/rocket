@@ -179,7 +179,7 @@ static int getModifierFlags(int flags)
 	float y = (float)[theEvent deltaY];
 	int flags = getModifierFlags([theEvent modifierFlags]);
 
-	printf("%f %f %d\n", x, y, flags);
+	//printf("%f %f %d\n", x, y, flags);
 	Editor_scroll(-x, -y, flags);
 }
 

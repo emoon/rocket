@@ -155,3 +155,124 @@ void TrackData_setActiveTrack(TrackData* trackData, int track)
 	trackData->activeTrack = track;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool TrackData_hasBookmark(TrackData* trackData, int row)
+{
+	int i, count = trackData->bookmarkCount;
+	int* bookmarks = trackData->bookmarks;
+
+	if (!bookmarks)
+		return false;
+
+	for (i = 0; i < count; ++i)
+	{
+		if (bookmarks[i] == row)
+			return true;
+	}
+
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int compare(const void* a, const void* b)
+{
+	return *(int*)a - *(int*)b;
+}
+
+static void sortArray(int* bookmarks, int count)
+{
+	qsort(bookmarks, count, sizeof(int), compare);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void TrackData_toogleBookmark(TrackData* trackData, int row)
+{
+	int i, count = trackData->bookmarkCount;
+	int* bookmarks = trackData->bookmarks;
+
+	if (!bookmarks)
+	{
+		bookmarks = trackData->bookmarks = malloc(sizeof(int));
+		*bookmarks = row;
+		trackData->bookmarkCount++;
+		return;
+	}
+
+	for (i = 0; i < count; ++i)
+	{
+		if (bookmarks[i] == row)
+		{
+			bookmarks[i] = 0;
+			sortArray(bookmarks, count);
+			return;
+		}
+	}
+
+	// look for empty slot
+
+	for (i = 0; i < count; ++i)
+	{
+		if (bookmarks[i] == 0)
+		{
+			bookmarks[i] = row;
+			sortArray(bookmarks, count);
+			return;
+		}
+	}
+
+	// no slot found so we will resize the array and add the bookmark at the end
+	
+	bookmarks = trackData->bookmarks = realloc(bookmarks, sizeof(int) * (count + 1));
+	bookmarks[count] = row;
+	sortArray(bookmarks, count + 1);
+
+	trackData->bookmarkCount = count + 1;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int TrackData_getNextBookmark(TrackData* trackData, int row)
+{
+	int i, count = trackData->bookmarkCount;
+	int* bookmarks = trackData->bookmarks;
+
+	if (!bookmarks)
+		return trackData->endRow;
+
+	for (i = 0; i < count - 1; ++i)
+	{
+		const int v0 = bookmarks[i + 0]; 
+		const int v1 = bookmarks[i + 1]; 
+
+		if (row >= v0 && row < v1)
+			return v1;
+	}
+
+	return trackData->endRow;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int TrackData_getPrevBookmark(TrackData* trackData, int row)
+{
+	int i, count = trackData->bookmarkCount - 1;
+	int* bookmarks = trackData->bookmarks;
+
+	if (!bookmarks)
+		return trackData->startRow;
+
+	for (i = count; i > 0; --i)
+	{
+		const int v0 = bookmarks[i]; 
+
+		if (v0 < row)
+			return v0;
+	}
+
+	return trackData->startRow;
+}
+
+

@@ -3,6 +3,8 @@
 #include "Types.h"
 #include "../../sync/sync.h"
 #include "../../sync/track.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +48,7 @@ struct MultiCommandData
 	CommandList list;
 };
 
-static struct MultiCommandData* s_multiCommand;
+static struct MultiCommandData* s_multiCommand = 0;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -60,29 +62,36 @@ void Commands_init(struct sync_track** syncTracks, struct TrackData* trackData)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static int countEntriesInList(CommandList* list)
+{
+	Command* command;
+	int count = 0;
+
+	for (command = list->first; command; command = command->next) 
+		count++;
+
+	return count;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void execCommand(Command* command)
 {
 	// set if we have multi command recording enabled)
 	if (s_multiCommand)
 	{
+		printf("cmd add to multicommand %p\n", command);
 		CommandList_addEntry(&s_multiCommand->list, command);
 	}
 	else
 	{
+		printf("cmd add to undoStack %p\n", command);
 		CommandList_addEntry(&s_undoStack, command);
+		printf("undo stack size %d\n", countEntriesInList(&s_undoStack));
 		command->exec(command->userData);
 	}
 
 	CommandList_clear(&s_redoStack);
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Commands_beginMulti()
-{
-	s_multiCommand = malloc(sizeof(struct MultiCommandData));
-	memset(s_multiCommand, 0, sizeof(struct MultiCommandData)); 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,18 +118,31 @@ static void undoMultiCommand(void* userData)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void Commands_beginMulti(const char* name)
+{
+	s_multiCommand = malloc(sizeof(struct MultiCommandData));
+	memset(s_multiCommand, 0, sizeof(struct MultiCommandData)); 
+	printf("multi_cmd: %s start %p\n", name, s_multiCommand);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Commands_endMulti()
 {
 	Command* command;
+
 
 	// Check if any command was added during multi command
 
 	if (CommandList_isEmpty(&s_multiCommand->list))
 	{
+		printf("multi_cmd: end (nothing to add)\n");
 		free(s_multiCommand);
 		s_multiCommand = 0;
 		return;
 	}
+
+	printf("multi_cmd: end %p\n", s_multiCommand);
 
 	command = malloc(sizeof(Command));
 	memset(command, 0, sizeof(Command));
@@ -154,6 +176,8 @@ static void execDeleteKey(void* userData)
 	data->oldKey = t->keys[idx];
 	sync_del_key(t, data->row);
 
+	printf("del_cmd exec: %d %d\n", data->track, data->row); 
+
 	RemoteConnection_sendDeleteKeyCommand(t->name, data->row);
 }
 
@@ -164,6 +188,8 @@ static void undoDeleteKey(void* userData)
 	struct DeleteKeyData* data = (struct DeleteKeyData*)userData;
 	struct sync_track* t = s_syncTracks[data->track];
 	sync_set_key(t, &data->oldKey);
+
+	printf("del_cmd undo: %d %d\n", data->track, data->oldKey.row); 
 
 	RemoteConnection_sendSetKeyCommand(t->name, &data->oldKey);
 }
@@ -187,6 +213,8 @@ void Commands_deleteKey(int track, int row)
 	command->undo = undoDeleteKey;
 	data->track = track;
 	data->row = row;
+
+	printf("del_cmd add: %p %d %d\n", command, track, row); 
 
 	execCommand(command);
 }
@@ -306,11 +334,20 @@ void Commands_undo()
 {
 	Command* command;
 
+	printf("calling undo\n");
+
 	if (CommandList_isEmpty(&s_undoStack))
+	{
+		printf("Thinks undo stack is empty.\n");
 		return;
+	}
+
+	printf("undo stack size before pop %d\n", countEntriesInList(&s_undoStack)); 
 
 	command = s_undoStack.last;
 	CommandList_pop(&s_undoStack);
+
+	printf("undo stack size after pop %d\n", countEntriesInList(&s_undoStack)); 
 
 	command->prev = 0;
 	command->next = 0;
@@ -331,6 +368,9 @@ void Commands_redo()
 
 	command = s_redoStack.last;
 	CommandList_pop(&s_redoStack);
+
+	command->prev = 0;
+	command->next = 0;
 
 	CommandList_addEntry(&s_undoStack, command);
 

@@ -491,7 +491,7 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 	const int track_count = getTrackCount();
 	struct sync_track** tracks = getTracks();
 
-	Commands_beginMulti();
+	Commands_beginMulti("deleteArea");
 
 	for (i = 0; i < bufferWidth; ++i) 
 	{
@@ -522,7 +522,7 @@ static void biasSelection(float value, int selectLeft, int selectRight, int sele
 	int track, row;
 	struct sync_track** tracks = getTracks();
 
-	Commands_beginMulti();
+	Commands_beginMulti("biasSelection");
 
 	for (track = selectLeft; track <= selectRight; ++track) 
 	{
@@ -671,7 +671,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			row += modifiers & EMGUI_KEY_ALT ? 8 : 1;
 
 			if ((modifiers & EMGUI_KEY_COMMAND) || row > trackData->endRow)
-				row = trackData->endRow;
+				row = TrackData_getNextBookmark(trackData, row); 
 
 			viewInfo->rowPos = row;
 
@@ -720,7 +720,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			row -= modifiers & EMGUI_KEY_ALT ? 8 : 1;
 
 			if ((modifiers & EMGUI_KEY_COMMAND) || row < trackData->startRow)
-				row = trackData->startRow;
+				row = TrackData_getPrevBookmark(trackData, row); 
 
 			viewInfo->rowPos = row;
 
@@ -912,7 +912,16 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		else
 			Commands_undo();
 
-		handled_key = true;
+		Editor_update();
+
+		return true;
+	}
+
+	if (key == 'b' || key == 'B')
+	{
+		TrackData_toogleBookmark(trackData, row_pos);
+		Editor_update();
+		return true;
 	}
 
 	// Handle paste of data
@@ -932,7 +941,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 		deleteArea(row_pos, active_track, buffer_width, buffer_height);
 
-		Commands_beginMulti();
+		Commands_beginMulti("pasteArea");
 
 		for (i = 0; i < buffer_size; ++i)
 		{
@@ -1035,9 +1044,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			key.value = sync_get_val(t, row_pos);
 			key.type = t->keys[emaxi(idx - 1, 0)].type;
 
-			sync_set_key(t, &key);
-
-			RemoteConnection_sendSetKeyCommand(t->name, &key);
+			Commands_addOrUpdateKey(active_track, &key);
 		}
 
 		handled_key = true;

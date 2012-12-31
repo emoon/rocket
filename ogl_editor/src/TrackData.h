@@ -8,6 +8,7 @@
 enum
 {
 	EDITOR_MAX_TRACKS = 16 * 1024,
+	EDITOR_MAX_BOOKMARKS = 32 * 1024,
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,6 +65,8 @@ typedef struct TrackData
 	struct sync_data syncData;
 	Track tracks[EDITOR_MAX_TRACKS];
 	Group groups[EDITOR_MAX_TRACKS];
+	int* bookmarks;
+	int bookmarkCount;
 	int groupCount;
 	int activeTrack;
 	int lastColor;
@@ -72,6 +75,13 @@ typedef struct TrackData
 	int endRow;
 	char* editText;
 } TrackData;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool TrackData_hasBookmark(TrackData* trackData, int row);
+void TrackData_toogleBookmark(TrackData* trackData, int row);
+int TrackData_getNextBookmark(TrackData* trackData, int row);
+int TrackData_getPrevBookmark(TrackData* trackData, int row);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Will get the get the track if it exists else create it
