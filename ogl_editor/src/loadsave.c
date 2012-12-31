@@ -10,10 +10,14 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static const char* s_foldedGroupNames[16 * 1024];
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 {
 	struct track_key k;
-	int is_key, track_index = 0;
+	int g, i, foldedGroupCount = 0, is_key, track_index = 0;
 	mxml_node_t* node = rootNode;
 
 	// Traverse the tracks node data
@@ -30,6 +34,11 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 			case MXML_ELEMENT:
 			{
 				const char* element_name = mxmlGetElement(node);
+
+				if (!strcmp("group", element_name))
+				{
+                    s_foldedGroupNames[foldedGroupCount++] = mxmlElementGetAttr(node, "name");
+				}
 
 				if (!strcmp("tracks", element_name))
 				{
@@ -117,6 +126,20 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 
 	TrackData_linkGroups(trackData);
 
+	// Apply fold status on the groups
+
+	for (i = 0; i < foldedGroupCount; ++i)
+	{
+		for (g = 0; g < trackData->groupCount; ++g)
+		{
+			if (!strcmp(s_foldedGroupNames[i], trackData->groups[g].name))
+			{
+				trackData->groups[i].folded = true;
+				break;
+			}
+		}
+	}
+
 	trackData->tracks[0].selected = true;
 }
 
@@ -182,6 +205,9 @@ static const char* whitespaceCallback(mxml_node_t* node, int where)
 
 		if (!strcmp("track", name))
 			return "\t";
+
+		if (!strcmp("group", name))
+			return "\t";
 	}
 
 	if (where == MXML_WS_AFTER_OPEN) 
@@ -222,6 +248,21 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 	struct sync_data* sync_data = &trackData->syncData;
 
 	xml = mxmlNewXML("1.0");	
+
+	// save groups that are folded
+
+	for (p = 0; p < trackData->groupCount; ++p)
+	{
+		mxml_node_t* node;
+		Group* group = &trackData->groups[p];
+
+		if (!group->folded)
+			continue;
+
+		node = mxmlNewElement(xml, "group");
+		mxmlElementSetAttr(node, "name", group->name); 
+	}
+
 	tracks = mxmlNewElement(xml, "tracks");
 
 	mxmlElementSetAttr(tracks, "rows", "10000");
