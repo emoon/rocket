@@ -55,6 +55,9 @@
 
 #ifndef WIN32
 #  include <unistd.h>
+#else
+#  include <fcntl.h>
+#  include <io.h>
 #endif /* !WIN32 */
 #include "mxml-private.h"
 
@@ -661,7 +664,7 @@ mxml_add_char(int  ch,			/* I  - Character to add */
     * Single byte ASCII...
     */
 
-    *(*bufptr)++ = ch;
+    *(*bufptr)++ = (char)ch;
   }
   else if (ch < 0x800)
   {
@@ -669,8 +672,8 @@ mxml_add_char(int  ch,			/* I  - Character to add */
     * Two-byte UTF-8...
     */
 
-    *(*bufptr)++ = 0xc0 | (ch >> 6);
-    *(*bufptr)++ = 0x80 | (ch & 0x3f);
+    *(*bufptr)++ = (char)(0xc0 | (ch >> 6));
+    *(*bufptr)++ = (char)(0x80 | (ch & 0x3f));
   }
   else if (ch < 0x10000)
   {
@@ -678,9 +681,9 @@ mxml_add_char(int  ch,			/* I  - Character to add */
     * Three-byte UTF-8...
     */
 
-    *(*bufptr)++ = 0xe0 | (ch >> 12);
-    *(*bufptr)++ = 0x80 | ((ch >> 6) & 0x3f);
-    *(*bufptr)++ = 0x80 | (ch & 0x3f);
+    *(*bufptr)++ = (char)(0xe0 | (ch >> 12));
+    *(*bufptr)++ = (char)(0x80 | ((ch >> 6) & 0x3f));
+    *(*bufptr)++ = (char)(0x80 | (ch & 0x3f));
   }
   else
   {
@@ -688,10 +691,10 @@ mxml_add_char(int  ch,			/* I  - Character to add */
     * Four-byte UTF-8...
     */
 
-    *(*bufptr)++ = 0xf0 | (ch >> 18);
-    *(*bufptr)++ = 0x80 | ((ch >> 12) & 0x3f);
-    *(*bufptr)++ = 0x80 | ((ch >> 6) & 0x3f);
-    *(*bufptr)++ = 0x80 | (ch & 0x3f);
+    *(*bufptr)++ = (char)(0xf0 | (ch >> 18));
+    *(*bufptr)++ = (char)(0x80 | ((ch >> 12) & 0x3f));
+    *(*bufptr)++ = (char)(0x80 | ((ch >> 6) & 0x3f));
+    *(*bufptr)++ = (char)(0x80 | (ch & 0x3f));
   }
 
   return (0);
@@ -1022,7 +1025,7 @@ mxml_fd_putc(int  ch,			/* I - Character */
     if (mxml_fd_write(buf) < 0)
       return (-1);
 
-  *(buf->current)++ = ch;
+  *(buf->current)++ = (unsigned char)ch;
 
  /*
   * Return successfully...
@@ -1367,7 +1370,7 @@ mxml_get_entity(mxml_node_t *parent,	/* I  - Parent node */
     if (ch > 126 || (!isalnum(ch) && ch != '#'))
       break;
     else if (entptr < (entity + sizeof(entity) - 1))
-      *entptr++ = ch;
+      *entptr++ = (char)ch;
     else
     {
       mxml_error("Entity name too long under parent <%s>!",
@@ -2199,7 +2202,7 @@ mxml_parse_element(
     * Read the attribute name...
     */
 
-    name[0] = ch;
+    name[0] = (char)ch;
     ptr     = name + 1;
 
     if (ch == '\"' || ch == '\'')
@@ -2297,7 +2300,7 @@ mxml_parse_element(
         * Read unquoted value...
 	*/
 
-	value[0] = ch;
+	value[0] = (char)ch;
 	ptr      = value + 1;
 
 	while ((ch = (*getc_cb)(p, encoding)) != EOF)
@@ -2642,7 +2645,7 @@ mxml_string_putc(int  ch,		/* I - Character to write */
   pp = (char **)p;
 
   if (pp[0] < pp[1])
-    pp[0][0] = ch;
+    pp[0][0] = (char)ch;
 
   pp[0] ++;
 

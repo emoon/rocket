@@ -452,7 +452,11 @@ _mxml_vstrdupf(const char *format,	/* I - Printf-style format string */
     * Hey, the formatted string fits in the tiny buffer, so just dup that...
     */
 
+#if defined(_WIN32)
+    return (_strdup(temp));
+#else
     return (strdup(temp));
+#endif
   }
 
  /*
