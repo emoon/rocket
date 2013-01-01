@@ -2,7 +2,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Dialog_open(char* path, int pathSize)
+int Dialog_open(wchar_t* path, int pathSize)
 {
 	OPENFILENAME ofn;
 
@@ -11,7 +11,7 @@ int Dialog_open(char* path, int pathSize)
 	ofn.lpstrFile = path;
 	ofn.lpstrFile[0] = '\0';
 	ofn.nMaxFile = pathSize;
-	ofn.lpstrFilter = "All\0*.*\0Rocket\0*.Rocket\0";
+	ofn.lpstrFilter = L"All\0*.*\0Rocket\0*.Rocket\0";
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFileTitle = NULL;
 	ofn.nMaxFileTitle = 0;

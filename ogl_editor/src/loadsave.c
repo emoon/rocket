@@ -146,13 +146,18 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int LoadSave_loadRocketXML(const char* path, TrackData* trackData)
+int LoadSave_loadRocketXML(const text_t* path, TrackData* trackData)
 {
 	FILE* fp = 0;
 	mxml_node_t* tree = 0;
 
+#if defined(_WIN32)
+	if (_wfopen_s(&fp, path, L"r") != 0)
+		return false;
+#else
 	if (!(fp = fopen(path, "r")))
 		return false;
+#endif
 
 	if (!(tree = mxmlLoadFile(NULL, fp, MXML_TEXT_CALLBACK)))
 	{
@@ -170,7 +175,7 @@ int LoadSave_loadRocketXML(const char* path, TrackData* trackData)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int LoadSave_loadRocketXMLDialog(char* path, TrackData* trackData)
+int LoadSave_loadRocketXMLDialog(text_t* path, TrackData* trackData)
 {
 	if (!Dialog_open(path))
 		return false;
@@ -238,7 +243,7 @@ static void setElementFloat(mxml_node_t* node, char* attr, float v)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
+int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 {
 	mxml_node_t* xml;
 	mxml_node_t* tracks;
@@ -251,7 +256,7 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 
 	// save groups that are folded
 
-	for (p = 0; p < trackData->groupCount; ++p)
+	for (p = 0; p < (size_t)trackData->groupCount; ++p)
 	{
 		mxml_node_t* node;
 		Group* group = &trackData->groups[p];
@@ -288,7 +293,13 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 		}
 	}
 
+
+#if defined(_WIN32)
+	_wfopen_s(&fp, path, L"wt");
+#else
 	fp = fopen(path, "wt");
+#endif
+
     mxmlSaveFile(xml, fp, whitespaceCallback);
     fclose(fp);
 
@@ -297,7 +308,7 @@ int LoadSave_saveRocketXML(const char* path, TrackData* trackData)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int LoadSave_saveRocketXMLDialog(char* path, TrackData* trackData)
+int LoadSave_saveRocketXMLDialog(text_t* path, TrackData* trackData)
 {
 	if (!Dialog_save(path))
 		return false;

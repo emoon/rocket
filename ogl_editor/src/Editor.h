@@ -16,7 +16,7 @@ void Editor_updateTrackScroll();
 void Editor_loadRecentFile(int file);
 bool Editor_saveBeforeExit();
 
-char** Editor_getRecentFiles();
+text_t** Editor_getRecentFiles();
 
 enum
 {

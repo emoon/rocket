@@ -37,7 +37,7 @@ static void closeWindow()
 		DestroyWindow(s_window);
 	}
 
-	UnregisterClass("GLRocket", s_instance);
+	UnregisterClass(L"GLRocket", s_instance);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +49,7 @@ void swapBuffers()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  
-bool createWindow(const char* title, int width, int height)
+bool createWindow(const wchar_t* title, int width, int height)
 {
 	GLuint format;
 	WNDCLASS wc;
@@ -93,14 +93,14 @@ bool createWindow(const char* title, int width, int height)
 	wc.lpfnWndProc	= (WNDPROC)WndProc;
 	wc.hInstance = s_instance;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.lpszClassName = "RocketEditor";
+	wc.lpszClassName = L"RocketEditor";
 	wc.hIcon = LoadIcon(s_instance, IDI_APPLICATION);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.lpszMenuName  = MAKEINTRESOURCE(IDR_MENU);
 
 	if (!RegisterClass(&wc))
 	{
-		MessageBox(0, "Failed To Register Window Class", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(0, L"Failed To Register Window Class", L"ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
 	}
 	
@@ -110,7 +110,7 @@ bool createWindow(const char* title, int width, int height)
 	AdjustWindowRectEx(&rect, style, FALSE, exStyle);
 
 	// Create The Window
-	if (!(s_window = CreateWindowEx(exStyle, "RocketEditor", title, style | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+	if (!(s_window = CreateWindowEx(exStyle, L"RocketEditor", title, style | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
 							  0, 0, rect.right - rect.left, rect.bottom - rect.top, NULL, NULL, s_instance, NULL)))
 	{
 		closeWindow();								// Reset The Display
@@ -157,7 +157,7 @@ bool createWindow(const char* title, int width, int height)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Window_setTitle(const char* title)
+void Window_setTitle(const wchar_t* title)
 {
 	SetWindowText(s_window, title);
 }
@@ -343,7 +343,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmndLine, i
 
 	memset(&msg, 0, sizeof(MSG));
 
-	if (!createWindow("RocketEditor", 800, 600))
+	if (!createWindow(L"RocketEditor", 800, 600))
 		return 0;
 
 	accel = LoadAccelerators(instance, MAKEINTRESOURCE(IDR_ACCELERATOR));

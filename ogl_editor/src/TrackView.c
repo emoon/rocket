@@ -317,7 +317,7 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 	const int endPos = info->endPos;
 	struct sync_track* track = 0;
 	const uint32_t color = trackData->color;
-	bool folded;
+	bool folded = false;
 
 	if (!valuesOnly)
 	{

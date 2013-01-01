@@ -17,8 +17,8 @@
 #include "../../sync/base.h"
 #include "../../sync/data.h"
 
-extern void Window_setTitle(const char* title);
-extern void Window_populateRecentList(const char** files);
+extern void Window_setTitle(const text_t* title);
+extern void Window_populateRecentList(const text_t** files);
 static void updateNeedsSaving();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,10 +54,10 @@ static EditorData s_editorData;
 static CopyData s_copyData;
 static int s_undoLevel = 0;
 static bool reset_tracks = true;
-static char s_filenames[5][2048];
-static char* s_loadedFilename = 0;
+static text_t s_filenames[5][2048];
+static text_t* s_loadedFilename = 0;
 
-static char* s_recentFiles[] =
+static text_t* s_recentFiles[] =
 {
 	s_filenames[0],
 	s_filenames[1],
@@ -68,46 +68,70 @@ static char* s_recentFiles[] =
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-char** Editor_getRecentFiles()
+text_t** Editor_getRecentFiles()
 {
-	return (char**)s_recentFiles;
+	return (text_t**)s_recentFiles;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const char* getMostRecentFile()
+const text_t* getMostRecentFile()
 {
 	return s_recentFiles[0];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void setMostRecentFile(const char* filename)
+static void textCopy(text_t* dest, const text_t* src)
+{
+#if defined(_WIN32)
+	wcscpy_s(dest, 2048, src);
+#else
+	strcpy(dest, src);
+#endif
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int textCmp(text_t* t0, const text_t* t1)
+{
+#if defined(_WIN32)
+	return wcscmp(t0, t1);
+#else
+	return strcmp(t0, t1);
+#endif
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void setMostRecentFile(const text_t* filename)
 {
 	int i;
 
 	// move down all files
 	for (i = 3; i >= 0; --i)
-		strcpy(s_recentFiles[i+1], s_recentFiles[i]);
+		textCopy(s_recentFiles[i+1], s_recentFiles[i]);
 
-	strcpy(s_recentFiles[0], filename);
+	textCopy(s_recentFiles[0], filename);
 	s_loadedFilename = s_recentFiles[0];
 
 	// check if the string was already present and remove it if that is the case by compacting the array
 	
 	for (i = 1; i < 5; ++i)
 	{
-		if (!strcmp(s_recentFiles[i], filename))
+		if (!textCmp(s_recentFiles[i], filename))
 		{
 			for (; i < 4; ++i)
-				strcpy(s_recentFiles[i], s_recentFiles[i + 1]);
+				textCopy(s_recentFiles[i], s_recentFiles[i + 1]);
 
 			break;
 		}
 	}
 
-	Window_populateRecentList((const char**)s_recentFiles);
+	Window_populateRecentList((const text_t**)s_recentFiles);
 }
+
+// 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1261,13 +1285,20 @@ void Editor_timedUpdate()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void setWindowTitle(const char* path, bool needsSave)
+static void setWindowTitle(const text_t* path, bool needsSave)
 {
-	char windowTitle[4096];
+	text_t windowTitle[4096];
+#if defined(_WIN32)
+	if (needsSave)
+		swprintf_s(windowTitle, sizeof(windowTitle), L"RocketEditor - (%s) *", path);
+	else
+		swprintf_s(windowTitle, sizeof(windowTitle), L"RocketEditor - (%s)", path);
+#else
 	if (needsSave)
 		sprintf(windowTitle, "RocketEditor - (%s) *", path);
 	else
 		sprintf(windowTitle, "RocketEditor - (%s)", path);
+#endif
 
 	Window_setTitle(windowTitle);
 }
@@ -1291,7 +1322,7 @@ void updateNeedsSaving()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onFinishedLoad(const char* path)
+static void onFinishedLoad(const text_t* path)
 {
 	Editor_update();
 	setWindowTitle(path, false);
@@ -1303,8 +1334,8 @@ static void onFinishedLoad(const char* path)
 
 void Editor_loadRecentFile(int id)
 {
-	char path[2048];
-	strcpy(path, s_recentFiles[id]);  // must be unique buffer when doing set mostRecent
+	text_t path[2048];
+	textCopy(path, s_recentFiles[id]);  // must be unique buffer when doing set mostRecent
 
 	if (LoadSave_loadRocketXML(path, getTrackData()))
 		onFinishedLoad(path);
@@ -1314,7 +1345,7 @@ void Editor_loadRecentFile(int id)
 
 static void onOpen()
 {
-	char currentFile[2048];
+	text_t currentFile[2048];
 
 	if (LoadSave_loadRocketXMLDialog(currentFile, getTrackData()))
 		onFinishedLoad(currentFile);
@@ -1324,7 +1355,7 @@ static void onOpen()
 
 static bool onSaveDialog()
 {
-	char path[2048];
+	text_t path[2048];
 	int ret;
 
 	if (!(ret = LoadSave_saveRocketXMLDialog(path, getTrackData())))
