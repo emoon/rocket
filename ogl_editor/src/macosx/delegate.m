@@ -45,7 +45,7 @@ void Window_populateRecentList(char** files);
 		for (int i = 0; i < 4; ++i)
 		{
 			NSString* name = [stringArray objectAtIndex:i];
-			const char* filename = [name cStringUsingEncoding:NSASCIIStringEncoding];
+			const char* filename = [name cStringUsingEncoding:NSUTF8StringEncoding];
 			if (filename)
 				strcpy(recent_list[i], filename);
 		}
