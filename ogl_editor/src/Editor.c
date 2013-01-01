@@ -653,7 +653,11 @@ static void onArrowSide(enum ArrowDirection dir, int row, TrackData* trackData, 
 	{
 		track = getPrevTrack();
 
+	#if defined(_WIN32)
+		if (keyMod & EMGUI_KEY_CTRL)
+	#else
 		if (keyMod & EMGUI_KEY_COMMAND)
+	#endif
 			track = 0;
 
 		track = emaxi(0, track); 
@@ -665,7 +669,11 @@ static void onArrowSide(enum ArrowDirection dir, int row, TrackData* trackData, 
 		if (track >= trackCount) 
 			track = trackCount - 1;
 
+	#if defined(_WIN32)
+		if (keyMod & EMGUI_KEY_CTRL)
+	#else
 		if (keyMod & EMGUI_KEY_COMMAND)
+	#endif
 			track = trackCount - 1;
 	}
 
