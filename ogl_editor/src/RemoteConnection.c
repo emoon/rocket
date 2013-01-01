@@ -148,7 +148,7 @@ bool RemoteConnection_createListner()
 	sin.sin_addr.s_addr = INADDR_ANY;
 	sin.sin_port = htons(1338);
 
-	if (setsockopt(s_serverSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+	if (setsockopt(s_serverSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&yes, sizeof(int)) == -1)
 	{
 		perror("setsockopt");
 		return false;
@@ -188,7 +188,7 @@ static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host)
 	const char* greeting = SERVER_GREET;
 	unsigned int hostSize = sizeof(struct sockaddr_in);
 
-	SOCKET clientSocket = accept(serverSocket, (struct sockaddr*)&hostTemp, &hostSize);
+	SOCKET clientSocket = accept(serverSocket, (struct sockaddr*)&hostTemp, (socklen_t*)&hostSize);
 
 	if (INVALID_SOCKET == clientSocket) 
 		return INVALID_SOCKET;
