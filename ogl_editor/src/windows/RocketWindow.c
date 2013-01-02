@@ -175,6 +175,9 @@ static int onKeyDown(WPARAM wParam, LPARAM lParam)
 {
 	int key = -1;
 
+	int foo = (int)(lParam >> 16); 
+	(void)foo;
+
     switch (wParam)
     {
         case VK_LEFT : key = EMGUI_ARROW_LEFT; break;
@@ -185,7 +188,11 @@ static int onKeyDown(WPARAM wParam, LPARAM lParam)
 
         default:
         {
+			int p, t = (int)wParam;
+			(void)t;
             wParam = MapVirtualKey((UINT)wParam, 2) & 0x0000ffff;
+			p = wParam;
+			(void)p;
 			wParam = (WPARAM) CharUpperA((LPSTR)wParam);
 
             if((wParam >=  32 && wParam <= 126) ||
@@ -267,7 +274,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 		}
 
         case WM_KEYDOWN:
-        case WM_SYSKEYDOWN:
+        //case WM_SYSKEYDOWN:
 		{
 			int key = onKeyDown(wParam, lParam);
 
@@ -288,7 +295,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 			{
 				case ID_FILE_OPEN:
 				{
-					Editor_menuEvent(EDITOR_MENU_OPEN);
+					//Editor_menuEvent(EDITOR_MENU_OPEN);
 					Editor_update();
 					break;
 				}

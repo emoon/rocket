@@ -15,17 +15,9 @@ void Editor_scroll(float deltaX, float deltaY, int flags);
 void Editor_updateTrackScroll();
 void Editor_loadRecentFile(int file);
 bool Editor_saveBeforeExit();
+bool Editor_needsSave();
 
 text_t** Editor_getRecentFiles();
-
-enum
-{
-	EDITOR_MENU_NEW,
-	EDITOR_MENU_OPEN,
-	EDITOR_MENU_SAVE,
-	EDITOR_MENU_SAVE_AS,
-	EDITOR_MENU_REMOTE_EXPORT,
-};
 
 enum
 {

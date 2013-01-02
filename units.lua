@@ -108,7 +108,7 @@ Program {
 
 	Libs = { { "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib", "user32.lib", "gdi32.lib", "Comdlg32.lib" ; Config = "win32-*-*" } },
 
-	Frameworks = { "Cocoa", "OpenGL"  },
+	Frameworks = { "Cocoa", "OpenGL", "Carbon"  },
 
 }
 

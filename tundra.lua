@@ -6,7 +6,7 @@ local macosx = {
 			"-Wno-deprecated-declarations", -- TickCount issue no Mountain Lion (needs to be fixed)
 			"-I.", "-DMACOSX", "-Wall",
 			{ "-O0", "-g"; Config = "*-*-debug" },
-			{ "-O4"; Config = "*-*-release" },
+			{ "-O3"; Config = "*-*-release" },
 		},
 	},
 

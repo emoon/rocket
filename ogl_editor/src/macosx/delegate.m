@@ -5,7 +5,7 @@
 
 void Window_populateRecentList(char** files);
 
-@implementation MinimalAppAppDelegate
+@implementation RocketAppDelegate
 
 @synthesize window;
 @synthesize button;
@@ -14,6 +14,9 @@ void Window_populateRecentList(char** files);
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
+	if (!Editor_needsSave())
+		return NSTerminateNow;
+
 	int ret = NSRunAlertPanel(@"Save before exit?", @"Do you want save the work?", @"Yes", @"Cancel", @"No");
 
 	if (ret == NSAlertDefaultReturn)
@@ -38,16 +41,20 @@ void Window_populateRecentList(char** files);
 
 	NSUserDefaults* prefs = [NSUserDefaults standardUserDefaults];
 
+	for (int i = 0; i < 4; ++i)
+		recent_list[i][0] = 0;
+
 	if (prefs)
 	{
 		NSArray* stringArray = [prefs objectForKey:@"recentFiles"];
+		int recentIndex = 0;
 
 		for (int i = 0; i < 4; ++i)
 		{
 			NSString* name = [stringArray objectAtIndex:i];
 			const char* filename = [name cStringUsingEncoding:NSUTF8StringEncoding];
-			if (filename)
-				strcpy(recent_list[i], filename);
+			if (filename && filename[0] != 0)
+				strcpy(recent_list[recentIndex++], filename);
 		}
 	}
 
