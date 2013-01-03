@@ -80,6 +80,19 @@ NSWindow* g_window = 0;
 #define KEY_LEFT 123
 #define KEY_RIGHT 124
 
+@interface MyMenuItem : NSMenuItem 
+{
+}
+- (BOOL)isHighlighted;
+@end
+
+@implementation MyMenuItem
+- (BOOL)isHighlighted
+{
+	return NO;
+}
+@end
+
 @implementation RocketView
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,7 +184,6 @@ static int getModifierFlags(int flags)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
 - (void)keyDown:(NSEvent *)theEvent 
 {
 	NSString* key = [theEvent charactersIgnoringModifiers];
@@ -190,10 +202,10 @@ static int getModifierFlags(int flags)
 	{ 
 		switch (keyChar)
 		{
-			case NSLeftArrowFunctionKey: keyCode = EMGUI_ARROW_LEFT; break;
-			case NSRightArrowFunctionKey: keyCode = EMGUI_ARROW_RIGHT; break;
-			case NSUpArrowFunctionKey: keyCode = EMGUI_ARROW_UP; break;
-			case NSDownArrowFunctionKey: keyCode = EMGUI_ARROW_DOWN; break;
+			case NSLeftArrowFunctionKey: keyCode = EMGUI_KEY_ARROW_LEFT; break;
+			case NSRightArrowFunctionKey: keyCode = EMGUI_KEY_ARROW_RIGHT; break;
+			case NSUpArrowFunctionKey: keyCode = EMGUI_KEY_ARROW_UP; break;
+			case NSDownArrowFunctionKey: keyCode = EMGUI_KEY_ARROW_DOWN; break;
 		}
 	}
 
@@ -202,7 +214,6 @@ static int getModifierFlags(int flags)
 
 	Editor_update();
 }
-*/
  
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -441,7 +452,7 @@ void buildSubMenu(NSMenu* menu, MenuDescriptor menuDesc[])
 		}
 		else if (desc->id == EDITOR_MENU_SUB_MENU)
 		{
-			NSMenuItem* newItem = [[NSMenuItem allocWithZone:[NSMenu menuZone]] initWithTitle:name action:NULL keyEquivalent:@""];
+			MyMenuItem* newItem = [[MyMenuItem allocWithZone:[NSMenu menuZone]] initWithTitle:name action:NULL keyEquivalent:@""];
 			NSMenu* newMenu = [[NSMenu allocWithZone:[NSMenu menuZone]] initWithTitle:name];
 			[newItem setSubmenu:newMenu];
 			[newMenu release];
@@ -451,7 +462,7 @@ void buildSubMenu(NSMenu* menu, MenuDescriptor menuDesc[])
 		else
 		{
 			int mask = 0;
-			NSMenuItem* newItem = [[NSMenuItem alloc] initWithTitle:name action:@selector(onMenuPress:) keyEquivalent:@""];
+			MyMenuItem* newItem = [[MyMenuItem alloc] initWithTitle:name action:@selector(onMenuPress:) keyEquivalent:@""];
 			[newItem setTag:desc->id];
 
 			if (desc->macMod & EMGUI_KEY_COMMAND)
@@ -475,8 +486,9 @@ void buildSubMenu(NSMenu* menu, MenuDescriptor menuDesc[])
 				fprintf(stderr, "Unable to map keyboard shortcut for %s\n", desc->name);
 			}
 
+			[newItem setOnStateImage: newItem.offStateImage];
 			[menu addItem:newItem];
-			[newItem release]; 
+			[newItem release];
 		}
 
 		desc++;

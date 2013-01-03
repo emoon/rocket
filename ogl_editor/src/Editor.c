@@ -185,6 +185,14 @@ static inline int getRowPos()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static inline void setRowPos(int pos)
+{
+	s_editorData.trackViewInfo.rowPos = pos;
+	RemoteConnection_sendSetRowCommand(pos);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static int getNextTrack()
 {
 	TrackData* trackData = &s_editorData.trackData;
@@ -647,6 +655,14 @@ enum ArrowDirection
 {
 	ARROW_LEFT,
 	ARROW_RIGHT,
+	ARROW_UP,
+	ARROW_DOWN,
+};
+
+enum Selection
+{
+	DO_SELECTION,
+	NO_SELECTION,
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -833,10 +849,10 @@ static void onArrow(int key, int modifiers, int rowPos, struct sync_track* track
 
 	switch (key)
 	{
-		case EMGUI_ARROW_DOWN:  onArrowDown(rowPos, trackData, track, activeTrack, modifiers); break;
-		case EMGUI_ARROW_UP:    onArrowUp(rowPos, trackData, track, activeTrack, modifiers); break;
-		case EMGUI_ARROW_RIGHT: onArrowSide(ARROW_RIGHT, rowPos, trackData, activeTrack, modifiers); break;
-		case EMGUI_ARROW_LEFT:  onArrowSide(ARROW_LEFT, rowPos, trackData, activeTrack, modifiers); break;
+		case EMGUI_KEY_ARROW_DOWN:  onArrowDown(rowPos, trackData, track, activeTrack, modifiers); break;
+		case EMGUI_KEY_ARROW_UP:    onArrowUp(rowPos, trackData, track, activeTrack, modifiers); break;
+		case EMGUI_KEY_ARROW_RIGHT: onArrowSide(ARROW_RIGHT, rowPos, trackData, activeTrack, modifiers); break;
+		case EMGUI_KEY_ARROW_LEFT:  onArrowSide(ARROW_LEFT, rowPos, trackData, activeTrack, modifiers); break;
 	}
 }
 
@@ -881,10 +897,10 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			break;
 		}
 
-		case EMGUI_ARROW_DOWN:
-		case EMGUI_ARROW_UP:
-		case EMGUI_ARROW_RIGHT:
-		case EMGUI_ARROW_LEFT: 
+		case EMGUI_KEY_ARROW_DOWN:
+		case EMGUI_KEY_ARROW_UP:
+		case EMGUI_KEY_ARROW_RIGHT:
+		case EMGUI_KEY_ARROW_LEFT: 
 		{
 			onArrow(key, modifiers, row_pos, tracks[active_track], active_track);
 
@@ -1008,6 +1024,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 	// Handle biasing of values
 
+	/*
 	if ((keyCode >=  0 && keyCode <=  6) || (keyCode >= 12 && keyCode <= 17))
 	{
 		float bias_value = 0.0f;
@@ -1034,6 +1051,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 		return true;
 	}
+	*/
 
 	// do edit here and biasing here
 
@@ -1470,12 +1488,299 @@ bool Editor_saveBeforeExit()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void onCancelEdit()
+{
+	endEditing();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onDeleteKey()
+{
+	deleteArea(getRowPos(), getActiveTrack(), 1, 1);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onCutAndCopy(bool cut)
+{
+	TrackViewInfo* viewInfo = getTrackViewInfo();
+	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+
+	if (!cut)
+	{
+		copySelection(getRowPos(), getActiveTrack(), selectLeft, selectRight, selectTop, selectBottom);
+	}
+	else
+	{
+		copySelection(getRowPos(), getActiveTrack(), selectLeft, selectRight, selectTop, selectBottom);
+		deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onPaste()
+{
+	const int buffer_width = s_copyData.bufferWidth;
+	const int buffer_height = s_copyData.bufferHeight;
+	const int buffer_size = s_copyData.count;
+	const int track_count = getTrackCount();
+	const int row_pos = getRowPos();
+	const int active_track = getActiveTrack();
+	int i, trackPos;
+
+	if (!s_copyData.entries)
+		return;
+
+	// First clear the paste area
+
+	deleteArea(row_pos, active_track, buffer_width, buffer_height);
+
+	Commands_beginMulti("pasteArea");
+
+	for (i = 0; i < buffer_size; ++i)
+	{
+		const CopyEntry* ce = &s_copyData.entries[i];
+		
+		trackPos = active_track + ce->track;
+		if (trackPos < track_count)
+		{
+			size_t trackIndex = trackPos;
+			struct track_key key = ce->keyFrame;
+			key.row += row_pos;
+
+			Commands_addOrUpdateKey(trackIndex, &key);
+		}
+	}
+
+	Commands_endMulti();
+	updateNeedsSaving();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onSelectTrack()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onBias(float v)
+{
+	TrackViewInfo* viewInfo = getTrackViewInfo();
+	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	biasSelection(v, selectLeft, selectRight, selectTop, selectBottom);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onInterpolation()
+{
+	struct track_key newKey;
+	struct sync_track* track;
+	struct sync_track** tracks = getTracks();
+
+	if (!tracks)
+		return;
+
+	track = tracks[getActiveTrack()];
+
+	int idx = key_idx_floor(track, getRowPos());
+	if (idx < 0) 
+		return;
+
+	newKey = track->keys[idx];
+	newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
+
+	Commands_addOrUpdateKey(getActiveTrack(), &newKey);
+	updateNeedsSaving();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onEnterCurrentValue()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onPlay()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onRowStep(int step, enum Selection selection)
+{
+	TrackViewInfo* viewInfo = getTrackViewInfo(); 
+	TrackData* trackData = getTrackData();
+
+	viewInfo->rowPos = eclampi(getRowPos() + step, trackData->startRow, trackData->endRow);
+
+	if (selection == DO_SELECTION)
+		viewInfo->selectStopRow = viewInfo->rowPos;
+
+	RemoteConnection_sendSetRowCommand(getRowPos());
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection selection)
+{
+	TrackViewInfo* viewInfo = getTrackViewInfo(); 
+	const int trackCount = getTrackCount();
+	const int oldTrack = getActiveTrack();
+	int track = 0;
+
+	if (dir == ARROW_LEFT)
+		track = startOrEnd ? 0 : getPrevTrack();
+	else
+		track = startOrEnd ? trackCount - 1 : getNextTrack();
+
+	track = eclampi(track, 0, trackCount); 
+
+	setActiveTrack(track);
+
+	if (selection == DO_SELECTION)
+	{
+		TrackData* trackData = getTrackData();
+		Track* t = &trackData->tracks[track];
+
+		// if this track has a folded group we can't select it so set back the selection to the old one
+
+		if (t->group->folded)
+			setActiveTrack(oldTrack);
+		else
+			viewInfo->selectStopTrack = track;
+	}
+	else
+	{
+		viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onBookmarkDir(enum ArrowDirection dir)
+{
+	TrackData* trackData = getTrackData();
+	int row = getRowPos();
+
+	if (dir == ARROW_UP) 
+		row = TrackData_getPrevBookmark(trackData, row); 
+	else
+		row = TrackData_getNextBookmark(trackData, row); 
+
+	setRowPos(row);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onPrevNextKey(bool prevKey, enum Selection selection)
+{
+	struct sync_track* track;
+	struct sync_track** tracks = getTracks();
+	TrackViewInfo* viewInfo = getTrackViewInfo(); 
+
+	if (!tracks || !tracks[getActiveTrack()]->keys)
+		return;
+
+	track = tracks[getActiveTrack()];
+
+	if (prevKey)
+	{
+		int idx = sync_find_key(track, getRowPos());
+		if (idx < 0)
+			idx = -idx - 1;
+
+		setRowPos(track->keys[emaxi(idx - 1, 0)].row);
+
+		if (selection == DO_SELECTION)
+			viewInfo->selectStartRow = getRowPos();
+		else
+			viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
+	}
+	else
+	{
+		int row = 0;
+
+		int idx = key_idx_floor(track, getRowPos());
+
+		if (idx < 0)
+			row = track->keys[0].row;
+		else if (idx > (int)track->num_keys - 2)
+			row = track->keys[track->num_keys - 1].row;
+		else
+			row = track->keys[idx + 1].row;
+
+		setRowPos(row);	
+
+		if (selection == DO_SELECTION)
+			viewInfo->selectStopRow = row;
+		else
+			viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onFoldTrack(bool fold)
+{
+	Track* t = &getTrackData()->tracks[getActiveTrack()];
+	t->folded = fold;
+	Editor_updateTrackScroll();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onFoldGroup(bool fold)
+{
+	Track* t = &getTrackData()->tracks[getActiveTrack()];
+
+	if (t->group->trackCount > 1)
+		t->group->folded = fold;
+
+	Editor_updateTrackScroll();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onToggleBookmark()
+{
+	TrackData_toogleBookmark(getTrackData(), getRowPos());
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onClearBookmarks()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onTab()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Editor_menuEvent(int menuItem)
 {
 	printf("%s\n", s_type[menuItem - 0x1000]);
+	
+	endEditing();
 
 	switch (menuItem)
 	{
+		// File
+
 		case EDITOR_MENU_OPEN: onOpen(); break;
 		case EDITOR_MENU_SAVE: onSave(); break;
 		case EDITOR_MENU_SAVE_AS: onSaveAs(); break;
@@ -1491,62 +1796,59 @@ void Editor_menuEvent(int menuItem)
 			break;
 		}
 
-
-		/*
-		EDITOR_MENU_OPEN,
-		EDITOR_MENU_SAVE,
-		EDITOR_MENU_SAVE_AS,
-		EDITOR_MENU_REMOTE_EXPORT,
-
 		// Edit
 		
-		EDITOR_MENU_UNDO,
-		EDITOR_MENU_REDO,
-		EDITOR_MENU_CANCEL_EDIT,
-		EDITOR_MENU_CLEAR,
-		EDITOR_MENU_CUT,
-		EDITOR_MENU_COPY,
-		EDITOR_MENU_PASTE,
-		EDITOR_MENU_SELECT_TRACK,
-		EDITOR_MENU_BIAS_P_001,
-		EDITOR_MENU_BIAS_P_01,
-		EDITOR_MENU_BIAS_P_1,
-		EDITOR_MENU_BIAS_P_10,
-		EDITOR_MENU_BIAS_P_100,
-		EDITOR_MENU_BIAS_P_1000,
-		EDITOR_MENU_BIAS_N_001,
-		EDITOR_MENU_BIAS_N_01,
-		EDITOR_MENU_BIAS_N_1,
-		EDITOR_MENU_BIAS_N_10,
-		EDITOR_MENU_BIAS_N_100,
-		EDITOR_MENU_BIAS_N_1000,
-		EDITOR_MENU_INTERPOLATION,
-		EDITOR_MENU_ENTER_CURRENT_V,
+		case EDITOR_MENU_UNDO : Commands_undo(); break;
+		case EDITOR_MENU_REDO : Commands_redo(); break;
+
+		case EDITOR_MENU_CANCEL_EDIT :  onCancelEdit(); break;
+		case EDITOR_MENU_DELETE_KEY  :  onDeleteKey(); break;
+		case EDITOR_MENU_CUT :          onCutAndCopy(true); break;
+		case EDITOR_MENU_COPY :         onCutAndCopy(false); break;
+		case EDITOR_MENU_PASTE :        onPaste(); break;
+		case EDITOR_MENU_SELECT_TRACK : onSelectTrack(); break;
+
+		case EDITOR_MENU_BIAS_P_001 : onBias(0.01f); break;
+		case EDITOR_MENU_BIAS_P_01 :  onBias(0.1f); break;
+		case EDITOR_MENU_BIAS_P_1:    onBias(1.0f); break;
+		case EDITOR_MENU_BIAS_P_10:   onBias(10.0f); break;
+		case EDITOR_MENU_BIAS_P_100:  onBias(100.0f); break;
+		case EDITOR_MENU_BIAS_P_1000: onBias(1000.0f); break;
+		case EDITOR_MENU_BIAS_N_001:  onBias(-0.01f); break;
+		case EDITOR_MENU_BIAS_N_01:   onBias(-0.1f); break;
+		case EDITOR_MENU_BIAS_N_1:    onBias(-1.0f); break;
+		case EDITOR_MENU_BIAS_N_10:   onBias(-10.0f); break;
+		case EDITOR_MENU_BIAS_N_100 : onBias(-100.0f); break;
+		case EDITOR_MENU_BIAS_N_1000: onBias(-1000.0f); break;
+
+		case EDITOR_MENU_INTERPOLATION : onInterpolation(); break;
+		case EDITOR_MENU_ENTER_CURRENT_V : onEnterCurrentValue(); break;
 
 		// View
 
-		EDITOR_MENU_PLAY,
-		EDITOR_MENU_ROW_UP,
-		EDITOR_MENU_ROW_DOWN,
-		EDITOR_MENU_TRACK_LEFT,
-		EDITOR_MENU_TRACK_RIGHT,
-		EDITOR_MENU_ROWS_DOWN,
-		EDITOR_MENU_ROWS_UP,
-		EDITOR_MENU_PREV_BOOKMARK,
-		EDITOR_MENU_NEXT_BOOKMARK,
-		EDITOR_MENU_FIRST_TRACK,
-		EDITOR_MENU_LAST_TRACK,
-		EDITOR_MENU_PREV_KEY,
-		EDITOR_MENU_NEXT_KEY,
-		EDITOR_MENU_FOLD_TRACK,
-		EDITOR_MENU_UNFOLD_TRACK,
-		EDITOR_MENU_FOLD_GROUP,
-		EDITOR_MENU_UNFOLD_GROUP,
-		EDITOR_MENU_TOGGLE_BOOKMARK,
-		EDITOR_MENU_CLEAR_BOOKMARKS,
-		EDITOR_MENU_TAB,
-		*/
+		case EDITOR_MENU_PLAY : onPlay(); break;
+		case EDITOR_MENU_ROW_UP : onRowStep(-1, NO_SELECTION); break;
+		case EDITOR_MENU_ROW_DOWN : onRowStep(1, NO_SELECTION); break;
+		case EDITOR_MENU_TRACK_LEFT : onTrackSide(ARROW_LEFT, false, NO_SELECTION); break;
+		case EDITOR_MENU_TRACK_RIGHT : onTrackSide(ARROW_RIGHT, false, NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_UP : onRowStep(-8, false); break;
+		case EDITOR_MENU_ROWS_DOWN : onRowStep(8, false); break;
+		case EDITOR_MENU_PREV_BOOKMARK : onBookmarkDir(ARROW_UP); break;
+		case EDITOR_MENU_NEXT_BOOKMARK : onBookmarkDir(ARROW_DOWN); break;
+		case EDITOR_MENU_FIRST_TRACK : onTrackSide(ARROW_LEFT, true, NO_SELECTION); break;
+		case EDITOR_MENU_LAST_TRACK : onTrackSide(ARROW_RIGHT, true, NO_SELECTION); break;
+		case EDITOR_MENU_PREV_KEY : onPrevNextKey(true, NO_SELECTION); break;
+		case EDITOR_MENU_NEXT_KEY : onPrevNextKey(false, NO_SELECTION); break;
+		case EDITOR_MENU_FOLD_TRACK : onFoldTrack(true); break;
+		case EDITOR_MENU_UNFOLD_TRACK : onFoldTrack(false); break;
+		case EDITOR_MENU_FOLD_GROUP : onFoldGroup(true); break;
+		case EDITOR_MENU_UNFOLD_GROUP : onFoldGroup(false); break;
+		case EDITOR_MENU_TOGGLE_BOOKMARK : onToggleBookmark(); break;
+		case EDITOR_MENU_CLEAR_BOOKMARKS : onClearBookmarks(); break;
+		case EDITOR_MENU_TAB : onTab(); break;
 	}
+
+	Editor_update();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
