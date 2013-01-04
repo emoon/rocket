@@ -360,6 +360,31 @@ void Commands_toggleBookmark(TrackData* trackData, int row)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void Commands_clearBookmarks(TrackData* trackData)
+{
+	int i, bookmarkCount = trackData->bookmarkCount;
+	int* bookmarks = trackData->bookmarks;
+
+	if (trackData->bookmarkCount == 0)
+		return;
+
+	Commands_beginMulti("clearBookmarks");
+
+	for (i = 0; i < bookmarkCount; ++i)
+	{
+		const int bookmark = *bookmarks++;
+
+		if (bookmark == 0)
+			continue;
+
+		Commands_toggleBookmark(trackData, bookmark);
+	}
+
+	Commands_endMulti();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Commands_undo()
 {
 	Command* command;
