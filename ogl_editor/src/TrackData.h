@@ -79,7 +79,7 @@ typedef struct TrackData
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool TrackData_hasBookmark(TrackData* trackData, int row);
-void TrackData_toogleBookmark(TrackData* trackData, int row);
+void TrackData_toggleBookmark(TrackData* trackData, int row);
 int TrackData_getNextBookmark(TrackData* trackData, int row);
 int TrackData_getPrevBookmark(TrackData* trackData, int row);
 

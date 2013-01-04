@@ -1,5 +1,6 @@
 #include "Commands.h"
 #include "RemoteConnection.h"
+#include "TrackData.h"
 #include "Types.h"
 #include "../../sync/sync.h"
 #include "../../sync/track.h"
@@ -318,6 +319,41 @@ void Commands_addOrUpdateKey(int track, struct track_key* key)
 	command->undo = undoInsertKey;
 	data->track = track;
 	data->key = *key;
+
+	execCommand(command);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct BookmarkData
+{
+	struct TrackData* trackData;
+	int row;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void toggleBookmark(void* userData)
+{
+	struct BookmarkData* data = (struct BookmarkData*)userData;
+	TrackData_toggleBookmark(data->trackData, data->row);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Commands_toggleBookmark(TrackData* trackData, int row)
+{
+	struct BookmarkData* data;
+	Command* command;
+
+	command = malloc(sizeof(Command));
+	memset(command, 0, sizeof(Command));
+
+	command->userData = data = malloc(sizeof(struct BookmarkData));
+	command->exec = toggleBookmark;
+	command->undo = toggleBookmark;
+	data->trackData = trackData;
+	data->row = row;
 
 	execCommand(command);
 }

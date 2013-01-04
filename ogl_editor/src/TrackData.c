@@ -198,7 +198,7 @@ static void sortArray(int* bookmarks, int count)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackData_toogleBookmark(TrackData* trackData, int row)
+void TrackData_toggleBookmark(TrackData* trackData, int row)
 {
 	int i, count = trackData->bookmarkCount;
 	int* bookmarks = trackData->bookmarks;

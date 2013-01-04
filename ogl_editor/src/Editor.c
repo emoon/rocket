@@ -1244,7 +1244,7 @@ static void onFoldGroup(bool fold)
 
 static void onToggleBookmark()
 {
-	TrackData_toogleBookmark(getTrackData(), getRowPos());
+	Commands_toggleBookmark(getTrackData(), getRowPos());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
