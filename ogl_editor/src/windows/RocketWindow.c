@@ -180,10 +180,10 @@ static int onKeyDown(WPARAM wParam, LPARAM lParam)
 
     switch (wParam)
     {
-        case VK_LEFT : key = EMGUI_ARROW_LEFT; break;
-        case VK_UP : key = EMGUI_ARROW_UP; break;
-        case VK_RIGHT : key = EMGUI_ARROW_RIGHT; break;
-        case VK_DOWN : key = EMGUI_ARROW_DOWN; break;
+        case VK_LEFT : key = EMGUI_KEY_ARROW_LEFT; break;
+        case VK_UP : key = EMGUI_KEY_ARROW_UP; break;
+        case VK_RIGHT : key = EMGUI_KEY_ARROW_RIGHT; break;
+        case VK_DOWN : key = EMGUI_KEY_ARROW_DOWN; break;
         case VK_SPACE : key = ' '; break;
 
         default:

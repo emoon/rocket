@@ -1022,6 +1022,7 @@ static void onSelectTrack()
 
 static void onInterpolation()
 {
+	int idx;
 	struct track_key newKey;
 	struct sync_track* track;
 	struct sync_track** tracks = getTracks();
@@ -1031,7 +1032,7 @@ static void onInterpolation()
 
 	track = tracks[getActiveTrack()];
 
-	int idx = key_idx_floor(track, getRowPos());
+	idx = key_idx_floor(track, getRowPos());
 	if (idx < 0) 
 		return;
 
@@ -1046,6 +1047,8 @@ static void onInterpolation()
 
 static void onEnterCurrentValue()
 {
+	int idx;
+	struct track_key key;
 	struct sync_track* track;
 	struct sync_track** tracks = getTracks();
 	const int rowPos = getRowPos();
@@ -1059,8 +1062,7 @@ static void onEnterCurrentValue()
 	if (!track->keys)
 		return;
 
-	struct track_key key;
-	int idx = sync_find_key(track, rowPos);
+	idx = sync_find_key(track, rowPos);
 	if (idx < 0)
 		idx = -idx - 1;
 
