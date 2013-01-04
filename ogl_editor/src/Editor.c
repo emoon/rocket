@@ -195,7 +195,7 @@ static inline void setRowPos(int pos)
 
 static int getNextTrack()
 {
-	TrackData* trackData = &s_editorData.trackData;
+	TrackData* trackData = getTrackData();
 	int i, track_count = getTrackCount(); 
 	int active_track = getActiveTrack();
  
@@ -224,7 +224,7 @@ static int getNextTrack()
 
 static int getPrevTrack()
 {
-	TrackData* trackData = &s_editorData.trackData;
+	TrackData* trackData = getTrackData(); 
 	int i, active_track = getActiveTrack();
  
 	for (i = active_track - 1; i >= 0; --i)
@@ -480,7 +480,7 @@ static bool internalUpdate()
 	drawHorizonalSlider();
 	drawVerticalSlider();
 
-	refresh = TrackView_render(&s_editorData.trackViewInfo, &s_editorData.trackData);
+	refresh = TrackView_render(getTrackViewInfo(), getTrackData()); 
 	Emgui_end();
 
 	return !!refresh; 
@@ -581,10 +581,15 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void biasSelection(float value, int selectLeft, int selectRight, int selectTop, int selectBottom)
+static void biasSelection(float value)
 {
 	int track, row;
 	struct sync_track** tracks = getTracks();
+	TrackViewInfo* viewInfo = getTrackViewInfo();
+	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
 	Commands_beginMulti("biasSelection");
 
@@ -651,514 +656,21 @@ static void endEditing()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum ArrowDirection
-{
-	ARROW_LEFT,
-	ARROW_RIGHT,
-	ARROW_UP,
-	ARROW_DOWN,
-};
-
-enum Selection
-{
-	DO_SELECTION,
-	NO_SELECTION,
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static void onArrowSide(enum ArrowDirection dir, int row, TrackData* trackData, int activeTrack, int keyMod)
-{
-	int track;
-	const bool shouldFold = dir == ARROW_LEFT ? true : false;
-	const int trackCount = getTrackCount();
-	TrackViewInfo* viewInfo = getTrackViewInfo(); 
-
-	if (keyMod & EMGUI_KEY_ALT)
-	{
-		Track* t = &trackData->tracks[activeTrack];
-
-		if (keyMod & EMGUI_KEY_CTRL) 
-		{
-			if (t->group->trackCount > 1)
-				t->group->folded = shouldFold;
-		}
-		else
-			t->folded = shouldFold;
-
-		Editor_updateTrackScroll();
-		return;
-	}
-
-	if (dir == ARROW_LEFT)
-	{
-		track = getPrevTrack();
-
-	#if defined(_WIN32)
-		if (keyMod & EMGUI_KEY_CTRL)
-	#else
-		if (keyMod & EMGUI_KEY_COMMAND)
-	#endif
-			track = 0;
-
-		track = emaxi(0, track); 
-	}
-	else
-	{
-		track = getNextTrack();
-
-		if (track >= trackCount) 
-			track = trackCount - 1;
-
-	#if defined(_WIN32)
-		if (keyMod & EMGUI_KEY_CTRL)
-	#else
-		if (keyMod & EMGUI_KEY_COMMAND)
-	#endif
-			track = trackCount - 1;
-	}
-
-	setActiveTrack(track);
-
-	if (!TrackView_isSelectedTrackVisible(viewInfo, trackData, track))
-	{
-		s_editorData.trackViewInfo.startPixel += TrackView_getTracksOffset(viewInfo, trackData, activeTrack, track);
-		Editor_updateTrackScroll();
-	}
-
-	if (keyMod & EMGUI_KEY_SHIFT)
-	{
-		Track* t = &trackData->tracks[track];
-
-		// if this track has a folded group we can't select it so set back the selection to the old one
-
-		if (t->group->folded)
-			setActiveTrack(activeTrack);
-		else
-			viewInfo->selectStopTrack = track;
-	}
-	else
-	{
-		viewInfo->selectStartRow = viewInfo->selectStopRow = row;
-		viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
-	}
-
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static void onArrowUp(int row, TrackData* trackData, struct sync_track* track, int activeTrack, int modifiers)
-{
-	TrackViewInfo* viewInfo = getTrackViewInfo(); 
-
-	if (modifiers & EMGUI_KEY_CTRL)
-	{
-		if (track->keys)
-		{
-			int idx = sync_find_key(track, row);
-			if (idx < 0)
-				idx = -idx - 1;
-
-			viewInfo->rowPos = row = track->keys[emaxi(idx - 1, 0)].row;
-
-			if (modifiers & EMGUI_KEY_SHIFT)
-				viewInfo->selectStartRow = row;
-			else
-				viewInfo->selectStartRow = viewInfo->selectStopRow = row;
-		}
-	}
-	else
-	{
-		row -= modifiers & EMGUI_KEY_ALT ? 8 : 1;
-
-		if ((modifiers & EMGUI_KEY_COMMAND) || row < trackData->startRow)
-			row = TrackData_getPrevBookmark(trackData, row); 
-
-		viewInfo->rowPos = row;
-
-		if (modifiers & EMGUI_KEY_SHIFT)
-		{
-			viewInfo->selectStopRow = row;
-			return;
-		}
-
-		viewInfo->selectStartRow = viewInfo->selectStopRow = row;
-		viewInfo->selectStartTrack = viewInfo->selectStopTrack = activeTrack;
-	}
-
-	RemoteConnection_sendSetRowCommand(row);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static void onArrowDown(int rowPos, TrackData* trackData, struct sync_track* track, int activeTrack, int modifiers)
-{
-	int row = getRowPos();
-	TrackViewInfo* viewInfo = getTrackViewInfo(); 
-
-	if (modifiers & EMGUI_KEY_CTRL)
-	{
-		if (track->keys)
-		{
-			int idx = key_idx_floor(track, rowPos);
-
-			if (idx < 0)
-				row = track->keys[0].row;
-			else if (idx > (int)track->num_keys - 2)
-				row = track->keys[track->num_keys - 1].row;
-			else
-				row = track->keys[idx + 1].row;
-
-			viewInfo->rowPos = row; 
-	
-			if (modifiers & EMGUI_KEY_SHIFT)
-				viewInfo->selectStopRow = row;
-			else
-				viewInfo->selectStartRow = viewInfo->selectStopRow = row;
-		}
-	}
-	else
-	{
-		row += modifiers & EMGUI_KEY_ALT ? 8 : 1;
-
-		if ((modifiers & EMGUI_KEY_COMMAND) || row > trackData->endRow)
-			row = TrackData_getNextBookmark(getTrackData(), row); 
-
-		viewInfo->rowPos = row;
-
-		if (modifiers & EMGUI_KEY_SHIFT)
-		{
-			viewInfo->selectStopRow = row;
-			return;
-		}
-
-		viewInfo->selectStartRow = viewInfo->selectStopRow = row;
-		viewInfo->selectStartTrack = viewInfo->selectStopTrack = activeTrack;
-	}
-
-	RemoteConnection_sendSetRowCommand(row);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static void onArrow(int key, int modifiers, int rowPos, struct sync_track* track, int activeTrack)
-{
-	TrackData* trackData = getTrackData();
-
-	endEditing();
-
-	switch (key)
-	{
-		case EMGUI_KEY_ARROW_DOWN:  onArrowDown(rowPos, trackData, track, activeTrack, modifiers); break;
-		case EMGUI_KEY_ARROW_UP:    onArrowUp(rowPos, trackData, track, activeTrack, modifiers); break;
-		case EMGUI_KEY_ARROW_RIGHT: onArrowSide(ARROW_RIGHT, rowPos, trackData, activeTrack, modifiers); break;
-		case EMGUI_KEY_ARROW_LEFT:  onArrowSide(ARROW_LEFT, rowPos, trackData, activeTrack, modifiers); break;
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool Editor_keyDown(int key, int keyCode, int modifiers)
-{
-	bool handled_key = true;
-	TrackData* trackData = &s_editorData.trackData;
-	TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
-	bool paused = RemoteConnection_isPaused();
-	struct sync_track** tracks = getTracks();
-	int active_track = getActiveTrack();
-	int row_pos = viewInfo->rowPos;
-
-	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
-
-	// If some emgui control has focus let it do its thing until its done
-
-	if (Emgui_hasKeyboardFocus())
-	{
-		Editor_update();
-		return true;
-	}
-
-	if (key == EMGUI_KEY_TAB)
-	{
-		Emgui_setFirstControlFocus();
-		Editor_update();
-		return true;
-	}
-
-	switch (key)
-	{
-		case EMGUI_KEY_BACKSPACE:
-		{
-			endEditing();
-			deleteArea(row_pos, active_track, 1, 1);
-			break;
-		}
-
-		case EMGUI_KEY_ARROW_DOWN:
-		case EMGUI_KEY_ARROW_UP:
-		case EMGUI_KEY_ARROW_RIGHT:
-		case EMGUI_KEY_ARROW_LEFT: 
-		{
-			onArrow(key, modifiers, row_pos, tracks[active_track], active_track);
-
-			if (paused)
-				Editor_update();
-
-			return true;
-		}
-
-		default : handled_key = false; break;
-	}
-
-	if (key == ' ')
-	{
-		// TODO: Don't start playing if we are in edit mode (but space shouldn't be added in edit mode but we still
-		// shouldn't start playing if we do
-
-		endEditing();
-		RemoteConnection_sendPauseCommand(!paused);
-		Editor_update();
-		return true;
-	}
-
-	if (!paused)
-		return true;
-
-	// handle copy of tracks/values
-
-	if (key == 'c' && (modifiers & EMGUI_KEY_COMMAND))
-	{
-		copySelection(row_pos, active_track, selectLeft, selectRight, selectTop, selectBottom);
-		return true;
-	}
-
-	if (key == 'x' && (modifiers & EMGUI_KEY_COMMAND))
-	{
-		copySelection(row_pos, active_track, selectLeft, selectRight, selectTop, selectBottom);
-		deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight);
-		handled_key = true;
-	}
-
-	if (key == 't' && (modifiers & EMGUI_KEY_COMMAND))
-	{
-		struct sync_track* t = getTracks()[active_track];
-
-		viewInfo->selectStartTrack = viewInfo->selectStopTrack = active_track;
-
-		if (t->keys)
-		{
-			viewInfo->selectStartRow = t->keys[0].row;
-			viewInfo->selectStopRow = t->keys[t->num_keys - 1].row;
-	
-		}
-		else
-		{
-			viewInfo->selectStartRow = viewInfo->selectStopRow = row_pos;
-		}
-
-		handled_key = true;
-	}
-
-	if (key == 'z' || key == 'Z')
-	{
-		if (modifiers & EMGUI_KEY_SHIFT)
-			Commands_redo();
-		else
-			Commands_undo();
-
-		updateNeedsSaving();
-		Editor_update();
-
-		return true;
-	}
-
-	if (key == 'b' || key == 'B')
-	{
-		TrackData_toogleBookmark(trackData, row_pos);
-		Editor_update();
-		return true;
-	}
-
-	// Handle paste of data
-
-	if (key == 'v' && (modifiers & EMGUI_KEY_COMMAND))
-	{
-		const int buffer_width = s_copyData.bufferWidth;
-		const int buffer_height = s_copyData.bufferHeight;
-		const int buffer_size = s_copyData.count;
-		const int track_count = getTrackCount();
-		int i, trackPos;
-
-		if (!s_copyData.entries)
-			return false;
-
-		// First clear the paste area
-
-		deleteArea(row_pos, active_track, buffer_width, buffer_height);
-
-		Commands_beginMulti("pasteArea");
-
-		for (i = 0; i < buffer_size; ++i)
-		{
-			const CopyEntry* ce = &s_copyData.entries[i];
-			
-			trackPos = active_track + ce->track;
-			if (trackPos < track_count)
-			{
-				size_t trackIndex = trackPos;
-				struct track_key key = ce->keyFrame;
-				key.row += row_pos;
-
-				Commands_addOrUpdateKey(trackIndex, &key);
-			}
-		}
-
-		Commands_endMulti();
-		updateNeedsSaving();
-
-		handled_key = true;
-	}
-
-	// Handle biasing of values
-
-	/*
-	if ((keyCode >=  0 && keyCode <=  6) || (keyCode >= 12 && keyCode <= 17))
-	{
-		float bias_value = 0.0f;
-
-		switch (keyCode)
-		{
-			case 0 : bias_value = -0.01f; break;
-			case 1 : bias_value = -0.1f; break;
-			case 2 : bias_value = -1.0f; break;
-			case 3 : bias_value = -10.f; break;
-			case 5 : bias_value = -100.0f; break;
-			case 4 : bias_value = -1000.0f; break;
-			case 12 : bias_value = 0.01f; break;
-			case 13 : bias_value = 0.1f; break;
-			case 14 : bias_value = 1.0f; break;
-			case 15 : bias_value = 10.f; break;
-			case 17 : bias_value = 100.0f; break;
-			case 16 : bias_value = 1000.0f; break;
-		}
-
-		biasSelection(bias_value, selectLeft, selectRight, selectTop, selectBottom);
-
-		Editor_update();
-
-		return true;
-	}
-	*/
-
-	// do edit here and biasing here
-
-	if ((key >= '0' && key <= '9') || key == '.' || key == '-')
-	{
-		if (!is_editing)
-		{
-			memset(s_editBuffer, 0, sizeof(s_editBuffer));
-			is_editing = true;
-		}
-
-		s_editBuffer[strlen(s_editBuffer)] = (char)key;
-		s_editorData.trackData.editText = s_editBuffer;
-
-		return true;
-	}
-	else if (is_editing)
-	{
-		// if we press esc we discard the value
-
-		if (!tracks)
-			return true;
-
-		if (key != 27)
-		{
-			endEditing();
-
-		}
-
-		is_editing = false;
-		s_editorData.trackData.editText = 0;
-	}
-
-	if (key == EMGUI_KEY_TAB_ENTER)
-	{
-		struct sync_track* t = getTracks()[active_track];
-
-		if (t->keys)
-		{
-			struct track_key key;
-			int idx = sync_find_key(t, row_pos);
-			if (idx < 0)
-				idx = -idx - 1;
-
-			key.row = row_pos;
-			key.value = sync_get_val(t, row_pos);
-			key.type = t->keys[emaxi(idx - 1, 0)].type;
-
-			Commands_addOrUpdateKey(active_track, &key);
-			updateNeedsSaving();
-		}
-
-		handled_key = true;
-	}
-
-	if (key == 'i' || key == 'I' || key == 'q')
-	{
-		struct track_key newKey;
-		struct sync_track* track = tracks[active_track];
-		int row = viewInfo->rowPos;
-
-		int idx = key_idx_floor(track, row);
-		if (idx < 0) 
-			return false;
-
-		newKey = track->keys[idx];
-		newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
-
-		Commands_addOrUpdateKey(active_track, &newKey);
-		updateNeedsSaving();
-
-		handled_key = true;
-	}
-
-	if (handled_key)
-		Editor_update();
-
-	return handled_key;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void Editor_scroll(float deltaX, float deltaY, int flags)
 {
+	TrackData* trackData = getTrackData();
 	int current_row = s_editorData.trackViewInfo.rowPos;
 	int old_offset = s_editorData.trackViewInfo.startPixel;
 	int start_row = 0, end_row = 10000;
 
-	if (trackData)
-	{
-		start_row = trackData->startRow;
-		end_row = trackData->endRow;
-	}
+	start_row = trackData->startRow;
+	end_row = trackData->endRow;
 
 	if (flags & EMGUI_KEY_ALT)
 	{
-		TrackViewInfo* viewInfo = &s_editorData.trackViewInfo;
-		const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-		const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-		const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-		const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 		const float multiplier = flags & EMGUI_KEY_SHIFT ? 0.1f : 0.01f;
-
-		biasSelection(-deltaY * multiplier, selectLeft, selectRight, selectTop, selectBottom);
-
+		biasSelection(-deltaY * multiplier);
 		Editor_update();
-
 		return;
 	}
 
@@ -1185,6 +697,7 @@ static int processCommands()
 	int strLen, newRow, serverIndex;
 	unsigned char cmd = 0;
 	int ret = 0;
+	TrackViewInfo* viewInfo = getTrackViewInfo();
 
 	if (RemoteConnection_recv((char*)&cmd, 1, 0)) 
 	{
@@ -1240,7 +753,9 @@ static int processCommands()
 					{
 						if (RemoteConnection_recv((char*)&newRow, sizeof(int), 0) == 4)
 						{
-							s_editorData.trackViewInfo.rowPos = htonl(newRow);
+							viewInfo->rowPos = htonl(newRow);
+							viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
+
 							rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
 							return 1;
 						}
@@ -1248,7 +763,9 @@ static int processCommands()
 				}
 				else
 				{
-					s_editorData.trackViewInfo.rowPos = htonl(newRow);
+					viewInfo->rowPos = htonl(newRow);
+					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
+
 					rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
 				}
 
@@ -1365,72 +882,6 @@ void Editor_loadRecentFile(int id)
 
 	if (LoadSave_loadRocketXML(path, getTrackData()))
 		onFinishedLoad(path);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-const char* s_type[] =
-{
-	"EDITOR_MENU_NEW",
-	"EDITOR_MENU_SUB_MENU",
-	"EDITOR_MENU_SEPARATOR",
-	"EDITOR_MENU_RECENT_FILE_0",
-	"EDITOR_MENU_RECENT_FILE_1",
-	"EDITOR_MENU_RECENT_FILE_2",
-	"EDITOR_MENU_RECENT_FILE_3",
-	"EDITOR_MENU_OPEN",
-	"EDITOR_MENU_SAVE",
-	"EDITOR_MENU_SAVE_AS",
-	"EDITOR_MENU_REMOTE_EXPORT",
-	"EDITOR_MENU_UNDO",
-	"EDITOR_MENU_REDO",
-	"EDITOR_MENU_CANCEL_EDIT",
-	"EDITOR_MENU_CLEAR",
-	"EDITOR_MENU_CUT",
-	"EDITOR_MENU_COPY",
-	"EDITOR_MENU_PASTE",
-	"EDITOR_MENU_SELECT_TRACK",
-	"EDITOR_MENU_BIAS_P_001",
-	"EDITOR_MENU_BIAS_P_01",
-	"EDITOR_MENU_BIAS_P_1",
-	"EDITOR_MENU_BIAS_P_10",
-	"EDITOR_MENU_BIAS_P_100",
-	"EDITOR_MENU_BIAS_P_1000",
-	"EDITOR_MENU_BIAS_N_001",
-	"EDITOR_MENU_BIAS_N_01",
-	"EDITOR_MENU_BIAS_N_1",
-	"EDITOR_MENU_BIAS_N_10",
-	"EDITOR_MENU_BIAS_N_100",
-	"EDITOR_MENU_BIAS_N_1000",
-	"EDITOR_MENU_INTERPOLATION",
-	"EDITOR_MENU_ENTER_CURRENT_V",
-	"EDITOR_MENU_PLAY",
-	"EDITOR_MENU_ROW_UP",
-	"EDITOR_MENU_ROW_DOWN",
-	"EDITOR_MENU_TRACK_LEFT",
-	"EDITOR_MENU_TRACK_RIGHT",
-	"EDITOR_MENU_ROWS_DOWN",
-	"EDITOR_MENU_ROWS_UP",
-	"EDITOR_MENU_PREV_BOOKMARK",
-	"EDITOR_MENU_NEXT_BOOKMARK",
-	"EDITOR_MENU_FIRST_TRACK",
-	"EDITOR_MENU_LAST_TRACK",
-	"EDITOR_MENU_PREV_KEY",
-	"EDITOR_MENU_NEXT_KEY",
-	"EDITOR_MENU_FOLD_TRACK",
-	"EDITOR_MENU_UNFOLD_TRACK",
-	"EDITOR_MENU_FOLD_GROUP",
-	"EDITOR_MENU_UNFOLD_GROUP",
-	"EDITOR_MENU_TOGGLE_BOOKMARK",
-	"EDITOR_MENU_CLEAR_BOOKMARKS",
-	"EDITOR_MENU_TAB",
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Editor_onMenuEvent(int id)
-{
-	printf("%s\n", s_type[id - 0x1000]);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1569,18 +1020,6 @@ static void onSelectTrack()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onBias(float v)
-{
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	biasSelection(v, selectLeft, selectRight, selectTop, selectBottom);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void onInterpolation()
 {
 	struct track_key newKey;
@@ -1607,13 +1046,56 @@ static void onInterpolation()
 
 static void onEnterCurrentValue()
 {
+	struct sync_track* track;
+	struct sync_track** tracks = getTracks();
+	const int rowPos = getRowPos();
+	const int activeTrack = getActiveTrack();
+
+	if (!tracks)
+		return;
+
+	track = tracks[activeTrack];
+
+	if (!track->keys)
+		return;
+
+	struct track_key key;
+	int idx = sync_find_key(track, rowPos);
+	if (idx < 0)
+		idx = -idx - 1;
+
+	key.row = rowPos;
+	key.value = sync_get_val(track, rowPos);
+	key.type = track->keys[emaxi(idx - 1, 0)].type;
+
+	Commands_addOrUpdateKey(activeTrack, &key);
+	updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void onPlay()
 {
+	RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum ArrowDirection
+{
+	ARROW_LEFT,
+	ARROW_RIGHT,
+	ARROW_UP,
+	ARROW_DOWN,
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum Selection
+{
+	DO_SELECTION,
+	NO_SELECTION,
+};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1622,12 +1104,12 @@ static void onRowStep(int step, enum Selection selection)
 	TrackViewInfo* viewInfo = getTrackViewInfo(); 
 	TrackData* trackData = getTrackData();
 
-	viewInfo->rowPos = eclampi(getRowPos() + step, trackData->startRow, trackData->endRow);
+	setRowPos(eclampi(getRowPos() + step, trackData->startRow, trackData->endRow));
 
 	if (selection == DO_SELECTION)
-		viewInfo->selectStopRow = viewInfo->rowPos;
-
-	RemoteConnection_sendSetRowCommand(getRowPos());
+		viewInfo->selectStartRow = getRowPos();
+	else
+		viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1635,6 +1117,7 @@ static void onRowStep(int step, enum Selection selection)
 static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection selection)
 {
 	TrackViewInfo* viewInfo = getTrackViewInfo(); 
+	TrackData* trackData = getTrackData();
 	const int trackCount = getTrackCount();
 	const int oldTrack = getActiveTrack();
 	int track = 0;
@@ -1650,7 +1133,6 @@ static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection
 
 	if (selection == DO_SELECTION)
 	{
-		TrackData* trackData = getTrackData();
 		Track* t = &trackData->tracks[track];
 
 		// if this track has a folded group we can't select it so set back the selection to the old one
@@ -1663,6 +1145,12 @@ static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection
 	else
 	{
 		viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
+	}
+
+	if (!TrackView_isSelectedTrackVisible(viewInfo, trackData, track))
+	{
+		s_editorData.trackViewInfo.startPixel += TrackView_getTracksOffset(viewInfo, trackData, oldTrack, track);
+		Editor_updateTrackScroll();
 	}
 }
 
@@ -1767,15 +1255,22 @@ static void onClearBookmarks()
 
 static void onTab()
 {
+	Emgui_setFirstControlFocus();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Editor_menuEvent(int menuItem)
 {
-	printf("%s\n", s_type[menuItem - 0x1000]);
-	
 	endEditing();
+
+	// If some internal control has focus we let it do its thing
+
+	if (Emgui_hasKeyboardFocus())
+	{
+		Editor_update();
+		return;
+	}
 
 	switch (menuItem)
 	{
@@ -1808,18 +1303,18 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_PASTE :        onPaste(); break;
 		case EDITOR_MENU_SELECT_TRACK : onSelectTrack(); break;
 
-		case EDITOR_MENU_BIAS_P_001 : onBias(0.01f); break;
-		case EDITOR_MENU_BIAS_P_01 :  onBias(0.1f); break;
-		case EDITOR_MENU_BIAS_P_1:    onBias(1.0f); break;
-		case EDITOR_MENU_BIAS_P_10:   onBias(10.0f); break;
-		case EDITOR_MENU_BIAS_P_100:  onBias(100.0f); break;
-		case EDITOR_MENU_BIAS_P_1000: onBias(1000.0f); break;
-		case EDITOR_MENU_BIAS_N_001:  onBias(-0.01f); break;
-		case EDITOR_MENU_BIAS_N_01:   onBias(-0.1f); break;
-		case EDITOR_MENU_BIAS_N_1:    onBias(-1.0f); break;
-		case EDITOR_MENU_BIAS_N_10:   onBias(-10.0f); break;
-		case EDITOR_MENU_BIAS_N_100 : onBias(-100.0f); break;
-		case EDITOR_MENU_BIAS_N_1000: onBias(-1000.0f); break;
+		case EDITOR_MENU_BIAS_P_001 : biasSelection(0.01f); break;
+		case EDITOR_MENU_BIAS_P_01 :  biasSelection(0.1f); break;
+		case EDITOR_MENU_BIAS_P_1:    biasSelection(1.0f); break;
+		case EDITOR_MENU_BIAS_P_10:   biasSelection(10.0f); break;
+		case EDITOR_MENU_BIAS_P_100:  biasSelection(100.0f); break;
+		case EDITOR_MENU_BIAS_P_1000: biasSelection(1000.0f); break;
+		case EDITOR_MENU_BIAS_N_001:  biasSelection(-0.01f); break;
+		case EDITOR_MENU_BIAS_N_01:   biasSelection(-0.1f); break;
+		case EDITOR_MENU_BIAS_N_1:    biasSelection(-1.0f); break;
+		case EDITOR_MENU_BIAS_N_10:   biasSelection(-10.0f); break;
+		case EDITOR_MENU_BIAS_N_100 : biasSelection(-100.0f); break;
+		case EDITOR_MENU_BIAS_N_1000: biasSelection(-1000.0f); break;
 
 		case EDITOR_MENU_INTERPOLATION : onInterpolation(); break;
 		case EDITOR_MENU_ENTER_CURRENT_V : onEnterCurrentValue(); break;
@@ -1827,12 +1322,12 @@ void Editor_menuEvent(int menuItem)
 		// View
 
 		case EDITOR_MENU_PLAY : onPlay(); break;
-		case EDITOR_MENU_ROW_UP : onRowStep(-1, NO_SELECTION); break;
-		case EDITOR_MENU_ROW_DOWN : onRowStep(1, NO_SELECTION); break;
-		case EDITOR_MENU_TRACK_LEFT : onTrackSide(ARROW_LEFT, false, NO_SELECTION); break;
-		case EDITOR_MENU_TRACK_RIGHT : onTrackSide(ARROW_RIGHT, false, NO_SELECTION); break;
-		case EDITOR_MENU_ROWS_UP : onRowStep(-8, false); break;
-		case EDITOR_MENU_ROWS_DOWN : onRowStep(8, false); break;
+		//case EDITOR_MENU_ROW_UP : onRowStep(-1, NO_SELECTION); break;
+		//case EDITOR_MENU_ROW_DOWN : onRowStep(1, NO_SELECTION); break;
+		//case EDITOR_MENU_TRACK_LEFT : onTrackSide(ARROW_LEFT, false, NO_SELECTION); break;
+		//case EDITOR_MENU_TRACK_RIGHT : onTrackSide(ARROW_RIGHT, false, NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_UP : onRowStep(-8, NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_DOWN : onRowStep(8, NO_SELECTION); break;
 		case EDITOR_MENU_PREV_BOOKMARK : onBookmarkDir(ARROW_UP); break;
 		case EDITOR_MENU_NEXT_BOOKMARK : onBookmarkDir(ARROW_DOWN); break;
 		case EDITOR_MENU_FIRST_TRACK : onTrackSide(ARROW_LEFT, true, NO_SELECTION); break;
@@ -1845,7 +1340,7 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_UNFOLD_GROUP : onFoldGroup(false); break;
 		case EDITOR_MENU_TOGGLE_BOOKMARK : onToggleBookmark(); break;
 		case EDITOR_MENU_CLEAR_BOOKMARKS : onClearBookmarks(); break;
-		case EDITOR_MENU_TAB : onTab(); break;
+		//case EDITOR_MENU_TAB : onTab(); break;
 	}
 
 	Editor_update();
@@ -1855,5 +1350,69 @@ void Editor_menuEvent(int menuItem)
 
 void Editor_destroy()
 {
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static bool doEditing(int key)
+{
+	// special case if '.' key (in case of dvorak) would clatch with the same key for biasing we do this special case
+	
+	if (key == '.' && !is_editing)
+		return false;
+
+	if ((key >= '0' && key <= '9') || key == '.' || key == '-')
+	{
+		if (!is_editing)
+		{
+			memset(s_editBuffer, 0, sizeof(s_editBuffer));
+			is_editing = true;
+		}
+
+		s_editBuffer[strlen(s_editBuffer)] = (char)key;
+		s_editorData.trackData.editText = s_editBuffer;
+
+		return true;
+	}
+
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// This code does handling of keys that isn't of the regular accelerators. This may be due to its being impractical
+// to have in the menus or for other reasons (example you can have arrows in the menus but should you have diffrent
+// ones when you press shift (making a selection) it all becomes a bit bloated so we leave some out.
+//
+// Also we assume here that keys that has been assigned to accelerators has been handled before this code
+// as it reduces some checks an makes the configuration stay in Menu.h/Menu.c
+
+bool Editor_keyDown(int key, int keyCode, int modifiers)
+{
+	enum Selection selection = modifiers & EMGUI_KEY_SHIFT ? DO_SELECTION : NO_SELECTION;
+
+	if (Emgui_hasKeyboardFocus())
+	{
+		Editor_update();
+		return true;
+	}
+
+	// Update editing of values
+
+	if (doEditing(key))
+		return true;
+
+	endEditing();
+
+	switch (key)
+	{
+		case EMGUI_KEY_ARROW_UP : onRowStep(-1, selection); break;
+		case EMGUI_KEY_ARROW_DOWN : onRowStep(1, selection); break;
+		case EMGUI_KEY_ARROW_LEFT : onTrackSide(ARROW_LEFT, false, selection); break;
+		case EMGUI_KEY_ARROW_RIGHT : onTrackSide(ARROW_RIGHT, false, selection); break;
+		case EMGUI_KEY_TAB : onTab(); break;
+		default : return false;
+	}
+
+	return true;
 }
 

@@ -184,6 +184,10 @@ static int getModifierFlags(int flags)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 - (void)keyDown:(NSEvent *)theEvent 
 {
 	NSString* key = [theEvent charactersIgnoringModifiers];
@@ -196,8 +200,6 @@ static int getModifierFlags(int flags)
 	int keyCode = keyChar;
 	int specialKeys = getModifierFlags([theEvent modifierFlags]);
 
-	Emgui_sendKeyinput(keyChar, specialKeys);
-
 	if ([theEvent modifierFlags] & NSNumericPadKeyMask) 
 	{ 
 		switch (keyChar)
@@ -208,6 +210,16 @@ static int getModifierFlags(int flags)
 			case NSDownArrowFunctionKey: keyCode = EMGUI_KEY_ARROW_DOWN; break;
 		}
 	}
+    else
+    {
+        switch ([theEvent keyCode])
+        {
+            case KEY_TAB : keyCode = EMGUI_KEY_TAB; break;
+            case KEY_DELETE : keyCode = EMGUI_KEY_BACKSPACE; break;
+        }
+    }
+
+	Emgui_sendKeyinput(keyCode, specialKeys);
 
 	if (!Editor_keyDown(keyCode, [theEvent keyCode], specialKeys))
     	[super keyDown:theEvent];
