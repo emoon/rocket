@@ -20,6 +20,9 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 	int g, i, foldedGroupCount = 0, is_key, track_index = 0;
 	mxml_node_t* node = rootNode;
 
+	free(trackData->bookmarks);
+	trackData->bookmarkCount = 0;
+
 	// Traverse the tracks node data
 
 	while (1)
@@ -34,6 +37,14 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 			case MXML_ELEMENT:
 			{
 				const char* element_name = mxmlGetElement(node);
+
+				if (!strcmp("bookmark", element_name))
+				{
+                    const char* row = mxmlElementGetAttr(node, "row");
+
+                    if (row)
+						TrackData_toggleBookmark(trackData, atoi(row));
+				}
 
 				if (!strcmp("group", element_name))
 				{
@@ -213,6 +224,9 @@ static const char* whitespaceCallback(mxml_node_t* node, int where)
 
 		if (!strcmp("group", name))
 			return "\t";
+
+		if (!strcmp("bookmark", name))
+			return "\t";
 	}
 
 	if (where == MXML_WS_AFTER_OPEN) 
@@ -249,10 +263,24 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 	mxml_node_t* tracks;
 	FILE* fp;
 	size_t p;
-	
 	struct sync_data* sync_data = &trackData->syncData;
+	int* bookmarks = trackData->bookmarks;
 
 	xml = mxmlNewXML("1.0");	
+
+	// save all bookmarks
+
+	for (p = 0; p < (size_t)trackData->bookmarkCount; ++p)
+	{
+		mxml_node_t* node;
+		const int bookmark = *bookmarks++;
+
+		if (bookmark == 0)
+			continue;
+
+		node = mxmlNewElement(xml, "bookmark");
+		setElementInt(node, "row", "%d", bookmark); 
+	}
 
 	// save groups that are folded
 
