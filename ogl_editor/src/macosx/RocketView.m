@@ -509,7 +509,7 @@ void buildSubMenu(NSMenu* menu, MenuDescriptor menuDesc[])
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void buildMenu()
+void Window_buildMenu()
 {
  	NSMenu* fileMenu = [[[NSApp mainMenu] itemWithTitle:@"File"] submenu];
  	NSMenu* editMenu = [[[NSApp mainMenu] itemWithTitle:@"Edit"] submenu];
@@ -524,8 +524,6 @@ void buildMenu()
 
 void Window_populateRecentList(const char** files)
 {
-	buildMenu();
-
  	NSMenu* fileMenu = [[[NSApp mainMenu] itemWithTitle:@"File"] submenu];
 	NSMenu* recentItems = [[fileMenu itemWithTitle:@"Recent Files"] submenu];
 

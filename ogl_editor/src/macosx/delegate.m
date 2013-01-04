@@ -4,6 +4,7 @@
 #include "rlog.h"
 
 void Window_populateRecentList(char** files);
+void Window_buildMenu();
 
 @implementation RocketAppDelegate
 
@@ -58,6 +59,7 @@ void Window_populateRecentList(char** files);
 		}
 	}
 
+	Window_buildMenu();
 	Window_populateRecentList(recent_list);
 }
 
