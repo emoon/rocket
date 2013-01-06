@@ -1378,7 +1378,7 @@ static bool doEditing(int key)
 	if (key == '.' && !is_editing)
 		return false;
 
-	if ((key >= '0' && key <= '9') || key == '.' || key == '-')
+	if ((key >= '0' && key <= '9') || key == '.' || key == '-' || key == EMGUI_KEY_BACKSPACE)
 	{
 		if (!is_editing)
 		{
@@ -1386,7 +1386,11 @@ static bool doEditing(int key)
 			is_editing = true;
 		}
 
-		s_editBuffer[strlen(s_editBuffer)] = (char)key;
+		if (key == EMGUI_KEY_BACKSPACE)
+			s_editBuffer[emaxi(strlen(s_editBuffer) - 1, 0)] = 0;
+		else
+			s_editBuffer[strlen(s_editBuffer)] = (char)key;
+
 		s_editorData.trackData.editText = s_editBuffer;
 
 		return true;
