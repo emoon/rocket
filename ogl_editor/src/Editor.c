@@ -639,11 +639,14 @@ static void endEditing()
 	key.value = (float)atof(s_editBuffer);
 	key.type = 0;
 
-	if (is_key_frame(track, row_pos))
+	if (track->num_keys > 0)
 	{
-		int idx = key_idx_floor(track, row_pos);
-		key.type = track->keys[idx].type;
-	}
+		int idx = sync_find_key(track, getRowPos());
+		if (idx < 0)
+			idx = -idx - 1;
+
+		key.type = track->keys[emaxi(idx - 1, 0)].type;
+	}	
 
 	track_name = track->name; 
 
@@ -1066,10 +1069,19 @@ static void onEnterCurrentValue()
 	if (idx < 0)
 		idx = -idx - 1;
 
-	key.row = rowPos;
-	key.value = sync_get_val(track, rowPos);
-	key.type = track->keys[emaxi(idx - 1, 0)].type;
-
+    key.row = rowPos;
+   
+    if (track->num_keys > 0)
+    {
+        key.value = sync_get_val(track, rowPos);
+        key.type = track->keys[emaxi(idx - 1, 0)].type;
+    }
+    else
+    {
+        key.value = 0.0f;
+        key.type = 0;
+    }
+    
 	Commands_addOrUpdateKey(activeTrack, &key);
 	updateNeedsSaving();
 }
