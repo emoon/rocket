@@ -659,6 +659,14 @@ static void endEditing()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void cancelEditing()
+{
+	is_editing = false;
+	s_editorData.trackData.editText = 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Editor_scroll(float deltaX, float deltaY, int flags)
 {
 	TrackData* trackData = getTrackData();
@@ -944,7 +952,7 @@ bool Editor_saveBeforeExit()
 
 static void onCancelEdit()
 {
-	endEditing();
+	cancelEditing();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1279,7 +1287,7 @@ static void onTab()
 
 void Editor_menuEvent(int menuItem)
 {
-	endEditing();
+	cancelEditing();
 
 	// If some internal control has focus we let it do its thing
 
@@ -1422,7 +1430,21 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 	if (doEditing(key))
 		return true;
 
-	endEditing();
+	switch (key)
+	{
+		case EMGUI_KEY_ARROW_UP :
+		case EMGUI_KEY_ARROW_DOWN :
+		case EMGUI_KEY_ARROW_LEFT : 
+		case EMGUI_KEY_ARROW_RIGHT : 
+		case EMGUI_KEY_TAB : 
+		case EMGUI_KEY_ENTER : 
+		{
+			endEditing();
+			break;
+		}
+	}
+
+	cancelEditing();
 
 	switch (key)
 	{
