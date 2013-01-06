@@ -217,6 +217,7 @@ static int getModifierFlags(int flags)
             case KEY_TAB : keyCode = EMGUI_KEY_TAB; break;
             case KEY_DELETE : keyCode = EMGUI_KEY_BACKSPACE; break;
             case KEY_RETURN : keyCode = EMGUI_KEY_ENTER; break;
+            case KEY_ESCAPE : keyCode = EMGUI_KEY_ESC; break;
         }
     }
 

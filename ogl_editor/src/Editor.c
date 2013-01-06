@@ -1442,9 +1442,13 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			endEditing();
 			break;
 		}
-	}
 
-	cancelEditing();
+		case EMGUI_KEY_ESC :
+		{
+			cancelEditing();
+			break;
+		}
+	}
 
 	switch (key)
 	{
