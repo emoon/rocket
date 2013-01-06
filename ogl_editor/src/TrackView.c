@@ -359,8 +359,15 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 	folded = valuesOnly ? true : folded;
 	size = valuesOnly ? track_size_folded : size;
 
-	//Emgui_fill(border_color, startX + size, info->startY - font_size * 4, 2, (info->endSizeY - info->startY) + 40);
-	Emgui_drawBorder(border_color, border_color, startX, info->startY - font_size * 4, size, (info->endSizeY - info->startY) + 40);
+	if (valuesOnly)
+	{
+		Emgui_fill(border_color, startX + size, info->startY - font_size * 4, 2, (info->endSizeY - info->startY) + 40);
+		Emgui_fill(border_color, startX, info->startY - font_size * 4, 2, (info->endSizeY - info->startY) + 40);
+	}
+	else
+	{
+		Emgui_drawBorder(border_color, border_color, startX, info->startY - font_size * 4, size, (info->endSizeY - info->startY) + 40);
+	}
 
 	// if folded we should skip rendering the rows that are covered by the text
 
@@ -668,7 +675,7 @@ int TrackView_getWidth(TrackViewInfo* viewInfo, struct TrackData* trackData)
 
 int TrackView_getStartOffset()
 {
-	return 50;
+	return 48;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
