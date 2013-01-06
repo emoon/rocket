@@ -1383,7 +1383,7 @@ static bool doEditing(int key)
 {
 	// special case if '.' key (in case of dvorak) would clatch with the same key for biasing we do this special case
 	
-	if (key == '.' && !is_editing)
+	if ((key == '.' || key == EMGUI_KEY_BACKSPACE) && !is_editing)
 		return false;
 
 	if ((key >= '0' && key <= '9') || key == '.' || key == '-' || key == EMGUI_KEY_BACKSPACE)
