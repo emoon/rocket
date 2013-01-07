@@ -1024,9 +1024,15 @@ void Emgui_editBoxXY(int x, int y, int width, int height, int bufferLength, char
 
 			default :
 			{
+				// Rocket hack:
+				// Currenty for rocket we only need 0-9 as input (for the edit field
+				// so we only update here if those are the keys
 				int offset = emini(bufferLength - 2, len);
-				buffer[offset + 0] = (char)keyCode;
-				buffer[offset + 1] = 0;
+				if (keyCode >= '0' && keyCode <= '9')
+				{
+					buffer[offset + 0] = (char)keyCode;
+					buffer[offset + 1] = 0;
+				}
 				break;
 			}
 		}
