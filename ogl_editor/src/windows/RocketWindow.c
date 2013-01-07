@@ -181,8 +181,10 @@ static void buildSubMenu(HMENU parentMenu, MenuDescriptor menuDesc[], wchar_t* n
 		}
 		else
 		{
+			wchar_t temp[256];
+			wsprintf(temp, L"%s\tCtrl-X", desc->name);
 			//&New\tCtrl+N
-			AppendMenu(menu, MF_STRING, desc->id, desc->name);
+			AppendMenu(menu, MF_STRING, desc->id, temp);
 		}
 
 		desc++;
@@ -197,6 +199,11 @@ void Window_buildMenu()
     buildSubMenu(mainMenu, g_fileMenu, L"&File");
     buildSubMenu(mainMenu, g_editMenu, L"&Edit");
     buildSubMenu(mainMenu, g_viewMenu, L"&View");
+
+	{
+		//int foo = MapVirtualKey(MAPVK_VSC_TO_VK_EX);
+		//(void)foo;
+	}
 
 	SetMenu(s_window, mainMenu);
 }
