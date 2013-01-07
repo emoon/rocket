@@ -2,8 +2,8 @@
 #include "../Editor.h"
 #include "../rlog.h"
 #include "../Menu.h"
-#include <Emgui.h> 
-#include <GFXBackend.h> 
+#include <emgui/emgui.h> 
+#include <emgui/gfxbackend.h> 
 #include <CoreFoundation/CoreFoundation.h>
 #include <Carbon/Carbon.h>
 
