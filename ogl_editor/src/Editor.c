@@ -1162,11 +1162,14 @@ static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection
 		if (t->group->folded)
 			setActiveTrack(oldTrack);
 		else
+		{
 			viewInfo->selectStopTrack = track;
+		}
 	}
 	else
 	{
 		viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
+		viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
 	}
 
 	if (!TrackView_isSelectedTrackVisible(viewInfo, trackData, track))
