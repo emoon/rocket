@@ -3,10 +3,13 @@
 #include <gl/gl.h>
 #include "../Editor.h"
 #include "resource.h"
+#include "Menu.h"
 #include "afxres.h"
 #include <string.h>
 #include <emgui/emgui.h>
 #include <emgui/gfxbackend.h> 
+
+void Window_buildMenu();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -96,7 +99,7 @@ bool createWindow(const wchar_t* title, int width, int height)
 	wc.lpszClassName = L"RocketEditor";
 	wc.hIcon = LoadIcon(s_instance, IDI_APPLICATION);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.lpszMenuName  = MAKEINTRESOURCE(IDR_MENU);
+	//wc.lpszMenuName  = MAKEINTRESOURCE(IDR_MENU);
 
 	if (!RegisterClass(&wc))
 	{
@@ -147,6 +150,9 @@ bool createWindow(const wchar_t* title, int width, int height)
 		return FALSE;
 	}
 
+	
+	Window_buildMenu();
+
 	ShowWindow(s_window, SW_SHOW);
 	SetForegroundWindow(s_window);
 	SetFocus(s_window);
@@ -157,16 +163,17 @@ bool createWindow(const wchar_t* title, int width, int height)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
-static void buildSubMenu(HMENU menu, MenuDescriptor menuDesc[])
+static void buildSubMenu(HMENU parentMenu, MenuDescriptor menuDesc[], wchar_t* name)
 {
 	MenuDescriptor* desc = &menuDesc[0];
+	HMENU menu = CreatePopupMenu();
+    AppendMenu(parentMenu, MF_STRING | MF_POPUP, (UINT)menu, name);
 
 	while (desc->name)
 	{
 		if (desc->id == EDITOR_MENU_SEPARATOR)
 		{
-			AppendMenu(MF_SEPARATOR, NULL, "-");
+			AppendMenu(menu, MF_SEPARATOR, 0, L"-");
 		}
 		else if (desc->id == EDITOR_MENU_SUB_MENU)
 		{
@@ -175,22 +182,24 @@ static void buildSubMenu(HMENU menu, MenuDescriptor menuDesc[])
 		else
 		{
 			//&New\tCtrl+N
-			AppendMenu(hSubMenu, MF_STRING, desc->id, "&Go");
-
+			AppendMenu(menu, MF_STRING, desc->id, desc->name);
 		}
 
+		desc++;
 	}
 }
-*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
 void Window_buildMenu()
 {
-	HMENU menu = GetMenu(s_window);
+	HMENU mainMenu = CreateMenu();
+    buildSubMenu(mainMenu, g_fileMenu, L"&File");
+    buildSubMenu(mainMenu, g_editMenu, L"&Edit");
+    buildSubMenu(mainMenu, g_viewMenu, L"&View");
+
+	SetMenu(s_window, mainMenu);
 }
-*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
