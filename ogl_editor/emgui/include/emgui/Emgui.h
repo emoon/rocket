@@ -5,6 +5,8 @@
 #include "Types.h"
 #include "FontLayout.h"
 
+struct EmguiFontLayout;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 enum EmguiSliderDirection
@@ -111,7 +113,7 @@ bool Emgui_setFontByName(const char* ttfFontname);
 
 int Emgui_loadFontTTF(const char* ttfFontname, float fontHeight);
 int Emgui_loadFontBitmap(const char* buffer, int len, enum EmguiMemoryLocation location, 
-						 int rangeStart, int rangeEnd, EmguiFontLayout* layout);
+						 int rangeStart, int rangeEnd, struct EmguiFontLayout* layout);
 uint32_t Emgui_getTextSize(const char* text);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

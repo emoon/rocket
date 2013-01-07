@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Emgui.h>
+#include <emgui/types.h>
 
 struct TrackData;
 

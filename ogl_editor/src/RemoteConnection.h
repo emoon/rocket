@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Types.h>
+#include <emgui/types.h>
 
 struct track_key;
 struct sync_track;

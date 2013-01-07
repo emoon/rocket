@@ -1,8 +1,11 @@
+require "tundra.syntax.glob"
+require "tundra.syntax.osx-bundle"
+
 StaticLibrary {
 	Name = "mxml",
 
 	Env = {
-		CPPPATH = { ".", "ogl_rocket/external/mxml" },
+		CPPPATH = { ".", "external/mxml" },
 		PROGOPTS = {
 			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
 		},
@@ -18,7 +21,7 @@ StaticLibrary {
 
 	Sources = { 
 		Glob {
-			Dir = "ogl_editor/external/mxml",
+			Dir = "external/mxml",
 			Extensions = { ".c" },
 		},
 	},
@@ -45,7 +48,7 @@ StaticLibrary {
 
 	Sources = { 
 		FGlob {
-			Dir = "../emgui/src",
+			Dir = "emgui/src",
 			Extensions = { ".c" },
 			Filters = {
 				{ Pattern = "macosx"; Config = "macosx-*-*" },
@@ -61,7 +64,7 @@ StaticLibrary {
 
 	Sources = { 
 		Glob {
-			Dir = "sync",
+			Dir = "../sync",
 			Extensions = { ".c" },
 		},
 	},
@@ -72,10 +75,9 @@ Program {
 	Name = "editor",
 
 	Env = {
-		CPPPATH = { ".", "ogl_editor/src", 
-						 "../emgui/src", 
-						 "../../../../../emgui/src",
-					     "ogl_editor/External/mxml" },
+		CPPPATH = { ".", "src", 
+						 "emgui/include", 
+					     "External/mxml" },
 		PROGOPTS = {
 			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
 		},
@@ -92,8 +94,7 @@ Program {
 
 	Sources = { 
 		FGlob {
-			Dir = "ogl_editor/src",
-			--Extensions = { ".c", { ".m"; Config = "macosx-*-*" } },
+			Dir = "src",
 			Extensions = { ".c", ".m" },
 			Filters = {
 				{ Pattern = "macosx"; Config = "macosx-*-*" },
@@ -101,7 +102,7 @@ Program {
 			},
 		},
 
-		{ "ogl_editor/data/windows/editor.rc" ; Config = { "win32-*-*", "win64-*-*" } },
+		{ "data/windows/editor.rc" ; Config = { "win32-*-*", "win64-*-*" } },
 	},
 
 	Depends = { "sync", "mxml", "emgui" },
@@ -116,11 +117,11 @@ local rocketBundle = OsxBundle
 {
 	Depends = { "editor" },
 	Target = "$(OBJECTDIR)/RocketEditor.app",
-	InfoPList = "ogl_editor/data/macosx/Info.plist",
+	InfoPList = "data/macosx/Info.plist",
 	Executable = "$(OBJECTDIR)/editor",
 	Resources = {
-		CompileNib { Source = "ogl_editor/data/macosx/appnib.xib", Target = "appnib.nib" },
-		"ogl_editor/data/macosx/icon.icns",
+		CompileNib { Source = "data/macosx/appnib.xib", Target = "appnib.nib" },
+		"data/macosx/icon.icns",
 	},
 }
 

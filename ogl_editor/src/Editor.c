@@ -1,11 +1,10 @@
+#include "Editor.h"
 #include <string.h>
 #include <stdlib.h>
-#include <Emgui.h>
 #include <stdio.h>
 #include <math.h>
 #include "Menu.h"
 #include "Dialog.h"
-#include "Editor.h"
 #include "LoadSave.h"
 #include "TrackView.h"
 #include "rlog.h"
@@ -17,6 +16,7 @@
 #include "../../sync/sync.h"
 #include "../../sync/base.h"
 #include "../../sync/data.h"
+#include <emgui/emgui.h>
 
 extern void Window_setTitle(const text_t* title);
 extern void Window_populateRecentList(const text_t** files);

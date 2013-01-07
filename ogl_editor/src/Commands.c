@@ -1,11 +1,11 @@
 #include "Commands.h"
 #include "RemoteConnection.h"
 #include "TrackData.h"
-#include "Types.h"
 #include "../../sync/sync.h"
 #include "../../sync/track.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <emgui/Types.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

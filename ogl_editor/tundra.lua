@@ -27,8 +27,6 @@ local win32 = {
 Build {
 	Units = "units.lua",
 
-	SyntaxExtensions = { "tundra.syntax.glob", "tundra.syntax.osx-bundle" },
-
 	Configs = {
 		Config { Name = "macosx-clang", DefaultOnHost = "macosx", Inherit = macosx, Tools = { "clang-osx" } },
 		Config { Name = "win32-msvc", DefaultOnHost = { "windows" }, Inherit = win32, Tools = { "msvc" } },

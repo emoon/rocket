@@ -4,9 +4,9 @@
 #include "../external/mxml/mxml.h"
 #include "RemoteConnection.h"
 #include "../../sync/data.h"
-#include <Types.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <emgui/types.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
