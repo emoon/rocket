@@ -161,6 +161,70 @@ bool createWindow(const wchar_t* title, int width, int height)
 	return TRUE;
 }
 
+static ACCEL s_accelTable[512];
+static int s_accelCount = 0;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void formatName(wchar_t* outName, int keyMod, int key, const wchar_t* name)
+{
+	wchar_t modName[64] = L"";
+	wchar_t keyName[64] = L""; 
+
+	if ((keyMod & EMGUI_KEY_WIN))
+		wcscat(modName, L"Win - ");
+
+	if ((keyMod & EMGUI_KEY_CTRL))
+		wcscat(modName, L"Ctrl - ");
+
+	if ((keyMod & EMGUI_KEY_ALT))
+		wcscat(modName, L"Alt - ");
+
+	if ((keyMod & EMGUI_KEY_SHIFT))
+		wcscat(modName, L"Alt - ");
+
+	if (key < 127)
+	{
+		keyName[0] = (wchar_t)(char)(key & ~0x20);
+		keyName[1] = 0;
+	}
+	else
+	{
+		switch (key)
+		{
+			case EMGUI_KEY_ARROW_DOWN : wcscpy_s(keyName, sizeof(keyName), L"Down"); break;
+			case EMGUI_KEY_ARROW_UP: wcscpy_s(keyName, sizeof(keyName), L"Up"); break;
+			case EMGUI_KEY_ARROW_RIGHT: wcscpy_s(keyName, sizeof(keyName), L"Right"); break;
+			case EMGUI_KEY_ARROW_LEFT: wcscpy_s(keyName, sizeof(keyName), L"Left"); break;
+			case EMGUI_KEY_ESC: wcscpy_s(keyName, sizeof(keyName), L"ESC"); break;
+			case EMGUI_KEY_TAB: wcscpy_s(keyName, sizeof(keyName), L"TAB"); break;
+			case EMGUI_KEY_BACKSPACE: wcscpy_s(keyName, sizeof(keyName), L"Delete"); break;
+			case EMGUI_KEY_ENTER: wcscpy_s(keyName, sizeof(keyName), L"Enter"); break;
+			case EMGUI_KEY_SPACE: wcscpy_s(keyName, sizeof(keyName), L"Space"); break;
+		}
+	}
+
+	wsprintf(outName, L"%s\t%s%s", name, modName, keyName);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+static void addAccelarator(const MenuDescriptor* desc)
+{
+	uint8_t virt = 0;
+	uint32_t winMod = desc->winMod;
+	uint32_t key = desc->key;
+
+	if (winMod & EMGUI_KEY_ALT)
+		virt |= 0x10;
+	if (winMod & EMGUI_KEY_CTRL)
+		virt |= 0x08;
+	//if (key > 127)
+	//	virt
+}
+*/
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void buildSubMenu(HMENU parentMenu, MenuDescriptor menuDesc[], wchar_t* name)
@@ -182,8 +246,7 @@ static void buildSubMenu(HMENU parentMenu, MenuDescriptor menuDesc[], wchar_t* n
 		else
 		{
 			wchar_t temp[256];
-			wsprintf(temp, L"%s\tCtrl-X", desc->name);
-			//&New\tCtrl+N
+			formatName(temp, desc->winMod, desc->key, desc->name);
 			AppendMenu(menu, MF_STRING, desc->id, temp);
 		}
 
@@ -346,10 +409,53 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 		{
 			switch (LOWORD(wParam))
 			{
-				case ID_FILE_OPEN:
+				case EDITOR_MENU_OPEN:
+				case EDITOR_MENU_SAVE:
+				case EDITOR_MENU_SAVE_AS:
+				case EDITOR_MENU_REMOTE_EXPORT:
+				case EDITOR_MENU_RECENT_FILE_0:
+				case EDITOR_MENU_RECENT_FILE_1:
+				case EDITOR_MENU_RECENT_FILE_2:
+				case EDITOR_MENU_RECENT_FILE_3:
+				case EDITOR_MENU_UNDO:
+				case EDITOR_MENU_REDO:
+				case EDITOR_MENU_CANCEL_EDIT:
+				case EDITOR_MENU_DELETE_KEY:
+				case EDITOR_MENU_CUT:
+				case EDITOR_MENU_COPY:
+				case EDITOR_MENU_PASTE:
+				case EDITOR_MENU_SELECT_TRACK:
+				case EDITOR_MENU_BIAS_P_001:
+				case EDITOR_MENU_BIAS_P_01:
+				case EDITOR_MENU_BIAS_P_1:
+				case EDITOR_MENU_BIAS_P_10:
+				case EDITOR_MENU_BIAS_P_100:
+				case EDITOR_MENU_BIAS_P_1000:
+				case EDITOR_MENU_BIAS_N_001:
+				case EDITOR_MENU_BIAS_N_01:
+				case EDITOR_MENU_BIAS_N_1:
+				case EDITOR_MENU_BIAS_N_10:
+				case EDITOR_MENU_BIAS_N_100:
+				case EDITOR_MENU_BIAS_N_1000:
+				case EDITOR_MENU_INTERPOLATION:
+				case EDITOR_MENU_ENTER_CURRENT_V:
+				case EDITOR_MENU_PLAY:
+				case EDITOR_MENU_ROWS_UP:
+				case EDITOR_MENU_ROWS_DOWN:
+				case EDITOR_MENU_PREV_BOOKMARK:
+				case EDITOR_MENU_NEXT_BOOKMARK:
+				case EDITOR_MENU_FIRST_TRACK:
+				case EDITOR_MENU_LAST_TRACK:
+				case EDITOR_MENU_PREV_KEY:
+				case EDITOR_MENU_NEXT_KEY:
+				case EDITOR_MENU_FOLD_TRACK:
+				case EDITOR_MENU_UNFOLD_TRACK:
+				case EDITOR_MENU_FOLD_GROUP:
+				case EDITOR_MENU_UNFOLD_GROUP:
+				case EDITOR_MENU_TOGGLE_BOOKMARK:
+				case EDITOR_MENU_CLEAR_BOOKMARKS:
 				{
-					//Editor_menuEvent(EDITOR_MENU_OPEN);
-					Editor_update();
+					Editor_menuEvent(LOWORD(wParam));
 					break;
 				}
 			}

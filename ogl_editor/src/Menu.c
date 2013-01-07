@@ -2,7 +2,6 @@
 #include <emgui/emgui.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// On win32 (where we use unicode for text-strings) this is defined already
 
 #ifndef _WIN32
 #define _T(v) v
@@ -60,28 +59,22 @@ MenuDescriptor g_viewMenu[] =
 {
 	{ _T("Start/Stop Playback"), 		EDITOR_MENU_PLAY,				EMGUI_KEY_SPACE, 		0, 0 },	
 	{ _T(""), 							EDITOR_MENU_SEPARATOR,			0, 						0, 0 },	
-	// { _T("Jump one row up"), 			EDITOR_MENU_ROW_UP,				EMGUI_KEY_ARROW_UP, 	0, 0 },	
-	// { _T("Jump one row down"), 			EDITOR_MENU_ROW_DOWN,			EMGUI_KEY_ARROW_DOWN, 	0, 0 },	
-	// { _T("Jump one track left"), 		EDITOR_MENU_TRACK_LEFT,			EMGUI_KEY_ARROW_LEFT, 	0, 0 },	
-	// { _T("Jump one track right"), 		EDITOR_MENU_TRACK_RIGHT,		EMGUI_KEY_ARROW_RIGHT, 	0, 0 },	
+	{ _T("Jump 8 rows up"), 			EDITOR_MENU_ROWS_UP,			EMGUI_KEY_ARROW_UP, 	EMGUI_KEY_ALT, EMGUI_KEY_ALT },	
+	{ _T("Jump 8 rows down"), 			EDITOR_MENU_ROWS_DOWN,			EMGUI_KEY_ARROW_DOWN, 	EMGUI_KEY_ALT, EMGUI_KEY_ALT },	
+	{ _T("Jump to previous bookmark"), 	EDITOR_MENU_PREV_BOOKMARK,		EMGUI_KEY_ARROW_UP, 	EMGUI_KEY_COMMAND, EMGUI_KEY_ALT | EMGUI_KEY_WIN },	
+	{ _T("Jump to next bookmark"),		EDITOR_MENU_NEXT_BOOKMARK,		EMGUI_KEY_ARROW_DOWN, 	EMGUI_KEY_COMMAND, EMGUI_KEY_ALT | EMGUI_KEY_WIN },	
+	{ _T("Jump to first track"), 		EDITOR_MENU_FIRST_TRACK,		EMGUI_KEY_ARROW_LEFT, 	EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	
+	{ _T("Jump to last track"),			EDITOR_MENU_LAST_TRACK,			EMGUI_KEY_ARROW_RIGHT, 	EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	
+	{ _T("Jump to previous key"), 		EDITOR_MENU_PREV_KEY,			EMGUI_KEY_ARROW_UP, 	EMGUI_KEY_CTRL, EMGUI_KEY_CTRL },	
+	{ _T("Jump to next key"),			EDITOR_MENU_NEXT_KEY,			EMGUI_KEY_ARROW_DOWN, 	EMGUI_KEY_CTRL, EMGUI_KEY_CTRL },	
 	{ _T(""), 							EDITOR_MENU_SEPARATOR,			0, 						0, 0 },	
-	{ _T("Jump 8 rows up"), 			EDITOR_MENU_ROWS_UP,			EMGUI_KEY_ARROW_UP, 	EMGUI_KEY_ALT, 0 },	
-	{ _T("Jump 8 rows down"), 			EDITOR_MENU_ROWS_DOWN,			EMGUI_KEY_ARROW_DOWN, 	EMGUI_KEY_ALT, 0 },	
-	{ _T("Jump to previous bookmark"), 	EDITOR_MENU_PREV_BOOKMARK,		EMGUI_KEY_ARROW_UP, 	EMGUI_KEY_COMMAND, 0 },	
-	{ _T("Jump to next bookmark"),		EDITOR_MENU_NEXT_BOOKMARK,		EMGUI_KEY_ARROW_DOWN, 	EMGUI_KEY_COMMAND, 0 },	
-	{ _T("Jump to first track"), 		EDITOR_MENU_FIRST_TRACK,		EMGUI_KEY_ARROW_LEFT, 	EMGUI_KEY_COMMAND, 0 },	
-	{ _T("Jump to last track"),			EDITOR_MENU_LAST_TRACK,			EMGUI_KEY_ARROW_RIGHT, 	EMGUI_KEY_COMMAND, 0 },	
-	{ _T("Jump to previous key"), 		EDITOR_MENU_PREV_KEY,			EMGUI_KEY_ARROW_UP, 	EMGUI_KEY_CTRL, 0 },	
-	{ _T("Jump to next key"),			EDITOR_MENU_NEXT_KEY,			EMGUI_KEY_ARROW_DOWN, 	EMGUI_KEY_CTRL, 0 },	
-	{ _T(""), 							EDITOR_MENU_SEPARATOR,			0, 						0, 0 },	
-	{ _T("Fold track"),					EDITOR_MENU_FOLD_TRACK,			EMGUI_KEY_ARROW_LEFT, 	EMGUI_KEY_ALT, 0 },	
-	{ _T("Unfold track"),				EDITOR_MENU_UNFOLD_TRACK,		EMGUI_KEY_ARROW_RIGHT, 	EMGUI_KEY_ALT, 0 },	
-	{ _T("Fold group"),					EDITOR_MENU_FOLD_GROUP,			EMGUI_KEY_ARROW_LEFT, 	EMGUI_KEY_ALT | EMGUI_KEY_CTRL, 0 },	
-	{ _T("Unfold group"),				EDITOR_MENU_UNFOLD_GROUP,		EMGUI_KEY_ARROW_RIGHT, 	EMGUI_KEY_ALT | EMGUI_KEY_CTRL, 0 },	
+	{ _T("Fold track"),					EDITOR_MENU_FOLD_TRACK,			EMGUI_KEY_ARROW_LEFT, 	EMGUI_KEY_ALT, EMGUI_KEY_ALT },	
+	{ _T("Unfold track"),				EDITOR_MENU_UNFOLD_TRACK,		EMGUI_KEY_ARROW_RIGHT, 	EMGUI_KEY_ALT, EMGUI_KEY_ALT },	
+	{ _T("Fold group"),					EDITOR_MENU_FOLD_GROUP,			EMGUI_KEY_ARROW_LEFT, 	EMGUI_KEY_ALT | EMGUI_KEY_CTRL, EMGUI_KEY_ALT | EMGUI_KEY_CTRL },	
+	{ _T("Unfold group"),				EDITOR_MENU_UNFOLD_GROUP,		EMGUI_KEY_ARROW_RIGHT, 	EMGUI_KEY_ALT | EMGUI_KEY_CTRL, EMGUI_KEY_ALT | EMGUI_KEY_CTRL },	
 	{ _T(""), 							EDITOR_MENU_SEPARATOR,			0, 						0, 0 },	
 	{ _T("Toogle bookmark"),			EDITOR_MENU_TOGGLE_BOOKMARK,	'b', 					0, 0 },	
 	{ _T("Clear bookmarks"),			EDITOR_MENU_CLEAR_BOOKMARKS,	'b', 					EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	
-	{ _T("Unfold track"),				EDITOR_MENU_UNFOLD_TRACK,		EMGUI_KEY_ARROW_RIGHT, 	EMGUI_KEY_ALT, 0 },	
 	{ _T("Jump row,start/end & edit"), 	EDITOR_MENU_TAB,				EMGUI_KEY_TAB, 			0, 0 },	
 	{ 0 },
 };
