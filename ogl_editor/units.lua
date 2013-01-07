@@ -31,7 +31,7 @@ StaticLibrary {
 	Name = "emgui",
 
 	Env = {
-		CPPPATH = { ".", "../../emgui/src", "../../../../emgui/src" },
+		CPPPATH = { ".", "emgui/src", "emgui/include" },
 		PROGOPTS = {
 			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
 		},
