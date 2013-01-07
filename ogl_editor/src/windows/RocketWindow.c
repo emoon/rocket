@@ -157,6 +157,39 @@ bool createWindow(const wchar_t* title, int width, int height)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void buildSubMenu(HMENU menu, MenuDescriptor menuDesc[])
+{
+	MenuDescriptor* desc = &menuDesc[0];
+
+	while (desc->name)
+	{
+		if (desc->id == EDITOR_MENU_SEPARATOR)
+		{
+			AppendMenu(MF_SEPARATOR, NULL, "-");
+		}
+		else if (desc->id == EDITOR_MENU_SUB_MENU)
+		{
+			// fix submenu here
+		}
+		else
+		{
+			//&New\tCtrl+N
+			AppendMenu(hSubMenu, MF_STRING, desc->id, "&Go");
+
+		}
+
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Window_buildMenu()
+{
+	HMENU menu = GetMenu(s_window);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Window_setTitle(const wchar_t* title)
 {
 	SetWindowText(s_window, title);
