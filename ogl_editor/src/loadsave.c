@@ -10,7 +10,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static const char* s_foldedGroupNames[16 * 1024];
+static char* s_foldedGroupNames[16 * 1024];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -48,7 +48,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 
 				if (!strcmp("group", element_name))
 				{
-                    s_foldedGroupNames[foldedGroupCount++] = mxmlElementGetAttr(node, "name");
+                    s_foldedGroupNames[foldedGroupCount++] = strdup(mxmlElementGetAttr(node, "name"));
 				}
 
 				if (!strcmp("tracks", element_name))
@@ -143,12 +143,23 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 	{
 		for (g = 0; g < trackData->groupCount; ++g)
 		{
-			if (!strcmp(s_foldedGroupNames[i], trackData->groups[g].name))
+            Group* group = &trackData->groups[g];
+            const char* groupName = group->name;
+            const char* foldedName = s_foldedGroupNames[i];
+         
+            // groups with 1 track is handled as non-grouped
+            
+            if (group->trackCount == 1)
+                continue;
+            
+			if (!strcmp(foldedName, groupName))
 			{
-				trackData->groups[i].folded = true;
+				trackData->groups[g].folded = true;
 				break;
 			}
 		}
+
+		free(s_foldedGroupNames[i]);
 	}
 
 	trackData->tracks[0].selected = true;
