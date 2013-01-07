@@ -1027,6 +1027,26 @@ static void onPaste()
 
 static void onSelectTrack()
 {
+	int activeTrack = getActiveTrack();
+	TrackViewInfo* viewInfo = getTrackViewInfo();
+	struct sync_track** tracks;
+	struct sync_track* track;
+	
+	if (!(tracks = getTracks()))
+		return;
+
+	track = tracks[activeTrack];
+	viewInfo->selectStartTrack = viewInfo->selectStopTrack = activeTrack;
+
+	if (track->keys)
+	{
+		viewInfo->selectStartRow = track->keys[0].row;
+		viewInfo->selectStopRow = track->keys[track->num_keys - 1].row;
+	}
+	else
+	{
+		viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
