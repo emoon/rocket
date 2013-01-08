@@ -172,16 +172,16 @@ static void formatName(wchar_t* outName, int keyMod, int key, const wchar_t* nam
 	wchar_t keyName[64] = L""; 
 
 	if ((keyMod & EMGUI_KEY_WIN))
-		wcscat(modName, L"Win - ");
+		wcscat(modName, L"Win-");
 
 	if ((keyMod & EMGUI_KEY_CTRL))
-		wcscat(modName, L"Ctrl - ");
+		wcscat(modName, L"Ctrl-");
 
 	if ((keyMod & EMGUI_KEY_ALT))
-		wcscat(modName, L"Alt - ");
+		wcscat(modName, L"Alt-");
 
 	if ((keyMod & EMGUI_KEY_SHIFT))
-		wcscat(modName, L"Shift - ");
+		wcscat(modName, L"Shift-");
 
 	if (key < 127)
 	{
@@ -225,12 +225,14 @@ static void addAccelarator(const MenuDescriptor* desc)
 
 	if (key < 127)
 	{
-		accel->key = (char)(key);
-
 		if (virt != 0)
 		{
 			accel->key = (char)(key & ~0x20);
 			virt |= 1;
+		}
+		else
+		{
+			accel->key = (char)(key);
 		}
 	}
 	else
