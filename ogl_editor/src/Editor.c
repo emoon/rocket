@@ -1310,6 +1310,9 @@ static void onTab()
 
 void Editor_menuEvent(int menuItem)
 {
+	if (menuItem == EDITOR_MENU_ENTER_CURRENT_V && is_editing)
+		endEditing();
+
 	cancelEditing();
 
 	// If some internal control has focus we let it do its thing

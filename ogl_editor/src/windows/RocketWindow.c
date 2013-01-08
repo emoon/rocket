@@ -181,7 +181,7 @@ static void formatName(wchar_t* outName, int keyMod, int key, const wchar_t* nam
 		wcscat(modName, L"Alt - ");
 
 	if ((keyMod & EMGUI_KEY_SHIFT))
-		wcscat(modName, L"Alt - ");
+		wcscat(modName, L"Shift - ");
 
 	if (key < 127)
 	{
@@ -209,21 +209,51 @@ static void formatName(wchar_t* outName, int keyMod, int key, const wchar_t* nam
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
 static void addAccelarator(const MenuDescriptor* desc)
 {
 	uint8_t virt = 0;
 	uint32_t winMod = desc->winMod;
 	uint32_t key = desc->key;
+	ACCEL* accel = &s_accelTable[s_accelCount++];
 
 	if (winMod & EMGUI_KEY_ALT)
 		virt |= 0x10;
 	if (winMod & EMGUI_KEY_CTRL)
 		virt |= 0x08;
-	//if (key > 127)
-	//	virt
+	if (winMod & EMGUI_KEY_SHIFT)
+		virt |= 0x04;
+
+	if (key < 127)
+	{
+		accel->key = (char)(key);
+
+		if (virt != 0)
+		{
+			accel->key = (char)(key & ~0x20);
+			virt |= 1;
+		}
+	}
+	else
+	{
+		virt |= 1;
+
+		switch (key)
+		{
+			case EMGUI_KEY_ARROW_DOWN : accel->key = VK_DOWN; break; 
+			case EMGUI_KEY_ARROW_UP:  accel->key = VK_UP; break;
+			case EMGUI_KEY_ARROW_RIGHT: accel->key = VK_RIGHT; break;
+			case EMGUI_KEY_ARROW_LEFT: accel->key = VK_LEFT; break;
+			case EMGUI_KEY_ESC: accel->key = VK_ESCAPE; break;
+			case EMGUI_KEY_TAB: accel->key = VK_TAB; break;
+			case EMGUI_KEY_BACKSPACE: accel->key = VK_DELETE; break;
+			case EMGUI_KEY_ENTER: accel->key = VK_RETURN; break;
+			case EMGUI_KEY_SPACE: accel->key = VK_SPACE; break;
+		}
+	}
+
+	accel->fVirt = virt;
+	accel->cmd = (WORD)desc->id;
 }
-*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -248,6 +278,7 @@ static void buildSubMenu(HMENU parentMenu, MenuDescriptor menuDesc[], wchar_t* n
 			wchar_t temp[256];
 			formatName(temp, desc->winMod, desc->key, desc->name);
 			AppendMenu(menu, MF_STRING, desc->id, temp);
+			addAccelarator(desc);
 		}
 
 		desc++;
@@ -512,7 +543,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmndLine, i
 	if (!createWindow(L"RocketEditor", 800, 600))
 		return 0;
 
-	accel = LoadAccelerators(instance, MAKEINTRESOURCE(IDR_ACCELERATOR));
+	accel = CreateAcceleratorTable(s_accelTable, s_accelCount);
 
 	// Update timed function every 16 ms
 
