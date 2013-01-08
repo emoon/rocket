@@ -2,6 +2,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#if defined(WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
+
 static int s_log_level = 0;
 static int s_old_level = 0;
 
@@ -9,14 +14,20 @@ static int s_old_level = 0;
 
 void rlog(int logLevel, const char* format, ...)
 {
+	char buffer[2048];
     va_list ap;
 
     if (logLevel < s_log_level)
         return;
 
     va_start(ap, format);
-    vprintf(format, ap);
-    va_end(ap);
+#if defined(_WIN32)
+	vsprintf(buffer, format, ap);
+	OutputDebugStringA(buffer);
+#else
+	vprintf(format, ap);
+#endif   
+	va_end(ap);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
