@@ -84,7 +84,7 @@ View:
 Space                   -       Start/Stop
 Arrows                  -       Move cursor around
 Alt+Up/Down             -       Jump 8 rows
-Cttr+Alt+Up/Down        -       Jump to StartRow/NextBookmark - PrevBookmark/EndRow
+Ctrl+Alt+Up/Down        -       Jump to StartRow/NextBookmark - PrevBookmark/EndRow
 Ctrl+Left/Right         -       Jump to first/last track
 Ctrl+Up/Down            -       Jump to Previous/Next key in current track
 Alt+Left/Right          -       Fold/Unfold track
