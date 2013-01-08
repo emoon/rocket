@@ -24,9 +24,11 @@ static HMENU s_recentFilesMenu;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 LRESULT	CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+void Window_populateRecentList(text_t** files);
 static bool setRegString(HKEY key, const wchar_t* name, const wchar_t* value, int size);
 static bool getRegString(HKEY key, wchar_t* out, const wchar_t* name);
 static void saveRecentFileList();
+static void getRecentFiles();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -155,12 +157,18 @@ bool createWindow(const wchar_t* title, int width, int height)
 		return FALSE;
 	}
 
-	if (!RegOpenKey(HKEY_CURRENT_USER, L"SOFTWARE\\Gnu Rocket", &s_regConfigKey))
+	if (RegOpenKey(HKEY_CURRENT_USER, L"SOFTWARE\\Gnu Rocket", &s_regConfigKey) != ERROR_SUCCESS)
 	{
-		return FALSE;
+		if (ERROR_SUCCESS != RegCreateKey(HKEY_CURRENT_USER, L"SOFTWARE\\Gnu Rocket", &s_regConfigKey))
+		{
+			// messagebox here
+			return FALSE;
+		}
 	}
 	
+	getRecentFiles();
 	Window_buildMenu();
+	Window_populateRecentList(Editor_getRecentFiles());
 
 	ShowWindow(s_window, SW_SHOW);
 	SetForegroundWindow(s_window);
@@ -283,11 +291,11 @@ static void buildSubMenu(HMENU parentMenu, MenuDescriptor menuDesc[], wchar_t* n
 		else if (desc->id == EDITOR_MENU_SUB_MENU)
 		{
 			HMENU subMenu = CreatePopupMenu();
-    		AppendMenu(parentMenu, MF_STRING | MF_POPUP, (UINT)subMenu, desc->name);
+    		AppendMenu(menu, MF_STRING | MF_POPUP, (UINT)subMenu, desc->name);
 
     		// A bit hacky but will save us time searching for it later on
 
-    		if (!wcstrcmp(desc->name, L"Recent Files"))
+    		if (!wcscmp(desc->name, L"Recent Files"))
 				s_recentFilesMenu = subMenu;
 		}
 		else
@@ -306,11 +314,22 @@ static void buildSubMenu(HMENU parentMenu, MenuDescriptor menuDesc[], wchar_t* n
 
 void Window_buildMenu()
 {
+	int i = 0;
 	HMENU mainMenu = CreateMenu();
     buildSubMenu(mainMenu, g_fileMenu, L"&File");
     buildSubMenu(mainMenu, g_editMenu, L"&Edit");
     buildSubMenu(mainMenu, g_viewMenu, L"&View");
 	SetMenu(s_window, mainMenu);
+
+	// Add accelerators for the recents files 
+
+	for (i = 0; i < 4; ++i)
+	{
+		ACCEL* accel = &s_accelTable[s_accelCount++];
+		accel->fVirt = 0x08 | 0x1;
+		accel->key = (WORD)('1' + i);
+		accel->cmd = (WORD)(EDITOR_MENU_RECENT_FILE_0 + i);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -331,7 +350,11 @@ void Window_populateRecentList(text_t** files)
 	for (i = 0; i < 4; ++i)
 	{
 		wchar_t name[2048];
-		wsprintf(name, L"%s\tCtrl-&%d", files[i], i);
+	
+		if (!wcscmp(files[i], L""))
+			continue;
+		
+		wsprintf(name, L"%s\tCtrl-&%d", files[i], i + 1);
 		AppendMenu(s_recentFilesMenu, MF_STRING, EDITOR_MENU_RECENT_FILE_0 + i, name); 
 	}
 }
@@ -605,7 +628,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmndLine, i
 
 static bool setRegString(HKEY key, const wchar_t* name, const wchar_t* value, int size)
 {
-	return ERROR_SUCCESS == RegSetValueExW(key, name, 0, REG_SZ, (BYTE*)value, size);
+	return ERROR_SUCCESS == RegSetValueExW(key, name, 0, REG_SZ, (BYTE*)value, (size + 1) * 2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -614,9 +637,32 @@ static bool getRegString(HKEY key, wchar_t* out, const wchar_t* name)
 {
 	DWORD size = 0;
 	DWORD type = 0;
-	DWORD ret = RegQueryValueExW(key, name, 0, &type, out, &size);
+	DWORD ret;
+
+	if (ERROR_SUCCESS != RegQueryValueExW(key, name, 0, &type, (LPBYTE)NULL, &size)) 
+		return false;
+	
+	if (REG_SZ != type) 
+		return false;
+
+	ret = RegQueryValueExW(key, name, 0, &type, (LPBYTE)out, &size);
 
 	return ret == ERROR_SUCCESS;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void getRecentFiles()
+{
+	int i = 0;
+	text_t** recent_list = Editor_getRecentFiles();
+
+	for (i = 0; i < 4; ++i)
+	{
+		wchar_t entryName[64];
+		wsprintf(entryName, L"RecentFile%d", i); 
+		getRegString(s_regConfigKey, recent_list[i], entryName); 		
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -626,14 +672,12 @@ static void saveRecentFileList()
 	int i = 0;
 	text_t** recent_list = Editor_getRecentFiles();
 
-	if (ERROR_SUCCESS != RegOpenKey(HKEY_CURRENT_USER, L"SOFTWARE\\Gnu Rocket", &s_regConfigKey))
-		return;
-
 	for (i = 0; i < 4; ++i)
 	{
 		wchar_t entryName[64];
 		wsprintf(entryName, L"RecentFile%d", i); 
-		setRegString(s_regConfigKey, entryName, recent_list[i], wstrlen(recent_list[i]);
+		setRegString(s_regConfigKey, entryName, recent_list[i], wcslen(recent_list[i]));
 	}
 }
+
 
