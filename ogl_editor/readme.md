@@ -24,8 +24,8 @@ Keys
 OSX:
 
 Editing:
-0-9                     -       Edit value
-Esc                     -       Cancel edit
+* 0-9                     -       Edit value
+* Esc                     -       Cancel edit
 QWERTY                  -       Bias selection +0.01, +0.1, +1, +10, +100, +1000
 ASDFGH                  -       Bias selection -0.01, -0.1, -1, -10, -100, -1000
 Alt+Trackpad scroll	-	Bias selection +1/-1
