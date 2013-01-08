@@ -1,5 +1,7 @@
 #include <windows.h>
 
+extern HWND s_window;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int Dialog_open(wchar_t* path, int pathSize)
@@ -46,6 +48,7 @@ void Dialog_showColorPicker(unsigned int* color)
 	cc.lStructSize = sizeof(CHOOSECOLOR);
 	cc.rgbResult = *color;
 	cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+	cc.hwndOwner = s_window;
 	if (ChooseColor(&cc)) 
 		*color = cc.rgbResult;
 }
