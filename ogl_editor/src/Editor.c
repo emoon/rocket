@@ -1474,8 +1474,32 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 	switch (key)
 	{
-		case EMGUI_KEY_ARROW_UP : onRowStep(-1, selection); break;
-		case EMGUI_KEY_ARROW_DOWN : onRowStep(1, selection); break;
+		// this is a bit hacky but we don't want to have lots of combos in the menus
+		// of arrow keys so this makes it a bit easier
+	
+		case EMGUI_KEY_ARROW_UP : 
+		{
+			if (modifiers & EMGUI_KEY_CTRL)
+				onPrevNextKey(true, selection);
+			else if (modifiers & EMGUI_KEY_ALT)
+				onRowStep(-8, selection); 
+			else
+				onRowStep(-1, selection); 
+
+			break;
+		}
+
+		case EMGUI_KEY_ARROW_DOWN : 
+		{
+			if (modifiers & EMGUI_KEY_CTRL)
+				onPrevNextKey(false, selection);
+			else if (modifiers & EMGUI_KEY_ALT)
+				onRowStep(8, selection); 
+			else
+				onRowStep(1, selection); 
+			break;
+		}
+
 		case EMGUI_KEY_ARROW_LEFT : onTrackSide(ARROW_LEFT, false, selection); break;
 		case EMGUI_KEY_ARROW_RIGHT : onTrackSide(ARROW_RIGHT, false, selection); break;
 		case EMGUI_KEY_TAB : onTab(); break;
