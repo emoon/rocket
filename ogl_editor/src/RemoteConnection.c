@@ -272,13 +272,25 @@ int RemoteConnection_recv(char* buffer, size_t length, int flags)
 
 #if defined(_WIN32)
 	if (ret <= 0)
-#else
+	{
+		int error = WSAGetLastError();
+		if (error == WSAEWOULDBLOCK)
+			return -1;
+	}
+	
 	if (ret == 0)
-#endif
 	{
 		RemoteConnection_disconnect();
 		return false;
 	}
+#else
+	if (ret == 0)
+	{
+		RemoteConnection_disconnect();
+		return false;
+	}
+#endif
+
 
 	return ret;
 }
