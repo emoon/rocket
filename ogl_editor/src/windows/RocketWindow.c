@@ -247,7 +247,7 @@ static void addAccelarator(const MenuDescriptor* desc)
 			case EMGUI_KEY_ARROW_LEFT: accel->key = VK_LEFT; break;
 			case EMGUI_KEY_ESC: accel->key = VK_ESCAPE; break;
 			case EMGUI_KEY_TAB: accel->key = VK_TAB; break;
-			case EMGUI_KEY_BACKSPACE: accel->key = VK_DELETE; break;
+			case EMGUI_KEY_BACKSPACE: accel->key = VK_BACK; break;
 			case EMGUI_KEY_ENTER: accel->key = VK_RETURN; break;
 			case EMGUI_KEY_SPACE: accel->key = VK_SPACE; break;
 		}
@@ -440,6 +440,17 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 
 		case WM_COMMAND:
 		{
+			// make sure we send tabs, enters and backspaces down to emgui as well, a bit hacky but well
+
+			if (LOWORD(wParam) == EDITOR_MENU_TAB)
+				Emgui_sendKeyinput(EMGUI_KEY_TAB, getModifiers());
+
+			if (LOWORD(wParam) == EDITOR_MENU_ENTER_CURRENT_V)
+				Emgui_sendKeyinput(EMGUI_KEY_ENTER, getModifiers());
+
+			if (LOWORD(wParam) == EDITOR_MENU_DELETE_KEY)
+				Emgui_sendKeyinput(EMGUI_KEY_BACKSPACE, getModifiers());
+
 			switch (LOWORD(wParam))
 			{
 				case EDITOR_MENU_OPEN:
@@ -472,6 +483,7 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 				case EDITOR_MENU_BIAS_N_1000:
 				case EDITOR_MENU_INTERPOLATION:
 				case EDITOR_MENU_ENTER_CURRENT_V:
+				case EDITOR_MENU_TAB:
 				case EDITOR_MENU_PLAY:
 				case EDITOR_MENU_ROWS_UP:
 				case EDITOR_MENU_ROWS_DOWN:
