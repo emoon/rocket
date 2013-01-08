@@ -26,20 +26,20 @@ OSX:
 Editing:
 * 0-9                     -       Edit value
 * Esc                     -       Cancel edit
-QWERTY                  -       Bias selection +0.01, +0.1, +1, +10, +100, +1000
-ASDFGH                  -       Bias selection -0.01, -0.1, -1, -10, -100, -1000
-Alt+Trackpad scroll	-	Bias selection +1/-1
-Shift+Alt+Trackpad	-	Bias selection +10/-10
-I                       -       Toggle interpolation (step/linear/smooth/ramp)
-Return                  -       Insert current interpolated value
-Shift+Arrows            -       Select
-Cmd+T                   -       Select all keys in track
-Cmd+X                   -       Cut
-Cmd+C                   -       Copy
-Cmd+V                   -       Paste
-Cmd+Z                   -       Undo
-Cmd+Shift+Z             -       Redo
-Delete                  -       Delete key
+* QWERTY                  -       Bias selection +0.01, +0.1, +1, +10, +100, +1000
+* ASDFGH                  -       Bias selection -0.01, -0.1, -1, -10, -100, -1000
+* Alt+Trackpad scroll	-	Bias selection +1/-1
+* Shift+Alt+Trackpad	-	Bias selection +10/-10
+* I                       -       Toggle interpolation (step/linear/smooth/ramp)
+* Return                  -       Insert current interpolated value
+* Shift+Arrows            -       Select
+* Cmd+T                   -       Select all keys in track
+* Cmd+X                   -       Cut
+* Cmd+C                   -       Copy
+* Cmd+V                   -       Paste
+* Cmd+Z                   -       Undo
+* Cmd+Shift+Z             -       Redo
+* Delete                  -       Delete key
 
 View:
 Space                   -       Start/Stop
