@@ -1,14 +1,6 @@
 #pragma once
 
-#if defined(_WIN32)
+#include <emgui/types.h>
 
-int Dialog_open(wchar_t* dest);
-int Dialog_save(wchar_t* dest);
-
-#else
-
-int Dialog_open(char* dest);
-int Dialog_save(char* dest);
-
-#endif
-
+int Dialog_open(text_t* dest);
+int Dialog_save(text_t* dest);

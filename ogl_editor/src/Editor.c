@@ -1373,10 +1373,6 @@ void Editor_menuEvent(int menuItem)
 		// View
 
 		case EDITOR_MENU_PLAY : onPlay(); break;
-		//case EDITOR_MENU_ROW_UP : onRowStep(-1, NO_SELECTION); break;
-		//case EDITOR_MENU_ROW_DOWN : onRowStep(1, NO_SELECTION); break;
-		//case EDITOR_MENU_TRACK_LEFT : onTrackSide(ARROW_LEFT, false, NO_SELECTION); break;
-		//case EDITOR_MENU_TRACK_RIGHT : onTrackSide(ARROW_RIGHT, false, NO_SELECTION); break;
 		case EDITOR_MENU_ROWS_UP : onRowStep(-8, NO_SELECTION); break;
 		case EDITOR_MENU_ROWS_DOWN : onRowStep(8, NO_SELECTION); break;
 		case EDITOR_MENU_PREV_BOOKMARK : onBookmarkDir(ARROW_UP); break;
@@ -1391,7 +1387,7 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_UNFOLD_GROUP : onFoldGroup(false); break;
 		case EDITOR_MENU_TOGGLE_BOOKMARK : onToggleBookmark(); break;
 		case EDITOR_MENU_CLEAR_BOOKMARKS : onClearBookmarks(); break;
-		//case EDITOR_MENU_TAB : onTab(); break;
+		case EDITOR_MENU_TAB : onTab(); break;
 	}
 
 	Editor_update();
