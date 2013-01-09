@@ -1,3 +1,11 @@
+About
+-----
+
+RocketEditor is coded by Daniel 'emoon' Collin with documentation and testing by Heine 'bstrr' Gundersen.
+Daniel Collin can be contacted at daniel aat collin dot com
+
+Latest version of this program should be availible at https://github.com/emoon/rocket
+
 Motivation
 ----------
 
