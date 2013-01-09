@@ -9,7 +9,6 @@ typedef unsigned int uint;
 
 #if defined(_WIN32)
 
-
 #if defined(__GNUC__)
 #include <stdint.h>
 #else
@@ -69,6 +68,8 @@ typedef wchar_t text_t;
 #define EMGUI_CACHED_PTR(x) x 
 #define EMGUI_ALIGNOF(t) __alignof__(t)
 #define EMGUI_BREAK ((*(volatile uint32_t *)(0)) = 0x666)
+
+#define _T(v) v
 
 typedef char text_t;
 
