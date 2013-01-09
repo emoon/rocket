@@ -31,7 +31,7 @@ int Dialog_save(wchar_t* path, int pathSize)
 	(void)pathSize;
 	ZeroMemory(&dialog, sizeof(dialog));
 	dialog.lStructSize = sizeof(dialog);
-	dialog.lpstrFilter = L"Rocket (*.rocket)\0*All Files (*.*)\0*.*\0";
+	dialog.lpstrFilter = L"*All Files (*.*)\0*.*\0";
 	dialog.lpstrFile = path;
 	dialog.nMaxFile = MAX_PATH;
 	dialog.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;

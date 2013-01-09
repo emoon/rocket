@@ -331,7 +331,7 @@ static int drawCurrentValue(int posX, int sizeY)
 			}
 		}
 
-		value = sync_get_val(track, current_row);
+		value = (float)sync_get_val(track, current_row);
 	}
 
 	snprintf(valueText, 256, "%f", value);
@@ -1101,7 +1101,7 @@ static void onEnterCurrentValue()
    
     if (track->num_keys > 0)
     {
-        key.value = sync_get_val(track, rowPos);
+        key.value = (float)sync_get_val(track, rowPos);
         key.type = track->keys[emaxi(idx - 1, 0)].type;
     }
     else
