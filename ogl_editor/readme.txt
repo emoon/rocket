@@ -1,3 +1,17 @@
+Beta Disclaimar
+---------------
+
+As currently this version of the editor is in beta and there *WILL* be bugs (backup your stuff before using this)
+
+If you encounter any issues please try to report them at https://github.com/emoon/rocket/issues?milestone=3 as
+this would make my life much easier and I will try to fix them given time. Hopefully the editor should be useful even if still not 100% finalized bug wise.
+Also the documentation hasn't been completed yet.
+
+Here are the links to the beta versions of the editor:
+
+Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.0Beta-Mac.zip
+Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.0Beta-Win.zip
+
 About
 -----
 
@@ -41,8 +55,8 @@ Building the code
 Both Mac and Windows version uses the Tundra build system (https://github.com/deplinenoise/tundra) so in order to build the code you need a tundra executable for your OS
 I have made two of the available here for your convenience if you don't want to build the code yourself.
 
-...path to mac version...
-Windows: https://dl.dropbox.com/u/5205843/tundra.zip
+Mac: https://dl.dropbox.com/u/5205843/tundra-mac.zip
+Windows: https://dl.dropbox.com/u/5205843/tundra-win.zip
 
 Mac
 ---
