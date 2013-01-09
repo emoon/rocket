@@ -165,7 +165,9 @@ bool createWindow(const wchar_t* title, int width, int height)
 			return FALSE;
 		}
 	}
-	
+
+	Editor_create();
+
 	getRecentFiles();
 	Window_buildMenu();
 	Window_populateRecentList(Editor_getRecentFiles());
@@ -173,7 +175,6 @@ bool createWindow(const wchar_t* title, int width, int height)
 	ShowWindow(s_window, SW_SHOW);
 	SetForegroundWindow(s_window);
 	SetFocus(s_window);
-	Editor_create();
 
 	return TRUE;
 }
