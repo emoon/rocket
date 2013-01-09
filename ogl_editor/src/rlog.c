@@ -14,7 +14,6 @@ static int s_old_level = 0;
 
 void rlog(int logLevel, const char* format, ...)
 {
-	char buffer[2048];
     va_list ap;
 
     if (logLevel < s_log_level)
@@ -22,8 +21,11 @@ void rlog(int logLevel, const char* format, ...)
 
     va_start(ap, format);
 #if defined(_WIN32)
-	vsprintf(buffer, format, ap);
-	OutputDebugStringA(buffer);
+	{
+		char buffer[2048];
+		vsprintf(buffer, format, ap);
+		OutputDebugStringA(buffer);
+	}
 #else
 	vprintf(format, ap);
 #endif   
