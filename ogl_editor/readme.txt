@@ -123,6 +123,8 @@ Ctrl+Up/Down            -       Jump to Previous/Next key in current track
 Alt+Left/Right          -       Fold/Unfold track
 Ctrl+Alt+Left/Right     -       Fold/Unfold group
 Trackpad scroll         -       Scroll
+B                       -       Toggle Bookmark
+Cmd+B                   -       Clear all Bookmarks
 Tab                     -       Jump between Row, Start Row, End Row, Track editing
 
 Files:
@@ -162,6 +164,8 @@ Ctrl+Up/Down            -       Jump to Previous/Next key in current track
 Alt+Left/Right          -       Fold/Unfold track
 Ctrl+Alt+Left/Right     -       Fold/Unfold group
 Trackpad scroll         -       Scroll
+B                       -       Toggle Bookmark
+Ctrl+B                  -       Clear all Bookmarks
 Tab                     -       Jump between Row, Start Row, End Row, Track editing
 
 Files:
