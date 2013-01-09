@@ -34,7 +34,7 @@ Both Mac and Windows version uses the Tundra build system (https://github.com/de
 I have made two of the available here for your convenience if you don't want to build the code yourself.
 
 ...path to mac version...
-...path to windows version..
+Windows: https://dl.dropbox.com/u/5205843/tundra.zip
 
 Mac
 ---
