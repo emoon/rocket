@@ -13,13 +13,12 @@
 #include "RemoteConnection.h"
 #include "Commands.h"
 #include "MinecraftiaFont.h"
+#include "Window.h"
 #include "../../sync/sync.h"
 #include "../../sync/base.h"
 #include "../../sync/data.h"
 #include <emgui/emgui.h>
 
-extern void Window_setTitle(const text_t* title);
-extern void Window_populateRecentList(const text_t** files);
 static void updateNeedsSaving();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -837,14 +836,14 @@ static void setWindowTitle(const text_t* path, bool needsSave)
 	text_t windowTitle[4096];
 #if defined(_WIN32)
 	if (needsSave)
-		swprintf_s(windowTitle, sizeof(windowTitle), L"RocketEditor - (%s) *", path);
+		swprintf_s(windowTitle, sizeof(windowTitle), L"RocketEditor" EDITOR_VERSION "- (%s) *", path);
 	else
-		swprintf_s(windowTitle, sizeof(windowTitle), L"RocketEditor - (%s)", path);
+		swprintf_s(windowTitle, sizeof(windowTitle), L"RocketEditor" EDITOR_VERSION " - (%s)", path);
 #else
 	if (needsSave)
-		sprintf(windowTitle, "RocketEditor - (%s) *", path);
+		sprintf(windowTitle, "RocketEditor" EDITOR_VERSION "- (%s) *", path);
 	else
-		sprintf(windowTitle, "RocketEditor - (%s)", path);
+		sprintf(windowTitle, "RocketEditor" EDITOR_VERSION "- (%s)", path);
 #endif
 
 	Window_setTitle(windowTitle);

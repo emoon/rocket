@@ -23,11 +23,5 @@ text_t** Editor_getRecentFiles();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum
-{
-	EDITOR_KEY_SHIFT = 1,
-	EDITOR_KEY_ALT = 2,
-	EDITOR_KEY_CTRL = 4,
-	EDITOR_KEY_COMMAND = 8,
-};
+#define EDITOR_VERSION _T(" 1.0 Beta ")
 
