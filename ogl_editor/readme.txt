@@ -2,7 +2,7 @@ Motivation
 ----------
 
 About a year ago me and Heine 'bstrr' Gundersen (at Revision 2012) started to talk about that having an editor for GNU Rocket that worked on Mac OS X would be great as we both used Mac as our primary development platform.
-This was the start of this another version of the editor. I (Daniel 'emoon' Collin) also wanted some features that weren�t in the old editor (such as folding of tracks, having it cross platform, etc)
+This was the start of this another version of the editor. I (Daniel 'emoon' Collin) also wanted some features that weren't in the old editor (such as folding of tracks, having it cross platform, etc)
 Some small work was started on the editor during spring and summer but not much happened. It was really during last autumn 2012 I started to work on it for real to get in the features I want to have.
 
 Features:
