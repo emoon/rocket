@@ -2,7 +2,7 @@ Motivation
 ----------
 
 About a year ago me and Heine 'bstrr' Gundersen (at Revision 2012) started to talk about that having an editor for GNU Rocket that worked on Mac OS X would be great as we both used Mac as our primary development platform.
-This was the start of this another version of the editor. I (Daniel 'emoon' Collin) also wanted some features that weren’t in the old editor (such as folding of tracks, having it cross platform, etc)
+This was the start of this another version of the editor. I (Daniel 'emoon' Collin) also wanted some features that werenï¿½t in the old editor (such as folding of tracks, having it cross platform, etc)
 Some small work was started on the editor during spring and summer but not much happened. It was really during last autumn 2012 I started to work on it for real to get in the features I want to have.
 
 Features:
@@ -21,7 +21,7 @@ Features:
 Source Code
 -----------
 
-Now uses a UI system called 'Emugi' which is an intermediate mode UI that was developed at the same time as the editor.
+Now uses a UI system called 'Emgui' which is an intermediate mode UI that was developed at the same time as the editor.
 Emui uses OpenGL as the rendering API for the UI making it possible to port to many platforms but using a diffrent backend is also very possible.
 The code is written in C and has currently been compiled with clang on Mac and Visual Studio 2012 (Express) on Windows.
 I have tried to keep the code as platform independent as possible and platform files are (mostly) in the src/macosx and src/windows directories.
