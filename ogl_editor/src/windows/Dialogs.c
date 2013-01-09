@@ -41,14 +41,17 @@ int Dialog_save(wchar_t* path, int pathSize)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static COLORREF custColors[16];
+
 void Dialog_showColorPicker(unsigned int* color)
 {
 	CHOOSECOLOR cc;
 	ZeroMemory(&cc, sizeof(CHOOSECOLOR));
 	cc.lStructSize = sizeof(CHOOSECOLOR);
-	cc.rgbResult = *color;
+	cc.lpCustColors = (LPDWORD)custColors;
+	cc.rgbResult = *color & 0x00ffffff;
 	cc.Flags = CC_FULLOPEN | CC_RGBINIT;
 	cc.hwndOwner = s_window;
 	if (ChooseColor(&cc)) 
-		*color = cc.rgbResult;
+		*color = cc.rgbResult | 0xff000000;
 }
