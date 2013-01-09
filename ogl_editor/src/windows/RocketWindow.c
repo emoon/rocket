@@ -595,7 +595,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmndLine, i
 
 	memset(&msg, 0, sizeof(MSG));
 
-	if (!createWindow(L"RocketEditor", 800, 600))
+	if (!createWindow(L"RocketEditor" EDITOR_VERSION, 800, 600))
 		return 0;
 
 	accel = CreateAcceleratorTable(s_accelTable, s_accelCount);
