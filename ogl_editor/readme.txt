@@ -1,6 +1,8 @@
 Beta Disclaimar
 ---------------
 
+First a screenshot of how it looks: https://dl.dropbox.com/u/5205843/RocketEditor.png
+
 As currently this version of the editor is in beta and there *WILL* be bugs (backup your stuff before using this)
 
 If you encounter any issues please try to report them at https://github.com/emoon/rocket/issues?milestone=3 as
