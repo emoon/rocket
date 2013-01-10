@@ -110,22 +110,6 @@ void RemoteConnection_mapTrackName(const char* name)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static bool setBlocking(int sock, bool blocking)
-{
-	u_long block = blocking ? 0 : 1;
-#if defined(_WIN32)
-	int error = ioctlsocket(sock, FIONBIO, &block);
-#else
-	int error = ioctl(sock, FIONBIO, &block);
-#endif
-	if (SOCKET_ERROR == error)
-		return false;
-
-	return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 bool RemoteConnection_createListner()
 {
 	struct sockaddr_in sin;
@@ -163,8 +147,6 @@ bool RemoteConnection_createListner()
 
 	while (listen(s_serverSocket, SOMAXCONN) == -1)
 		;
-
-	setBlocking(s_serverSocket, false);
 
 	rlog(R_INFO, "Created listner\n");
 
@@ -213,14 +195,23 @@ static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host)
 
 void RemoteConnection_updateListner(int currentRow)
 {
-	SOCKET clientSocket;
+	struct timeval timeout;
 	struct sockaddr_in client;
+	SOCKET clientSocket = INVALID_SOCKET;
+	fd_set fds;
 
+	FD_ZERO(&fds);
+	FD_SET(s_serverSocket, &fds);
+
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
+	
 	if (RemoteConnection_connected())
 		return;
 
 	// look for new clients
 	
+	if (select(s_serverSocket + 1, &fds, NULL, NULL, &timeout) > 0)
 	{
 		clientSocket = clientConnect(s_serverSocket, &client);
 
@@ -270,27 +261,11 @@ int RemoteConnection_recv(char* buffer, size_t length, int flags)
 
 	ret = recv(s_socket, buffer, (int)length, flags);
 
-#if defined(_WIN32)
-	if (ret <= 0)
-	{
-		int error = WSAGetLastError();
-		if (error == WSAEWOULDBLOCK)
-			return -1;
-	}
-	
-	if (ret == 0)
+	if (ret != length)
 	{
 		RemoteConnection_disconnect();
 		return false;
 	}
-#else
-	if (ret == 0)
-	{
-		RemoteConnection_disconnect();
-		return false;
-	}
-#endif
-
 
 	return ret;
 }

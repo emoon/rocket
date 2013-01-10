@@ -252,7 +252,7 @@ static int getPrevTrack()
 void Editor_create()
 {
 	int id;
-	Emgui_create("foo");
+	Emgui_create();
 	id = Emgui_loadFontBitmap(g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_LOCATION_MEMORY, 32, 128, g_minecraftiaFontLayout);
 
 	RemoteConnection_createListner();
@@ -752,30 +752,13 @@ static int processCommands()
 
 			case SET_ROW:
 			{
-				int i = 0;
+				//int i = 0;
 				ret = RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
 
-				if (ret == -1)
-				{
-					// retry to get the data and do it for max of 20 times otherwise disconnect
-
-					for (i = 0; i < 20; ++i)
-					{
-						if (RemoteConnection_recv((char*)&newRow, sizeof(int), 0) == 4)
-						{
-							viewInfo->rowPos = htonl(newRow);
-							viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
-
-							rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
-							return 1;
-						}
-					}
-				}
-				else
+				if (ret)
 				{
 					viewInfo->rowPos = htonl(newRow);
 					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
-
 					rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
 				}
 
