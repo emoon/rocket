@@ -634,23 +634,27 @@ static void endEditing()
 
 	track = getTracks()[active_track];
 
-	key.row = row_pos;
-	key.value = (float)atof(s_editBuffer);
-	key.type = 0;
-
-	if (track->num_keys > 0)
+	if (strcmp(s_editBuffer, ""))
 	{
-		int idx = sync_find_key(track, getRowPos());
-		if (idx < 0)
-			idx = -idx - 1;
 
-		key.type = track->keys[emaxi(idx - 1, 0)].type;
-	}	
+		key.row = row_pos;
+		key.value = (float)atof(s_editBuffer);
+		key.type = 0;
 
-	track_name = track->name; 
+		if (track->num_keys > 0)
+		{
+			int idx = sync_find_key(track, getRowPos());
+			if (idx < 0)
+				idx = -idx - 1;
 
-	Commands_addOrUpdateKey(active_track, &key);
-	updateNeedsSaving();
+			key.type = track->keys[emaxi(idx - 1, 0)].type;
+		}	
+
+		track_name = track->name; 
+
+		Commands_addOrUpdateKey(active_track, &key);
+		updateNeedsSaving();
+	}
 
 	is_editing = false;
 	s_editorData.trackData.editText = 0;
