@@ -1289,7 +1289,13 @@ static void onFoldGroup(bool fold)
 	Track* t = &getTrackData()->tracks[getActiveTrack()];
 
 	if (t->group->trackCount > 1)
+	{
+		TrackViewInfo* viewInfo = getTrackViewInfo(); 
+		int firstTrackIndex = t->group->t.tracks[0]->index;
 		t->group->folded = fold;
+		setActiveTrack(firstTrackIndex);
+		viewInfo->selectStartTrack = viewInfo->selectStopTrack = firstTrackIndex;
+	}
 
 	Editor_updateTrackScroll();
 }
