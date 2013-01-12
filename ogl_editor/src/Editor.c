@@ -743,7 +743,6 @@ static int processCommands()
 
 				s_editorData.trackData.tracks[serverIndex].active = true;
 
-				setActiveTrack(0);
 
 				ret = 1;
 
