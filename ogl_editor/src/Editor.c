@@ -1208,12 +1208,15 @@ static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection
 static void onBookmarkDir(enum ArrowDirection dir)
 {
 	TrackData* trackData = getTrackData();
+	TrackViewInfo* viewInfo = getTrackViewInfo(); 
 	int row = getRowPos();
 
 	if (dir == ARROW_UP) 
 		row = TrackData_getPrevBookmark(trackData, row); 
 	else
 		row = TrackData_getNextBookmark(trackData, row); 
+
+	viewInfo->selectStartRow = viewInfo->selectStopRow = row;
 
 	setRowPos(row);
 }
@@ -1317,6 +1320,12 @@ void Editor_menuEvent(int menuItem)
 	switch (menuItem)
 	{
 		case EDITOR_MENU_ENTER_CURRENT_V : 
+		case EDITOR_MENU_ROWS_UP :
+		case EDITOR_MENU_ROWS_DOWN :
+		case EDITOR_MENU_PREV_BOOKMARK :
+		case EDITOR_MENU_NEXT_BOOKMARK :
+		case EDITOR_MENU_PREV_KEY :
+		case EDITOR_MENU_NEXT_KEY :
 		case EDITOR_MENU_PLAY : 
 		{
 			if (is_editing)
