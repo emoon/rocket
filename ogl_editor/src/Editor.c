@@ -1087,7 +1087,15 @@ static void onEnterCurrentValue()
 	track = tracks[activeTrack];
 
 	if (!track->keys)
+	{
+		key.row = rowPos;
+		key.value = 0.0f;
+		key.type = 0;
+
+		Commands_addOrUpdateKey(activeTrack, &key);
+		updateNeedsSaving();
 		return;
+	}
 
 	idx = sync_find_key(track, rowPos);
 	if (idx < 0)
