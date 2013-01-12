@@ -17,7 +17,7 @@ local win32 = {
 	Env = {
  		GENERATE_PDB = "1",
 		CCOPTS = {
-			"/W4", "/I.", "/WX", "/DUNICODE", "/D_UNICODE", "/DWIN32", "/D_CRT_SECURE_NO_WARNINGS", "/wd4996",
+			"/W4", "/I.", "/WX", "/DUNICODE", "/D_UNICODE", "/DWIN32", "/D_CRT_SECURE_NO_WARNINGS", "/wd4996", "/wd4389",
 			{ "/Od"; Config = "*-*-debug" },
 			{ "/O2"; Config = "*-*-release" },
 		},
