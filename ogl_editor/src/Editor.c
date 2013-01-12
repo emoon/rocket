@@ -743,7 +743,6 @@ static int processCommands()
 
 				s_editorData.trackData.tracks[serverIndex].active = true;
 
-
 				ret = 1;
 
 				break;
@@ -927,6 +926,22 @@ bool Editor_saveBeforeExit()
 	}
 
 	return onSaveAs();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onUndo()
+{
+	Commands_undo();
+	updateNeedsSaving();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onRedo()
+{
+	Commands_undo();
+	updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1325,8 +1340,8 @@ void Editor_menuEvent(int menuItem)
 
 		// Edit
 		
-		case EDITOR_MENU_UNDO : Commands_undo(); break;
-		case EDITOR_MENU_REDO : Commands_redo(); break;
+		case EDITOR_MENU_UNDO : onUndo(); break;
+		case EDITOR_MENU_REDO : onRedo(); break;
 
 		case EDITOR_MENU_CANCEL_EDIT :  onCancelEdit(); break;
 		case EDITOR_MENU_DELETE_KEY  :  onDeleteKey(); break;
