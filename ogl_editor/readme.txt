@@ -11,8 +11,8 @@ Also the documentation hasn't been completed yet.
 
 Here are the links to the beta versions of the editor:
 
-Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.0Beta2-Mac.zip
-Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.0Beta2-Win.zip
+Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.0Beta3-Mac.zip
+Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.0Beta3-Win.zip
 
 About
 -----
