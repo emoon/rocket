@@ -644,10 +644,20 @@ static void endEditing()
 		if (track->num_keys > 0)
 		{
 			int idx = sync_find_key(track, getRowPos());
-			if (idx < 0)
-				idx = -idx - 1;
 
-			key.type = track->keys[emaxi(idx - 1, 0)].type;
+			if (idx > 0)
+			{
+				// exact match, keep current type
+				key.type = track->keys[emaxi(idx, 0)].type;
+			}
+			else
+			{
+				// no match, grab type from previous key
+				if (idx < 0)
+					idx = -idx - 1;
+
+				key.type = track->keys[emaxi(idx - 1, 0)].type;
+			}
 		}	
 
 		track_name = track->name; 
@@ -1338,9 +1348,7 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_NEXT_KEY :
 		case EDITOR_MENU_PLAY : 
 		{
-			if (is_editing)
-				endEditing();
-			break;
+			endEditing();
 		}
 	}
 
@@ -1492,7 +1500,14 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		case EMGUI_KEY_TAB : 
 		case EMGUI_KEY_ENTER : 
 		{
-			endEditing();
+            if (is_editing)
+            {
+                endEditing();
+                
+                if (key == EMGUI_KEY_ENTER)
+                    return true;
+            }
+            
 			break;
 		}
 
