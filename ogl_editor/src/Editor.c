@@ -1167,7 +1167,12 @@ static void onRowStep(int step, enum Selection selection)
 	setRowPos(eclampi(getRowPos() + step, trackData->startRow, trackData->endRow));
 
 	if (selection == DO_SELECTION)
-		viewInfo->selectStartRow = getRowPos();
+	{
+		if (step < 0)
+			viewInfo->selectStartRow = getRowPos();
+		else
+			viewInfo->selectStopRow = getRowPos();
+	}
 	else
 		viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
 }
