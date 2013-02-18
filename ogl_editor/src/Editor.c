@@ -585,11 +585,32 @@ static void biasSelection(float value)
 	int track, row;
 	struct sync_track** tracks = getTracks();
 	TrackViewInfo* viewInfo = getTrackViewInfo();
-	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	
+	// If we have no selection and no currenty key bias the previous key
 
+	if (selectLeft == selectRight && selectTop == selectBottom)
+	{
+		struct sync_track* track;
+		struct sync_track** tracks = getTracks();
+
+		if (!tracks || !tracks[getActiveTrack()]->keys)
+			return;
+
+		track = tracks[getActiveTrack()];
+
+		int idx = sync_find_key(track, getRowPos());
+		
+		if (idx < 0) 
+		{
+			idx = -idx - 1;
+			selectTop = selectBottom = track->keys[emaxi(idx - 1, 0)].row;
+		}
+	}
+	
 	Commands_beginMulti("biasSelection");
 
 	for (track = selectLeft; track <= selectRight; ++track) 
@@ -1168,10 +1189,7 @@ static void onRowStep(int step, enum Selection selection)
 
 	if (selection == DO_SELECTION)
 	{
-		if (step < 0)
-			viewInfo->selectStartRow = getRowPos();
-		else
-			viewInfo->selectStopRow = getRowPos();
+		viewInfo->selectStopRow = getRowPos();
 	}
 	else
 		viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
@@ -1224,7 +1242,7 @@ static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onBookmarkDir(enum ArrowDirection dir)
+static void onBookmarkDir(enum ArrowDirection dir, enum Selection selection)
 {
 	TrackData* trackData = getTrackData();
 	TrackViewInfo* viewInfo = getTrackViewInfo(); 
@@ -1234,8 +1252,11 @@ static void onBookmarkDir(enum ArrowDirection dir)
 		row = TrackData_getPrevBookmark(trackData, row); 
 	else
 		row = TrackData_getNextBookmark(trackData, row); 
-
-	viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+		
+	if (selection == NO_SELECTION)
+		viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+	else
+		viewInfo->selectStopRow = row;
 
 	setRowPos(row);
 }
@@ -1262,7 +1283,7 @@ static void onPrevNextKey(bool prevKey, enum Selection selection)
 		setRowPos(track->keys[emaxi(idx - 1, 0)].row);
 
 		if (selection == DO_SELECTION)
-			viewInfo->selectStartRow = getRowPos();
+			viewInfo->selectStopRow = getRowPos();
 		else
 			viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
 	}
@@ -1410,7 +1431,7 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_BIAS_N_10:   biasSelection(-10.0f); break;
 		case EDITOR_MENU_BIAS_N_100 : biasSelection(-100.0f); break;
 		case EDITOR_MENU_BIAS_N_1000: biasSelection(-1000.0f); break;
-
+		
 		case EDITOR_MENU_INTERPOLATION : onInterpolation(); break;
 		case EDITOR_MENU_ENTER_CURRENT_V : onEnterCurrentValue(); break;
 
@@ -1419,8 +1440,8 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_PLAY : onPlay(); break;
 		case EDITOR_MENU_ROWS_UP : onRowStep(-8, NO_SELECTION); break;
 		case EDITOR_MENU_ROWS_DOWN : onRowStep(8, NO_SELECTION); break;
-		case EDITOR_MENU_PREV_BOOKMARK : onBookmarkDir(ARROW_UP); break;
-		case EDITOR_MENU_NEXT_BOOKMARK : onBookmarkDir(ARROW_DOWN); break;
+		case EDITOR_MENU_PREV_BOOKMARK : onBookmarkDir(ARROW_UP, NO_SELECTION); break;
+		case EDITOR_MENU_NEXT_BOOKMARK : onBookmarkDir(ARROW_DOWN, NO_SELECTION); break;
 		case EDITOR_MENU_FIRST_TRACK : onTrackSide(ARROW_LEFT, true, NO_SELECTION); break;
 		case EDITOR_MENU_LAST_TRACK : onTrackSide(ARROW_RIGHT, true, NO_SELECTION); break;
 		case EDITOR_MENU_PREV_KEY : onPrevNextKey(true, NO_SELECTION); break;
@@ -1532,6 +1553,8 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		{
 			if (modifiers & EMGUI_KEY_CTRL)
 				onPrevNextKey(true, selection);
+			else if (modifiers & EMGUI_KEY_COMMAND)
+				onBookmarkDir(ARROW_UP, selection);
 			else if (modifiers & EMGUI_KEY_ALT)
 				onRowStep(-8, selection); 
 			else
@@ -1544,6 +1567,8 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 		{
 			if (modifiers & EMGUI_KEY_CTRL)
 				onPrevNextKey(false, selection);
+			else if (modifiers & EMGUI_KEY_COMMAND)
+				onBookmarkDir(ARROW_DOWN, selection);
 			else if (modifiers & EMGUI_KEY_ALT)
 				onRowStep(8, selection); 
 			else
