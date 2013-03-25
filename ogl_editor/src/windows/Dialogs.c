@@ -13,7 +13,7 @@ int Dialog_open(wchar_t* path, int pathSize)
 	ofn.lpstrFile = path;
 	ofn.lpstrFile[0] = '\0';
 	ofn.nMaxFile = pathSize;
-	ofn.lpstrFilter = L"All\0*.*\0Rocket\0*.Rocket\0";
+	ofn.lpstrFilter = L"All Files\0*.*\0Rocket\0*.Rocket\0";
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFileTitle = NULL;
 	ofn.nMaxFileTitle = 0;
@@ -25,13 +25,12 @@ int Dialog_open(wchar_t* path, int pathSize)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Dialog_save(wchar_t* path, int pathSize)
+int Dialog_save(wchar_t* path)
 {
 	OPENFILENAME dialog;
-	(void)pathSize;
 	ZeroMemory(&dialog, sizeof(dialog));
 	dialog.lStructSize = sizeof(dialog);
-	dialog.lpstrFilter = L"*All Files (*.*)\0*.*\0";
+	dialog.lpstrFilter = L"All Files (*.*)\0*.*\0";
 	dialog.lpstrFile = path;
 	dialog.nMaxFile = MAX_PATH;
 	dialog.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
