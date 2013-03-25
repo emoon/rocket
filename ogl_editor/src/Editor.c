@@ -595,6 +595,7 @@ static void biasSelection(float value)
 
 	if (selectLeft == selectRight && selectTop == selectBottom)
 	{
+		int idx;
 		struct sync_track* track;
 		struct sync_track** tracks = getTracks();
 
@@ -603,7 +604,7 @@ static void biasSelection(float value)
 
 		track = tracks[getActiveTrack()];
 
-		int idx = sync_find_key(track, getRowPos());
+		idx = sync_find_key(track, getRowPos());
 		
 		if (idx < 0) 
 		{
@@ -927,6 +928,8 @@ static bool onSaveAs()
 {
 	text_t path[2048];
 	int ret;
+
+	memset(path, 0, sizeof(path));
 
 	if (!(ret = LoadSave_saveRocketXMLDialog(path, getTrackData())))
 		return false;
