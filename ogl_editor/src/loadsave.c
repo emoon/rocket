@@ -22,6 +22,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 
 	free(trackData->bookmarks);
 	trackData->bookmarkCount = 0;
+	trackData->highlightRowStep = 8;
 
 	// Traverse the tracks node data
 
@@ -55,12 +56,16 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 				{
                     const char* start_row = mxmlElementGetAttr(node, "startRow");
                     const char* end_row = mxmlElementGetAttr(node, "endRow");
+                    const char* hlrow_step = mxmlElementGetAttr(node, "highlightRowStep");
 
                     if (start_row)
 						trackData->startRow = atoi(start_row);
 
                     if (end_row)
 						trackData->endRow = atoi(end_row);
+
+                    if (hlrow_step)
+						trackData->highlightRowStep = atoi(hlrow_step);
 				}
 
 				if (!strcmp("track", element_name))
@@ -312,6 +317,7 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 	mxmlElementSetAttr(tracks, "rows", "10000");
 	setElementInt(tracks, "startRow", "%d", trackData->startRow); 
 	setElementInt(tracks, "endRow", "%d", trackData->endRow); 
+	setElementInt(tracks, "highlightRowStep", "%d", trackData->highlightRowStep); 
 
 	for (p = 0; p < sync_data->num_tracks; ++p) 
 	{

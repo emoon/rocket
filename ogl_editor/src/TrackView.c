@@ -598,7 +598,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 
 	x_pos = TrackView_getStartOffset() + -viewInfo->startPixel;
 
-	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, 8, y_end_border);
+	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, trackData->highlightRowStep, y_end_border);
 	Emgui_drawBorder(border_color, border_color, 48, info.startY - font_size * 4, viewInfo->windowSizeX - 80, (info.endSizeY - info.startY) + 40);
 
 	Emgui_setLayer(1);

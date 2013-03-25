@@ -260,6 +260,7 @@ void Editor_create()
 	s_editorData.trackViewInfo.smallFontId = id;
 	s_editorData.trackData.startRow = 0;
 	s_editorData.trackData.endRow = 10000;
+	s_editorData.trackData.highlightRowStep = 8;
 
 	Emgui_setDefaultFont();
 }
@@ -1363,6 +1364,8 @@ static void onTab()
 
 void Editor_menuEvent(int menuItem)
 {
+	int highlightRowStep = getTrackData()->highlightRowStep; 
+
 	switch (menuItem)
 	{
 		case EDITOR_MENU_ENTER_CURRENT_V : 
@@ -1438,8 +1441,8 @@ void Editor_menuEvent(int menuItem)
 		// View
 
 		case EDITOR_MENU_PLAY : onPlay(); break;
-		case EDITOR_MENU_ROWS_UP : onRowStep(-8, NO_SELECTION); break;
-		case EDITOR_MENU_ROWS_DOWN : onRowStep(8, NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_UP : onRowStep(-highlightRowStep , NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_DOWN : onRowStep(highlightRowStep , NO_SELECTION); break;
 		case EDITOR_MENU_PREV_BOOKMARK : onBookmarkDir(ARROW_UP, NO_SELECTION); break;
 		case EDITOR_MENU_NEXT_BOOKMARK : onBookmarkDir(ARROW_DOWN, NO_SELECTION); break;
 		case EDITOR_MENU_FIRST_TRACK : onTrackSide(ARROW_LEFT, true, NO_SELECTION); break;
@@ -1505,6 +1508,7 @@ static bool doEditing(int key)
 bool Editor_keyDown(int key, int keyCode, int modifiers)
 {
 	enum Selection selection = modifiers & EMGUI_KEY_SHIFT ? DO_SELECTION : NO_SELECTION;
+	int highlightRowStep = getTrackData()->highlightRowStep; 
 
 	if (Emgui_hasKeyboardFocus())
 	{
@@ -1556,7 +1560,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			else if (modifiers & EMGUI_KEY_COMMAND)
 				onBookmarkDir(ARROW_UP, selection);
 			else if (modifiers & EMGUI_KEY_ALT)
-				onRowStep(-8, selection); 
+				onRowStep(-highlightRowStep , selection); 
 			else
 				onRowStep(-1, selection); 
 
@@ -1570,7 +1574,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			else if (modifiers & EMGUI_KEY_COMMAND)
 				onBookmarkDir(ARROW_DOWN, selection);
 			else if (modifiers & EMGUI_KEY_ALT)
-				onRowStep(8, selection); 
+				onRowStep(highlightRowStep, selection); 
 			else
 				onRowStep(1, selection); 
 			break;
