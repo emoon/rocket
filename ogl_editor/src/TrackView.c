@@ -14,7 +14,7 @@
 #if defined(__APPLE__)
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
-#else
+#elif !defined(EMGUI_UNIX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <gl/gl.h>
