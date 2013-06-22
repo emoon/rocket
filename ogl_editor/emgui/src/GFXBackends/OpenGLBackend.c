@@ -1,5 +1,5 @@
 #include "../GFXBackend.h"
-#include "../emgui_internal.h"
+#include "../Emgui_internal.h"
 #if defined(__APPLE__)
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
