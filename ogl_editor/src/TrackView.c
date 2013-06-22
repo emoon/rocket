@@ -1,5 +1,5 @@
-#include "trackview.h"
-#include <emgui/emgui.h>
+#include "TrackView.h"
+#include <emgui/Emgui.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
