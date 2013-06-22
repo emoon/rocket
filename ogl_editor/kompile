@@ -2,3 +2,4 @@ gcc -c external/mxml/*.c -D_THREAD_SAFE -D_REENTRANT
 gcc -c emgui/src/*.c emgui/src/*/*.c -DEMGUI_UNIX -I emgui/include -I emgui/src/
 gcc ../sync/*.c -c
 gcc -c src/*.c -DEMGUI_UNIX -I emgui/include -I external/mxml/ -I src/
+gcc *.o -lGL -lm
