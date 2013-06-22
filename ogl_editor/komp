@@ -1,2 +1,0 @@
-gcc -c `sdl-config --cflags` src/linux/*.c  -I emgui/include/ -DEMGUI_UNIX
-gcc *.o -lSDL -lGL -lm
