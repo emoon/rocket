@@ -1,8 +1,8 @@
-#include "emgui.h"
-#include "emgui_internal.h"
+#include "Emgui.h"
+#include "Emgui_internal.h"
 #include "memory/LinearAllocator.h"
 #include "GFXBackend.h"
-#include "MicroKnightFont.h"
+#include "MicroknightFont.h"
 #include "External/stb_truetype.h"
 #include "External/stb_image.h"
 #include <string.h>

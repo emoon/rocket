@@ -1,5 +1,5 @@
-#include "trackview.h"
-#include <emgui/emgui.h>
+#include "TrackView.h"
+#include <emgui/Emgui.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,7 +14,7 @@
 #if defined(__APPLE__)
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
-#else
+#elif !defined(EMGUI_UNIX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <gl/gl.h>

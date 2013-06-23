@@ -5,7 +5,7 @@
 #include <math.h>
 #include "Menu.h"
 #include "Dialog.h"
-#include "LoadSave.h"
+#include "loadsave.h"
 #include "TrackView.h"
 #include "rlog.h"
 #include "minmax.h"
@@ -17,7 +17,7 @@
 #include "../../sync/sync.h"
 #include "../../sync/base.h"
 #include "../../sync/data.h"
-#include <emgui/emgui.h>
+#include <emgui/Emgui.h>
 
 static void updateNeedsSaving();
 
@@ -772,6 +772,9 @@ static int processCommands()
 				// find track
 				
 				serverIndex = TrackData_createGetTrack(&s_editorData.trackData, trackName);
+				// if it's the first one we get, select it too
+				if (serverIndex == 0)
+					setActiveTrack(0);
 
 				// setup remap and send the keyframes to the demo
 				RemoteConnection_mapTrackName(trackName);
