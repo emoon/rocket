@@ -4,3 +4,4 @@ t2-output
 .tundra*
 *.swp
 *.swo
+.rocket-recents.txt

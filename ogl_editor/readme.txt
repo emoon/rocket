@@ -22,6 +22,8 @@ Daniel Collin can be contacted at daniel aat collin dot com
 
 Latest version of this program should be availible at https://github.com/emoon/rocket
 
+The SDL-based linux support is written by Konsta 'sooda' Hölttä at https://github.com/sooda/rocket
+
 Motivation
 ----------
 
@@ -37,7 +39,7 @@ Features:
 * Folding support for both groups and tracks. Something I found annoying in the old editor was that you had to scroll around quite a bit to get to channel you wanted. Now with folding you use the screen space better.
 * Faster navigation: Can jump between key values, jump in step of 8 and also with bookmarks.
 * Other features such as using more of the keyboard for biasing of values (see key layout below)
-* Trackpad support (OS X only, mouse wheel on Windows) to scroll around (can only be used with biasing)
+* Trackpad support (OS X only, mouse wheel elsewhere) to scroll around (can only be used with biasing)
 * Cross platform. Read more about the code in the next section.
 * Navigation while play-backing. It's now possible to jump forward/backward when playing the demo (demo "scratching")
 * Fast way to insert a interpolated value by just pressing return on an empty row.
@@ -47,14 +49,14 @@ Source Code
 
 Now uses a UI system called 'Emgui' which is an intermediate mode UI that was developed at the same time as the editor.
 Emui uses OpenGL as the rendering API for the UI making it possible to port to many platforms but using a diffrent backend is also very possible.
-The code is written in C and has currently been compiled with clang on Mac and Visual Studio 2012 (Express) on Windows.
-I have tried to keep the code as platform independent as possible and platform files are (mostly) in the src/macosx and src/windows directories.
+The code is written in C and has currently been compiled with clang on Mac, Visual Studio 2012 (Express) on Windows, and gcc on Linux.
+I have tried to keep the code as platform independent as possible and platform files are (mostly) in the src/macosx, src/windows and src/linux directories.
 Some parts of the code could need some cleanup but should hopefully be quite easy to follow and understand.
 
 Building the code
 -----------------
 
-Both Mac and Windows version uses the Tundra build system (https://github.com/deplinenoise/tundra) so in order to build the code you need a tundra executable for your OS
+All Mac, Windows and Linux versions use the Tundra build system (https://github.com/deplinenoise/tundra) so in order to build the code you need a tundra executable for your OS
 I have made two of the available here for your convenience if you don't want to build the code yourself.
 
 Mac: https://dl.dropbox.com/u/5205843/tundra-mac.zip
@@ -74,6 +76,11 @@ Note that you will need to setup your paths/variables so cl is included and can 
 In that case run the "vsvars32.bat" included with Visual Studio from a command prompt and start Visual Studio from there.
 
 If you want to build from command line that works just as fine as well (just set vsvars32 (as seen above) and run "tundra win32-msvc-debug" for the debug build.
+
+Linux
+-----
+
+Almost like in Mac, use the supplied linux-build.sh file. No project files are generated - Tundra builds the editor straight away.
 
 Tips & tricks
 -------------
@@ -138,7 +145,7 @@ Cmd+E                   -       Remote export
 
 ---------------------------------------------------------------------------------
 
-Windows:
+Windows and Linux:
 
 Editing:
 0-9                     -       Edit value
