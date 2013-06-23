@@ -1,8 +1,10 @@
 #include "../GFXBackend.h"
-#include "../emgui_internal.h"
+#include "../Emgui_internal.h"
 #if defined(__APPLE__)
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
+#elif defined(EMGUI_UNIX)
+#include <GL/gl.h>
 #else
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

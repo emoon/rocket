@@ -1,4 +1,4 @@
-#include "LoadSave.h"
+#include "loadsave.h"
 #include "Dialog.h"
 #include "TrackData.h"
 #include "../external/mxml/mxml.h"
@@ -6,7 +6,7 @@
 #include "../../sync/data.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <emgui/types.h>
+#include <emgui/Types.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -21,6 +21,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 	mxml_node_t* node = rootNode;
 
 	free(trackData->bookmarks);
+	trackData->bookmarks = NULL;
 	trackData->bookmarkCount = 0;
 	trackData->highlightRowStep = 8;
 

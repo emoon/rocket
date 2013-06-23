@@ -24,11 +24,24 @@ local win32 = {
 	},
 }
 
+local linux = {
+	Env = {
+		CPPDEFS = { "EMGUI_UNIX" },
+		CCOPTS = {
+			"-I.",
+			"`sdl-config --cflags`",
+			{ "-O0", "-g"; Config = "*-*-debug" },
+			{ "-O2"; Config = "*-*-release" },
+		},
+	},
+}
+
 Build {
 	Units = "units.lua",
 
 	Configs = {
 		Config { Name = "macosx-clang", DefaultOnHost = "macosx", Inherit = macosx, Tools = { "clang-osx" } },
 		Config { Name = "win32-msvc", DefaultOnHost = { "windows" }, Inherit = win32, Tools = { "msvc" } },
+		Config { Name = "linux-gcc", DefaultOnHost = { "linux" }, Inherit = linux, Tools = { "gcc" } },
 	},
 }

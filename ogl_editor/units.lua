@@ -107,7 +107,10 @@ Program {
 
 	Depends = { "sync", "mxml", "emgui" },
 
-	Libs = { { "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib", "user32.lib", "gdi32.lib", "Comdlg32.lib", "Advapi32.lib" ; Config = "win32-*-*" } },
+	Libs = {
+		{ "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib", "user32.lib", "gdi32.lib", "Comdlg32.lib", "Advapi32.lib" ; Config = "win32-*-*" },
+		{ "GL", "SDL", "m"; Config = "linux-*-*" }
+	},
 
 	Frameworks = { "Cocoa", "OpenGL", "Carbon"  },
 
