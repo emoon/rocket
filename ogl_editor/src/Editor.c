@@ -772,6 +772,9 @@ static int processCommands()
 				// find track
 				
 				serverIndex = TrackData_createGetTrack(&s_editorData.trackData, trackName);
+				// if it's the first one we get, select it too
+				if (serverIndex == 0)
+					setActiveTrack(0);
 
 				// setup remap and send the keyframes to the demo
 				RemoteConnection_mapTrackName(trackName);
