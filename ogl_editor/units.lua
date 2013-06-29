@@ -51,6 +51,7 @@ StaticLibrary {
 			Dir = "emgui/src",
 			Extensions = { ".c" },
 			Filters = {
+				{ Pattern = "macosx"; Config = "linux-*-*" },
 				{ Pattern = "macosx"; Config = "macosx-*-*" },
 				{ Pattern = "windows"; Config = { "win32-*-*", "win64-*-*" } },
 			},
@@ -97,6 +98,7 @@ Program {
 			Dir = "src",
 			Extensions = { ".c", ".m" },
 			Filters = {
+				{ Pattern = "linux"; Config = "linux-*-*" },
 				{ Pattern = "macosx"; Config = "macosx-*-*" },
 				{ Pattern = "windows"; Config = { "win32-*-*", "win64-*-*" } },
 			},
