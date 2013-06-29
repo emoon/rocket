@@ -711,7 +711,7 @@ void Editor_scroll(float deltaX, float deltaY, int flags)
 	int start_row = 0, end_row = 10000;
 
 	start_row = trackData->startRow;
-	end_row = trackData->endRow;
+	end_row = trackData->endRow + 1;	// +1 as we count from 0
 
 	if (flags & EMGUI_KEY_ALT)
 	{
