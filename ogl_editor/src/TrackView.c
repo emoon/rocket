@@ -529,7 +529,9 @@ int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, in
 			else
 			{
 				for (j = 0; j < group->trackCount; ++j)
-					posX += processTrack(group->t.tracks[j], posX, &start_track, &end_track, viewInfo);
+					processTrack(group->t.tracks[j], posX, &start_track, &end_track, viewInfo);
+
+				posX += getGroupSize(viewInfo, group, 0);
 			}
 		}
 
