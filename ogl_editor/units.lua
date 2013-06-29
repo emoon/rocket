@@ -115,7 +115,12 @@ Program {
 	},
 
 	Frameworks = { "Cocoa", "OpenGL", "Carbon"  },
+}
 
+Program {
+	Name = "basic_example",
+	Sources = { "basic_example/basic_example.c" },
+	Depends = { "sync" },
 }
 
 local rocketBundle = OsxBundle 
@@ -138,5 +143,6 @@ else
 	Default "editor"
 end
 
+Default "basic_example"
 
 
