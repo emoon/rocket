@@ -194,57 +194,85 @@ static inline void setRowPos(int pos)
 
 static int getNextTrack()
 {
+	Group* group;
 	TrackData* trackData = getTrackData();
-	int i, track_count = getTrackCount(); 
-	int active_track = getActiveTrack();
- 
-	for (i = active_track + 1; i < track_count; ++i)
+	int groupIndex = 0;
+	int groupTrackCount = 0;
+	int currentTrack = getActiveTrack();
+
+	// Get the group for the currentTrack
+
+	Track* track = &trackData->tracks[currentTrack];
+	group = track->group; 
+	groupTrackCount = group->trackCount;
+
+	// Check If next track is within the group
+
+	if (!group->folded)
 	{
-		Track* t = &trackData->tracks[i];
-
-		// if track has no group its always safe to assume that can select the track
- 
-		if (!t->group)
-			return i;
- 
-		if (!t->group->folded)
-			return i;
-
-		// if the track is the first in the group (and group is folded) we use that as the display track
-
-		if (t->group->t.tracks[0] == t)
-			return i;
+		if (track->groupIndex + 1 < group->trackCount)
+			return group->t.tracks[track->groupIndex + 1]->index; 
 	}
- 
-	return active_track;
+
+	groupIndex = group->groupIndex;
+
+	// We are at the last track in the last group so just return the current one
+
+	if (groupIndex >= trackData->groupCount-1)
+		return currentTrack;
+
+	// Get the next group and select the first track in it
+
+	group = &trackData->groups[groupIndex + 1];
+
+	if (group->trackCount == 1)
+		return group->t.track->index;
+	else
+		return group->t.tracks[0]->index;
+	
+	return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static int getPrevTrack()
 {
-	TrackData* trackData = getTrackData(); 
-	int i, active_track = getActiveTrack();
- 
-	for (i = active_track - 1; i >= 0; --i)
-	{
-		Track* t = &trackData->tracks[i];
+	Group* group;
+	TrackData* trackData = getTrackData();
+	int trackIndex = 0;
+	int groupIndex = 0;
+	int groupTrackCount = 0;
+	int currentTrack = getActiveTrack();
 
-		// if track has no group its always safe to assume that can select the track
- 
-		if (!trackData->tracks[i].group)
-			return i;
- 
-		if (!trackData->tracks[i].group->folded)
-			return i;
+	// Get the group for the currentTrack
 
-		// if the track is the first in the group (and group is folded) we use that as the display track
+	Track* track = &trackData->tracks[currentTrack];
+	group = track->group; 
+	groupTrackCount = group->trackCount;
 
-		if (t->group->t.tracks[0] == t)
-			return i;
-	}
- 
-	return active_track;
+	// Check If next track is within the group
+
+	if (track->groupIndex - 1 >= 0)
+		return group->t.tracks[track->groupIndex - 1]->index; 
+
+	groupIndex = group->groupIndex - 1;
+
+	// We are at the last track in the last group so just return the current one
+
+	if (groupIndex < 0)
+		return currentTrack;
+
+	// Get the next group and select the first track in it
+
+	group = &trackData->groups[groupIndex];
+	trackIndex = group->folded ? 0 : group->trackCount - 1;
+
+	if (group->trackCount == 1)
+		return group->t.track->index;
+	else
+		return group->t.tracks[trackIndex]->index;
+	
+	return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
