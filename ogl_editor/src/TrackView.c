@@ -558,9 +558,9 @@ int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, in
 bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 {
 	struct TrackInfo info;
-	int start_track = 0; //viewInfo->startTrack;
+	int group_count;
 	int x_pos = 128;
-	int end_track = 0;
+	//int end_track = 0;
 	int i = 0;
 	//int track_size;
 	int adjust_top_size;
@@ -612,13 +612,13 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	//if (sel_track != trackData->activeTrack)
 	//	TrackData_setActiveTrack(trackData, sel_track);
 
-	for (i = start_track, end_track = trackData->syncData.num_tracks; i < end_track; )
+	for (i = 0, group_count = trackData->groupCount; i < group_count; ++i)
 	{
-		Track* track = &trackData->tracks[i];
-		Group* group = track->group; 
+		Group* group = &trackData->groups[i];
 
 		if (group->trackCount == 1)
 		{
+			Track* track = group->t.track;
 			int track_size = getTrackSize(viewInfo, track);
 		
 			if ((x_pos + track_size > 0) && (x_pos < viewInfo->windowSizeX))
@@ -630,11 +630,11 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 			}
 
 			x_pos += track_size;
-			++i;
 		}
 		else
 		{
-			x_pos += renderGroup(group, track, x_pos, &i, info, trackData);
+			int temp;
+			x_pos += renderGroup(group, group->t.tracks[0], x_pos, &temp, info, trackData);
 		}
 	}
 

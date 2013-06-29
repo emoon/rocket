@@ -1,6 +1,7 @@
 #include "TrackData.h"
 #include "Commands.h"
 #include "rlog.h"
+#include <stdio.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -40,7 +41,7 @@ static uint32_t s_colors[] =
 
 uint32_t TrackData_getNextColor(TrackData* trackData)
 {
-	return s_colors[(trackData->lastColor++) & 0x7];
+	return s_colors[trackData->lastColor++ & 0x7];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,7 +85,9 @@ static Group* findOrCreateGroup(const char* name, TrackData* trackData)
 	group->name = strdup(name);
 	group->displayName = strdup(name);
 	group->displayName[strlen(name)-1] = 0;
-	group->trackCount = 0;
+	group->groupIndex = trackData->groupCount - 1;
+
+	printf("creating group %s\n", name);
 
 	return group;
 }
@@ -114,6 +117,9 @@ void TrackData_linkTrack(int index, const char* name, TrackData* trackData)
 		group->trackCount = 1;
 		track->group = group;
 		track->displayName = strdup(name); 
+
+		printf("Linking track %s to group %s\n", name, name); 
+
 		return;
 	}
 
@@ -127,8 +133,10 @@ void TrackData_linkTrack(int index, const char* name, TrackData* trackData)
 	else
 		group->t.tracks = (Track**)realloc(group->t.tracks, sizeof(Track**) * (group->trackCount + 1));
 
-	group->t.tracks[group->trackCount] = track;
-	group->trackCount++;
+	printf("Linking track %s to group %s\n", name, group_name); 
+
+	track->groupIndex = group->trackCount;
+	group->t.tracks[group->trackCount++] = track;
 
 	track->group = group;
 	track->displayName = strdup(&name[found + 1]);

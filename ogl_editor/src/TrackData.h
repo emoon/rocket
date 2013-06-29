@@ -31,6 +31,7 @@ typedef struct Track
 
 	int width;           // width in pixels of the track
 	int index;
+	int groupIndex;
 	bool hidden;
 	bool folded;
 	bool selected;
@@ -56,6 +57,7 @@ typedef struct Group
 
 	enum GroupType type;
 	int trackCount;
+	int groupIndex;
 } Group;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
