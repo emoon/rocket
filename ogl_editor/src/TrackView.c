@@ -261,7 +261,7 @@ static int findStartTrack(Group* group, Track* startTrack)
 
 	for (i = 0; i < track_count; ++i)
 	{
-		if (group->t.tracks[i] == startTrack)
+		if (group->tracks[i] == startTrack)
 			return i;
 	}
 
@@ -291,14 +291,16 @@ int getGroupSize(TrackViewInfo* viewInfo, Group* group, int startTrack)
 {
 	int i, size = 0, count = group->trackCount;
 
-	if (group->width == 0)
+	if (group->width == 0 && group->name)
 		group->width = (Emgui_getTextSize(group->name) & 0xffff) + 40;
-
+    else
+		group->width = (Emgui_getTextSize(group->tracks[0]->displayName) & 0xffff) + 40;
+    
 	if (group->folded)
 		return track_size_folded; 
 
 	for (i = startTrack; i < count; ++i)
-		size += getTrackSize(viewInfo, group->t.tracks[i]);
+		size += getTrackSize(viewInfo, group->tracks[i]);
 
 	size = emaxi(size, group->width);
 
@@ -465,7 +467,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 	{
 		for (i = startTrackIndex; i < track_count; ++i)
 		{
-			Track* t = group->t.tracks[i];
+			Track* t = group->tracks[i];
 			posX += renderChannel(&info, posX, t, false);
 
 			if (posX >= windowSizeX)
@@ -479,7 +481,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 	}
 	else
 	{
-		renderChannel(&info, posX, group->t.tracks[0], true);
+		renderChannel(&info, posX, group->tracks[0], true);
 	}
 
 	Emgui_setDefaultFont();
@@ -489,6 +491,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
 static int processTrack(Track* track, int posX, int* startTrack, int* endTrack, TrackViewInfo* viewInfo)
 {
 	int track_size = getTrackSize(viewInfo, track);
@@ -501,9 +504,81 @@ static int processTrack(Track* track, int posX, int* startTrack, int* endTrack, 
 
 	return track_size;
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// This function will figure out what the next track to be selected is when the trackView is scrolled.
+// 
+// The way it does that is by looking at all the groups (which a linear, while tracks are not) and figure out the start
+// visible track and the end visible track. It also check if the current track is the activeTrack and if it's hidden on
+// the left or right side.
+//
+// This code actually does more work than needed (possible to just break out when we found on which side the track
+// is hidden but this code should be fairly fast anyway.
 
+
+int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, int activeTrack, int posX)
+{
+	int i, j, foundState = 0, group_count = trackData->groupCount;
+	Track* activeTrackPtr = &trackData->tracks[activeTrack];
+	const int window_size = viewInfo->windowSizeX - 80;
+
+	posX -= 40;
+
+	for (i = 0; i < group_count; ++i)
+	{
+		Group* group = &trackData->groups[i]; 
+		int track_count = group->trackCount;
+		const bool folded = group->folded;
+
+		if (folded)
+			track_count = 1;
+
+		int t_pos = posX;
+
+		for (j = 0; j < track_count; ++j)
+		{
+			Track* currentTrack = group->tracks[j];
+			const int track_size = folded ? track_size_folded : getTrackSize(viewInfo, currentTrack); 
+
+			// if we are on the current track we check where the current position is located
+			// so if we are above the window limit wi
+
+			if (currentTrack == activeTrackPtr) 
+			{
+				if (t_pos < 0 && currentTrack == activeTrackPtr)
+					foundState = -1;
+
+				// if we are with in the limits we can just return directly here
+
+				if (t_pos >= 0 && (t_pos + track_size) < window_size)
+					return activeTrack;
+			}
+
+			// if we just crossed over to positive side and the activeTrack was found negative then the current track 
+			// should be the next active one
+
+			if (t_pos >= 0 && foundState == -1) 
+				return currentTrack->index;
+
+			// if we have crossed the page boundry and not yet has returned the track the last visible one 
+			// will be seleceted as the active one
+
+			if (t_pos + track_size > window_size)
+				return currentTrack->index;
+            
+            t_pos += track_size;
+		}
+
+		posX += getGroupSize(viewInfo, group, 0);
+	}
+
+	return activeTrack;
+}
+
+
+
+/*
 int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, int activeTrack, int posX)
 {
 	int i, j,  track_count = trackData->syncData.num_tracks;
@@ -524,12 +599,12 @@ int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, in
 		{
 			if (group->folded)
 			{
-				posX += processTrack(group->t.tracks[0], posX, &start_track, &end_track, viewInfo);
+				posX += processTrack(group->tracks[0], posX, &start_track, &end_track, viewInfo);
 			}
 			else
 			{
 				for (j = 0; j < group->trackCount; ++j)
-					processTrack(group->t.tracks[j], posX, &start_track, &end_track, viewInfo);
+					processTrack(group->tracks[j], posX, &start_track, &end_track, viewInfo);
 
 				posX += getGroupSize(viewInfo, group, 0);
 			}
@@ -552,6 +627,7 @@ int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, in
 
 	return activeTrack;
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -607,18 +683,14 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	Emgui_setScissor(48, 0, viewInfo->windowSizeX - 80, viewInfo->windowSizeY);
 	Emgui_setFont(viewInfo->smallFontId);
 
-	///sel_track = setActiveTrack(viewInfo, trackData, trackData->activeTrack, x_pos);
-
-	//if (sel_track != trackData->activeTrack)
-	//	TrackData_setActiveTrack(trackData, sel_track);
 
 	for (i = 0, group_count = trackData->groupCount; i < group_count; ++i)
 	{
 		Group* group = &trackData->groups[i];
 
-		if (group->trackCount == 1)
+		if (group->trackCount == 1 && !group->displayName)
 		{
-			Track* track = group->t.track;
+			Track* track = group->tracks[0];
 			int track_size = getTrackSize(viewInfo, track);
 		
 			if ((x_pos + track_size > 0) && (x_pos < viewInfo->windowSizeX))
@@ -634,16 +706,13 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 		else
 		{
 			int temp;
-			x_pos += renderGroup(group, group->t.tracks[0], x_pos, &temp, info, trackData);
+			x_pos += renderGroup(group, group->tracks[0], x_pos, &temp, info, trackData);
 		}
 	}
 
 	Emgui_setDefaultFont();
 
 	Emgui_fill(Emgui_color32(127, 127, 127, 56), 0, mid_screen_y + adjust_top_size, viewInfo->windowSizeX, font_size + 1);
-
-	//Emgui_setLayer(1);
-	//drawBookmarks(trackData, 2, adjust_top_size, end_row, y_pos_row, viewInfo->windowSizeX, y_end_border);
 
 	Emgui_setLayer(0);
 
@@ -663,11 +732,7 @@ int TrackView_getWidth(TrackViewInfo* viewInfo, struct TrackData* trackData)
 	for (i = 0; i < group_count; ++i)
 	{
 		Group* group = &trackData->groups[i];
-
-		if (group->trackCount == 1)
-			size += getTrackSize(viewInfo, group->t.track);
-		else
-			size += getGroupSize(viewInfo, group, 0);
+		size += getGroupSize(viewInfo, group, 0);
 	}
 
 	return size;
@@ -731,7 +796,7 @@ int TrackView_getTracksOffset(TrackViewInfo* viewInfo, TrackData* trackData, int
 			if (i + j == nextTrack)
 				goto end;
 			
-			size += getTrackSize(viewInfo, t->group->t.tracks[j]); 
+			size += getTrackSize(viewInfo, t->group->tracks[j]); 
 
 		}
 

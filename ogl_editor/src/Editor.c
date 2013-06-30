@@ -211,10 +211,14 @@ static int getNextTrack()
 	if (!group->folded)
 	{
 		if (track->groupIndex + 1 < group->trackCount)
-			return group->t.tracks[track->groupIndex + 1]->index; 
+			return group->tracks[track->groupIndex + 1]->index; 
 	}
 
+	printf("groupName %s : index %d\n", group->name, group->groupIndex);
+
 	groupIndex = group->groupIndex;
+
+	printf("%d %d\n", groupIndex, trackData->groupCount);
 
 	// We are at the last track in the last group so just return the current one
 
@@ -224,11 +228,12 @@ static int getNextTrack()
 	// Get the next group and select the first track in it
 
 	group = &trackData->groups[groupIndex + 1];
+	printf("next group %s\n", group->name);
 
-	if (group->trackCount == 1)
-		return group->t.track->index;
-	else
-		return group->t.tracks[0]->index;
+	printf("newIndex %d\n", group->tracks[0]->index);
+	return group->tracks[0]->index;
+
+	printf("should not be here\n");
 	
 	return 0;
 }
@@ -253,7 +258,7 @@ static int getPrevTrack()
 	// Check If next track is within the group
 
 	if (track->groupIndex - 1 >= 0)
-		return group->t.tracks[track->groupIndex - 1]->index; 
+		return group->tracks[track->groupIndex - 1]->index; 
 
 	groupIndex = group->groupIndex - 1;
 
@@ -267,12 +272,7 @@ static int getPrevTrack()
 	group = &trackData->groups[groupIndex];
 	trackIndex = group->folded ? 0 : group->trackCount - 1;
 
-	if (group->trackCount == 1)
-		return group->t.track->index;
-	else
-		return group->t.tracks[trackIndex]->index;
-	
-	return 0;
+	return group->tracks[trackIndex]->index;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -445,6 +445,8 @@ void Editor_updateTrackScroll()
 
 	sel_track = TrackView_getScrolledTrack(view_info, track_data, track_data->activeTrack, 
 										   track_start_offset - track_start_pixel);
+
+	printf("sel_track %d\n", sel_track);
 
 	if (sel_track != track_data->activeTrack)
 		TrackData_setActiveTrack(track_data, sel_track);
@@ -1362,7 +1364,7 @@ static void onFoldGroup(bool fold)
 	if (t->group->trackCount > 1)
 	{
 		TrackViewInfo* viewInfo = getTrackViewInfo(); 
-		int firstTrackIndex = t->group->t.tracks[0]->index;
+		int firstTrackIndex = t->group->tracks[0]->index;
 		t->group->folded = fold;
 		setActiveTrack(firstTrackIndex);
 		viewInfo->selectStartTrack = viewInfo->selectStopTrack = firstTrackIndex;

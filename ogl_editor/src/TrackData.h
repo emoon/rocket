@@ -48,16 +48,12 @@ typedef struct Group
 	char* displayName;
 	int width;
 
-	bool folded;
-	union
-	{
-		Track* track;
-		Track** tracks;
-	} t;
+	Track** tracks;
 
 	enum GroupType type;
 	int trackCount;
 	int groupIndex;
+	bool folded;
 } Group;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
