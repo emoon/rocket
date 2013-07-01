@@ -272,7 +272,14 @@ void Editor_create()
 	Emgui_create();
 	id = Emgui_loadFontBitmap(g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_LOCATION_MEMORY, 32, 128, g_minecraftiaFontLayout);
 
-	RemoteConnection_createListner();
+	if (!RemoteConnection_createListner())
+	{
+	#if defined(_WIN32)
+		Dialog_showError(L"Unable to create listener. Make sure no other program is using port 1338");
+	#else
+		Dialog_showError("Unable to create listener. Make sure no other program is using port 1338");
+	#endif
+	}
 
 	s_editorData.trackViewInfo.smallFontId = id;
 	s_editorData.trackData.startRow = 0;
