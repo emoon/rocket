@@ -490,23 +490,6 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-static int processTrack(Track* track, int posX, int* startTrack, int* endTrack, TrackViewInfo* viewInfo)
-{
-	int track_size = getTrackSize(viewInfo, track);
-
-	if (posX > 0 && *startTrack == -1)
-		*startTrack = track->index;
-
-	if (((posX + 50 + track_size) > (viewInfo->windowSizeX - 80)) && *endTrack == -1)
-		*endTrack = track->index;
-
-	return track_size;
-}
-*/
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // This function will figure out what the next track to be selected is when the trackView is scrolled.
 // 
 // The way it does that is by looking at all the groups (which a linear, while tracks are not) and figure out the start
@@ -515,7 +498,6 @@ static int processTrack(Track* track, int posX, int* startTrack, int* endTrack, 
 //
 // This code actually does more work than needed (possible to just break out when we found on which side the track
 // is hidden but this code should be fairly fast anyway.
-
 
 int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, int activeTrack, int posX)
 {
@@ -575,59 +557,6 @@ int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, in
 
 	return activeTrack;
 }
-
-
-
-/*
-int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, int activeTrack, int posX)
-{
-	int i, j,  track_count = trackData->syncData.num_tracks;
-	int start_track = -1, end_track = -1;
-
-	posX -= 40;
-
-	for (i = 0; i < track_count; )
-	{
-		Track* track = &trackData->tracks[i];
-		Group* group = track->group; 
-
-		if (group->trackCount == 1)
-		{
-			posX += processTrack(track, posX, &start_track, &end_track, viewInfo);
-		}
-		else
-		{
-			if (group->folded)
-			{
-				posX += processTrack(group->tracks[0], posX, &start_track, &end_track, viewInfo);
-			}
-			else
-			{
-				for (j = 0; j < group->trackCount; ++j)
-					processTrack(group->tracks[j], posX, &start_track, &end_track, viewInfo);
-
-				posX += getGroupSize(viewInfo, group, 0);
-			}
-		}
-
-		i += group->trackCount;
-	}
-
-	if (activeTrack > start_track && activeTrack < end_track)
-		return activeTrack;
-
-	if (activeTrack < start_track)
-		return start_track;
-
-	if (activeTrack > end_track)
-	{
-		if (end_track != -1)
-			return end_track;
-	}
-
-	return activeTrack;
-}
-*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
