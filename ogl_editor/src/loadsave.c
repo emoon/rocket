@@ -92,9 +92,8 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					}
 					else
 					{
-						char* end;
 						if (color_text)
-							t->color = strtol(color_text, &end, 16);
+							t->color = strtoul(color_text, 0, 16);
 					}
 
 					if (folded_text)
