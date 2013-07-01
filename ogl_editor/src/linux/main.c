@@ -57,6 +57,11 @@ void Dialog_showColorPicker(unsigned int* color)
 	printf("dialog_showColorPicker() not implemented\n");
 }
 
+void Dialog_showError(const text_t* text)
+{
+	printf("Error %s\n", text);
+}
+
 int mapSdlEmKeycode(SDLKey key)
 {
 	switch (key)

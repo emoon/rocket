@@ -52,6 +52,7 @@ int Dialog_save(char* dest)
 	return true;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 @interface ColorDelegate : NSObject<NSWindowDelegate>
 {
@@ -137,5 +138,17 @@ void Dialog_showColorPicker(uint32_t* color)
 						   255);
 
 	[thePool release];
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Dialog_showError(const text_t* text)
+{
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+	NSString* message = [[[NSString alloc] initWithUTF8String:text] autorelease];// convert 
+
+	NSRunAlertPanel(@"Error", message, @"Ok", @"", @"");
+
+	[pool drain];
 }
 
