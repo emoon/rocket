@@ -512,11 +512,12 @@ int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, in
 		Group* group = &trackData->groups[i]; 
 		int track_count = group->trackCount;
 		const bool folded = group->folded;
+		int t_pos;
 
 		if (folded)
 			track_count = 1;
 
-		int t_pos = posX;
+		t_pos = posX;
 
 		for (j = 0; j < track_count; ++j)
 		{
