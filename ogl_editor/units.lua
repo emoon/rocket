@@ -121,6 +121,9 @@ Program {
 	Name = "basic_example",
 	Sources = { "basic_example/basic_example.c" },
 	Depends = { "sync" },
+	Libs = {
+		{ "wsock32.lib"; Config = "win32-*-*" },
+	},
 }
 
 local rocketBundle = OsxBundle 

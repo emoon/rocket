@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <math.h>
+#if defined(WIN32)
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
 #include "../../sync/sync.h"
 
 static struct sync_device *device;
@@ -12,7 +16,7 @@ static struct sync_cb cb;
 
 const float bpm = 180.0f;
 const float rpb = 8.0f;
-const float rps = bpm / 60.0f * rpb; 
+float rps = 24.0f;// bpm / 60.0f * rpb; <- msvc cant compute this compile time... sigh
 int audio_is_playing = 1;
 int curtime_ms = 0;
 
@@ -20,7 +24,7 @@ int curtime_ms = 0;
 
 static int row_to_ms_round(int row, float rps) 
 {
-	const double newtime = ((float)(row)) / rps;
+	const float newtime = ((float)(row)) / rps;
 	return (int)(floor(newtime * 1000.0f + 0.5f));
 }
 
@@ -28,7 +32,7 @@ static int row_to_ms_round(int row, float rps)
 
 static float ms_to_row_f(int time_ms, float rps) 
 {
-	const double row = rps * ((float)time_ms) * 1.0f/1000.0f;
+	const float row = rps * ((float)time_ms) * 1.0f/1000.0f;
 	return row;
 }
 
@@ -58,9 +62,9 @@ static void xpause(void* data, int flag)
 
 static void xset_row(void* data, int row)
 {
-	(void)data;
 	int newtime_ms = row_to_ms_round(row, rps);
 	curtime_ms = newtime_ms;
+	(void)data;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -158,8 +162,11 @@ int main()
 
 		for (i = 0; i < sizeof_array(s_trackNames); ++i)
 			printf("%s %f\n", s_trackNames[i], sync_get_val(s_tracks[i], row_f));
-
+	#if defined(WIN32)
+		Sleep(16);
+	#else
 		usleep(16000);
+	#endif
 	}
 }
 
