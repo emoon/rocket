@@ -214,11 +214,7 @@ static int getNextTrack()
 			return group->tracks[track->groupIndex + 1]->index; 
 	}
 
-	printf("groupName %s : index %d\n", group->name, group->groupIndex);
-
 	groupIndex = group->groupIndex;
-
-	printf("%d %d\n", groupIndex, trackData->groupCount);
 
 	// We are at the last track in the last group so just return the current one
 
@@ -228,14 +224,7 @@ static int getNextTrack()
 	// Get the next group and select the first track in it
 
 	group = &trackData->groups[groupIndex + 1];
-	printf("next group %s\n", group->name);
-
-	printf("newIndex %d\n", group->tracks[0]->index);
 	return group->tracks[0]->index;
-
-	printf("should not be here\n");
-	
-	return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
