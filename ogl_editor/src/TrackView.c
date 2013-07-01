@@ -342,10 +342,13 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 		{
 			if (drawColorButton(color, startX + 4, info->startY - colorbar_adjust, size))
 			{
-				Dialog_showColorPicker(&trackData->color);
+				if (!info->trackData->isPlaying)
+				{
+					Dialog_showColorPicker(&trackData->color);
 
-				if (trackData->color != color)
-					s_needsUpdate = true;
+					if (trackData->color != color)
+						s_needsUpdate = true;
+				}
 			}
 		}
 		else

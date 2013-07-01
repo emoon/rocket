@@ -278,6 +278,7 @@ void Editor_create()
 	s_editorData.trackData.startRow = 0;
 	s_editorData.trackData.endRow = 10000;
 	s_editorData.trackData.highlightRowStep = 8;
+	s_editorData.trackData.isPlaying = false;
 
 	Emgui_setDefaultFont();
 }
@@ -1182,6 +1183,7 @@ static void onEnterCurrentValue()
 static void onPlay()
 {
 	RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
+	getTrackData()->isPlaying = !RemoteConnection_isPaused();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
