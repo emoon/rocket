@@ -446,8 +446,6 @@ void Editor_updateTrackScroll()
 	sel_track = TrackView_getScrolledTrack(view_info, track_data, track_data->activeTrack, 
 										   track_start_offset - track_start_pixel);
 
-	printf("sel_track %d\n", sel_track);
-
 	if (sel_track != track_data->activeTrack)
 		TrackData_setActiveTrack(track_data, sel_track);
 
