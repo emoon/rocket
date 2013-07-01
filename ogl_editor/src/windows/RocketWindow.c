@@ -563,6 +563,22 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 
 		case WM_CLOSE:
 		{
+			int res;
+			
+			if (!Editor_needsSave())
+			{
+				PostQuitMessage(0);
+				return 0;
+			}
+
+			res = MessageBox(window, L"Do you want to save the work?", L"Save before exit?", MB_YESNOCANCEL | MB_ICONQUESTION); 
+
+			if (res == IDCANCEL)
+				return 0;
+
+			if (res == IDYES)
+				Editor_saveBeforeExit();
+
 			PostQuitMessage(0);
 			return 0;
 		}
@@ -617,6 +633,8 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmndLine, i
 					done = true;
 			}
 		}
+
+		Sleep(1); // to prevent hammering the thread
 	}
 
 	saveRecentFileList();
