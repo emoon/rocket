@@ -1475,6 +1475,8 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_PLAY : onPlay(); break;
 		case EDITOR_MENU_ROWS_UP : onRowStep(-highlightRowStep , NO_SELECTION); break;
 		case EDITOR_MENU_ROWS_DOWN : onRowStep(highlightRowStep , NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_2X_UP : onRowStep(-highlightRowStep * 2 , NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_2X_DOWN : onRowStep(highlightRowStep * 2 , NO_SELECTION); break;
 		case EDITOR_MENU_PREV_BOOKMARK : onBookmarkDir(ARROW_UP, NO_SELECTION); break;
 		case EDITOR_MENU_NEXT_BOOKMARK : onBookmarkDir(ARROW_DOWN, NO_SELECTION); break;
 		case EDITOR_MENU_FIRST_TRACK : onTrackSide(ARROW_LEFT, true, NO_SELECTION); break;

@@ -55,6 +55,8 @@ MenuDescriptor g_viewMenu[] =
 	{ _T(""), 							EDITOR_MENU_SEPARATOR,			0, 						0, 0 },	
 	{ _T("Jump 8 rows up"), 			EDITOR_MENU_ROWS_UP,			EMGUI_KEY_ARROW_UP, 	EMGUI_KEY_ALT, EMGUI_KEY_ALT },	
 	{ _T("Jump 8 rows down"), 			EDITOR_MENU_ROWS_DOWN,			EMGUI_KEY_ARROW_DOWN, 	EMGUI_KEY_ALT, EMGUI_KEY_ALT },	
+	{ _T("Jump 16 rows up"), 			EDITOR_MENU_ROWS_2X_UP,			EMGUI_KEY_PAGE_UP, 		0, 0 },	
+	{ _T("Jump 16 rows down"), 			EDITOR_MENU_ROWS_2X_DOWN,		EMGUI_KEY_PAGE_DOWN, 	0, 0 },	
 	{ _T("Jump to previous bookmark"), 	EDITOR_MENU_PREV_BOOKMARK,		EMGUI_KEY_ARROW_UP, 	EMGUI_KEY_COMMAND, EMGUI_KEY_ALT | EMGUI_KEY_CTRL },	
 	{ _T("Jump to next bookmark"),		EDITOR_MENU_NEXT_BOOKMARK,		EMGUI_KEY_ARROW_DOWN, 	EMGUI_KEY_COMMAND, EMGUI_KEY_ALT | EMGUI_KEY_CTRL },	
 	{ _T("Jump to first track"), 		EDITOR_MENU_FIRST_TRACK,		EMGUI_KEY_ARROW_LEFT, 	EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	

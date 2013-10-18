@@ -219,6 +219,8 @@ static void formatName(wchar_t* outName, int keyMod, int key, const wchar_t* nam
 			case EMGUI_KEY_BACKSPACE: wcscpy_s(keyName, sizeof(keyName), L"Delete"); break;
 			case EMGUI_KEY_ENTER: wcscpy_s(keyName, sizeof(keyName), L"Enter"); break;
 			case EMGUI_KEY_SPACE: wcscpy_s(keyName, sizeof(keyName), L"Space"); break;
+			case EMGUI_KEY_PAGE_UP: wcscpy_s(keyName, sizeof(keyName), L"Page Up"); break;
+			case EMGUI_KEY_PAGE_DOWN: wcscpy_s(keyName, sizeof(keyName), L"Page Down"); break;
 		}
 	}
 
@@ -268,6 +270,8 @@ static void addAccelarator(const MenuDescriptor* desc)
 			case EMGUI_KEY_BACKSPACE: accel->key = VK_BACK; break;
 			case EMGUI_KEY_ENTER: accel->key = VK_RETURN; break;
 			case EMGUI_KEY_SPACE: accel->key = VK_SPACE; break;
+			case EMGUI_KEY_PAGE_DOWN: accel->key = VK_PAGE_DOWN; break;
+			case EMGUI_KEY_PAGE_UP: accel->key = VK_PAGE_UP; break;
 		}
 	}
 

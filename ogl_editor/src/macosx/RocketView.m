@@ -48,17 +48,17 @@ void Window_setTitle(const char* title);
 
 - (id)initWithFrame:(NSRect)frame 
 {
-    self = [super initWithFrame:frame];
-    if (self == nil)
-        return nil;
+	self = [super initWithFrame:frame];
+	if (self == nil)
+		return nil;
 
-    NSOpenGLPixelFormatAttribute attributes[4];
+	NSOpenGLPixelFormatAttribute attributes[4];
 
-    attributes[0] = NSOpenGLPFADoubleBuffer;
-    attributes[1] = 0;
+	attributes[0] = NSOpenGLPFADoubleBuffer;
+	attributes[1] = 0;
 
-    NSOpenGLPixelFormat* format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-    oglContext = [[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];
+	NSOpenGLPixelFormat* format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+	oglContext = [[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];
 	[oglContext makeCurrentContext];
 
 	g_context = oglContext;
@@ -71,8 +71,8 @@ void Window_setTitle(const char* title);
 	const float framerate = 60;
 	const float frequency = 1.0f/framerate;
 	[NSTimer scheduledTimerWithTimeInterval:frequency
-		target:self selector:@selector(updateEditor)
-		userInfo:nil repeats:YES];
+									 target:self selector:@selector(updateEditor)
+								   userInfo:nil repeats:YES];
 
 	return self;
 }
@@ -81,26 +81,26 @@ void Window_setTitle(const char* title);
 
 - (void)lockFocus
 {
-    NSOpenGLContext* context = oglContext;
-    
-    [super lockFocus];
-    
-    if ([context view] != self) 
-        [context setView:self];
-    
-    [context makeCurrentContext];
+	NSOpenGLContext* context = oglContext;
+
+	[super lockFocus];
+
+	if ([context view] != self) 
+		[context setView:self];
+
+	[context makeCurrentContext];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 - (void)drawRect:(NSRect)frameRect 
 {
-    [oglContext update];
+	[oglContext update];
 	g_window = [self window];
 
 	EMGFXBackend_updateViewPort((int)frameRect.size.width, (int)frameRect.size.height);
 	Editor_setWindowSize((int)frameRect.size.width, (int)frameRect.size.height);
-    Editor_update();
+	Editor_update();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,6 +156,8 @@ static int getModifierFlags(int flags)
             case KEY_DELETE : keyCode = EMGUI_KEY_BACKSPACE; break;
             case KEY_RETURN : keyCode = EMGUI_KEY_ENTER; break;
             case KEY_ESCAPE : keyCode = EMGUI_KEY_ESC; break;
+			case NSPageDownFunctionKey: keyCode = EMGUI_KEY_PAGE_DOWN; break;
+			case NSPageUpFunctionKey: keyCode = EMGUI_KEY_PAGE_UP; break;
         }
     }
 
@@ -381,6 +383,8 @@ NSString* convertKeyCodeToString(int key)
 			case EMGUI_KEY_SPACE : return @" "; 
 			case EMGUI_KEY_BACKSPACE : return [NSString stringWithFormat:@"%C",(uint16_t)0x232b];
 			case EMGUI_KEY_TAB : return [NSString stringWithFormat:@"%C",(uint16_t)0x21e4]; 
+			case EMGUI_KEY_PAGE_UP : return [NSString stringWithFormat:@"%C",(uint16_t)0x21de]; 
+			case EMGUI_KEY_PAGE_DOWN : return [NSString stringWithFormat:@"%C",(uint16_t)0x21df]; 
 		}
 	}
 
