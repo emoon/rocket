@@ -255,21 +255,6 @@ static void renderText(const struct TrackInfo* info, struct sync_track* track, i
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int findStartTrack(Group* group, Track* startTrack)
-{
-	int i, track_count = group->trackCount;
-
-	for (i = 0; i < track_count; ++i)
-	{
-		if (group->tracks[i] == startTrack)
-			return i;
-	}
-
-	return 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static int getTrackSize(TrackViewInfo* viewInfo, Track* track)
 {
 	if (track->folded)
@@ -291,13 +276,19 @@ int getGroupSize(TrackViewInfo* viewInfo, Group* group, int startTrack)
 {
 	int i, size = 0, count = group->trackCount;
 
-	if (group->width == 0 && group->name)
-		group->width = (Emgui_getTextSize(group->name) & 0xffff) + 40;
-    else
-		group->width = (Emgui_getTextSize(group->tracks[0]->displayName) & 0xffff) + 40;
-    
+	if (group->width == 0)
+	{
+		if (group->name)
+			group->width = (Emgui_getTextSize(group->name) & 0xffff) + 40;
+		else
+			group->width = (Emgui_getTextSize(group->tracks[0]->displayName) & 0xffff) + 40;
+	}
+
 	if (group->folded)
 		return track_size_folded; 
+
+	if (!group->name)
+		return getTrackSize(viewInfo, group->tracks[0]);
 
 	for (i = startTrack; i < count; ++i)
 		size += getTrackSize(viewInfo, group->tracks[i]);
@@ -445,7 +436,7 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffset, struct TrackInfo info, TrackData* trackData)
+static int renderGroup(Group* group, int posX, int* trackOffset, struct TrackInfo info, TrackData* trackData)
 {
 	int i, startTrackIndex = 0, size, track_count = group->trackCount;
 	const int oldY = info.startY;
@@ -455,9 +446,7 @@ static int renderGroup(Group* group, Track* startTrack, int posX, int* trackOffs
 
 	Emgui_setFont(info.viewInfo->smallFontId);
 
-	startTrackIndex = findStartTrack(group, startTrack);
-
-	size = getGroupSize(info.viewInfo, group, startTrackIndex);
+	size = getGroupSize(info.viewInfo, group, 0);
 
 	renderGroupHeader(group, posX, oldY, size, info.viewInfo->windowSizeX);
 
@@ -639,7 +628,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 		else
 		{
 			int temp;
-			x_pos += renderGroup(group, group->tracks[0], x_pos, &temp, info, trackData);
+			x_pos += renderGroup(group, x_pos, &temp, info, trackData);
 		}
 	}
 
