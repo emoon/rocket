@@ -491,6 +491,9 @@ LRESULT CALLBACK WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam
 			if (LOWORD(wParam) == EDITOR_MENU_TAB)
 				Emgui_sendKeyinput(EMGUI_KEY_TAB, getModifiers());
 
+			if (LOWORD(wParam) == EDITOR_MENU_CANCEL_EDIT)
+				Emgui_sendKeyinput(EMGUI_KEY_ESC, getModifiers());
+
 			if (LOWORD(wParam) == EDITOR_MENU_ENTER_CURRENT_V)
 				Emgui_sendKeyinput(EMGUI_KEY_ENTER, getModifiers());
 
