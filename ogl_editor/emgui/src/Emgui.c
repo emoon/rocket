@@ -976,6 +976,13 @@ void Emgui_editBoxXY(int x, int y, int width, int height, int bufferLength, char
 
 		switch (keyCode)
 		{
+			case EMGUI_KEY_ESC :
+			{
+				g_emguiGuiState.kbdItem = -1;
+				g_emguiGuiState.keyCode = 0;
+				break;
+			}
+
 			case EMGUI_KEY_TAB :
 			{
 				if (g_emguiGuiState.keyMod & EMGUI_KEY_SHIFT)
@@ -1089,6 +1096,14 @@ void Emgui_setFirstControlFocus()
 	g_emguiGuiState.kbdItem = 1;
 	g_emguiGuiState.keyCode = 0;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Emgui_resetFocus()
+{
+	g_emguiGuiState.kbdItem = -1;
+	g_emguiGuiState.keyCode = 0;
+}	
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
