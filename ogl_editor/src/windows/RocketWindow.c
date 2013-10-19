@@ -270,8 +270,8 @@ static void addAccelarator(const MenuDescriptor* desc)
 			case EMGUI_KEY_BACKSPACE: accel->key = VK_BACK; break;
 			case EMGUI_KEY_ENTER: accel->key = VK_RETURN; break;
 			case EMGUI_KEY_SPACE: accel->key = VK_SPACE; break;
-			case EMGUI_KEY_PAGE_DOWN: accel->key = VK_PAGE_DOWN; break;
-			case EMGUI_KEY_PAGE_UP: accel->key = VK_PAGE_UP; break;
+			case EMGUI_KEY_PAGE_DOWN: accel->key = VK_NEXT; break;
+			case EMGUI_KEY_PAGE_UP: accel->key = VK_PRIOR; break;
 		}
 	}
 
