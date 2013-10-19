@@ -3,16 +3,16 @@ Beta Disclaimar
 
 First a screenshot of how it looks: https://dl.dropbox.com/u/5205843/RocketEditor.png
 
-As currently this version of the editor is in beta and there *WILL* be bugs (backup your stuff before using this)
+Regular disclaimar: Backup your stuff before using software :)
 
-If you encounter any issues please try to report them at https://github.com/emoon/rocket/issues?milestone=3 as
+If you encounter any issues please try to report them at https://github.com/emoon/rocket/issues as
 this would make my life much easier and I will try to fix them given time. Hopefully the editor should be useful even if still not 100% finalized bug wise.
 Also the documentation hasn't been completed yet.
 
-Here are the links to the beta versions of the editor:
+Here are the links to the current version of the editor:
 
-Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.0RC1.zip
-Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.0RC1-Win.zip
+Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.0.zip
+Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.0-win32.zip
 
 About
 -----
