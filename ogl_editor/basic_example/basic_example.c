@@ -127,13 +127,13 @@ static int rocket_update()
 
 static const char* s_trackNames[] = 
 {
-	"group0:track0",
-	"group0:track1",
-	"group0:track2",
-	"group0:track3",
-	"group1:track0",
-	"group1:track1",
-	"group1:track2",
+	"group0#track0",
+	"group0#track1",
+	"group0#track2",
+	"group0#track3",
+	"group1#track0",
+	"group1#track1",
+	"group1#track2",
 };
 
 static const struct sync_track* s_tracks[sizeof_array(s_trackNames)];
