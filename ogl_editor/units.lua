@@ -42,7 +42,7 @@ StaticLibrary {
 		},
 
 		CCOPTS = {
-			{ "-Werror", "-pedantic-errors", "-Wall"; Config = "macosx-clang-*" },
+			{ "-Werror", "-pedantic-errors", "-Wall", "-Wno-format-security"; Config = "macosx-clang-*" },
 		},
 	},
 
@@ -89,7 +89,7 @@ Program {
 		},
 
 		CCOPTS = {
-			{ "-Werror", "-pedantic-errors", "-Wall"; Config = "macosx-clang-*" },
+			{ "-Werror", "-pedantic-errors", "-Wall", "-Wno-format-security"; Config = "macosx-clang-*" },
 		},
 	},
 

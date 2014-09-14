@@ -3,6 +3,7 @@ local macosx = {
 		CPPDEFS = { "EMGUI_MACOSX" },
 		CCOPTS = {
 			"-Wall",
+			"-Wno-format-security",
 			"-Wno-deprecated-declarations", -- TickCount issue no Mountain Lion (needs to be fixed)
 			"-I.", "-DMACOSX", "-Wall",
 			{ "-O0", "-g"; Config = "*-*-debug" },
