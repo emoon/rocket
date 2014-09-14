@@ -606,7 +606,15 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void biasSelection(float value)
+typedef enum BiasOperation
+{
+	BiasOperation_Bias,
+	BiasOperation_Scale,
+} BiasOperation;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void scaleOrBiasSelection(float value, BiasOperation biasOp)
 {
 	int track, row;
 	struct sync_track** tracks = getTracks();
@@ -637,8 +645,11 @@ static void biasSelection(float value)
 			selectTop = selectBottom = track->keys[emaxi(idx - 1, 0)].row;
 		}
 	}
-	
-	Commands_beginMulti("biasSelection");
+
+	if (biasOp == BiasOperation_Bias)
+		Commands_beginMulti("biasSelection");
+	else
+		Commands_beginMulti("scaleSelection");
 
 	for (track = selectLeft; track <= selectRight; ++track) 
 	{
@@ -652,7 +663,11 @@ static void biasSelection(float value)
 				continue;
 
 			newKey = t->keys[idx];
-			newKey.value += value;
+
+			if (biasOp == BiasOperation_Bias)
+				newKey.value += value;
+			else
+				newKey.value *= value;
 
 			Commands_updateKey(track, &newKey);
 		}
@@ -660,6 +675,20 @@ static void biasSelection(float value)
 
 	Commands_endMulti();
 	updateNeedsSaving();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void biasSelection(float value)
+{
+	scaleOrBiasSelection(value, BiasOperation_Bias);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void scaleSelection(float value)
+{
+	scaleOrBiasSelection(value, BiasOperation_Scale);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1489,6 +1518,12 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_BIAS_N_10:   biasSelection(-10.0f); break;
 		case EDITOR_MENU_BIAS_N_100 : biasSelection(-100.0f); break;
 		case EDITOR_MENU_BIAS_N_1000: biasSelection(-1000.0f); break;
+		case EDITOR_MENU_SCALE_001 : scaleSelection(0.01f); break;
+		case EDITOR_MENU_SCALE_01 :  scaleSelection(0.1f); break;
+		case EDITOR_MENU_SCALE_1:    scaleSelection(1.0f); break;
+		case EDITOR_MENU_SCALE_10:   scaleSelection(10.0f); break;
+		case EDITOR_MENU_SCALE_100:  scaleSelection(100.0f); break;
+		case EDITOR_MENU_SCALE_1000: scaleSelection(1000.0f); break;
 		
 		case EDITOR_MENU_INTERPOLATION : onInterpolation(); break;
 		case EDITOR_MENU_ENTER_CURRENT_V : onEnterCurrentValue(); break;
