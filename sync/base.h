@@ -8,8 +8,10 @@
 /* configure inline keyword */
 #if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
  #if defined(_MSC_VER) || defined(__GNUC__) || defined(__SASC)
-  #define inline __inline
- #else
+#ifndef inline
+	#define inline __inline
+#endif 
+#else
   /* compiler does not support inline, make function static instead */
   #define inline static
  #endif
