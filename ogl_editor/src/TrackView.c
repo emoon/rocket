@@ -36,6 +36,7 @@ const uint32_t inactive_text_color = EMGUI_COLOR32(0x5f, 0x5f, 0x5f, 0xff);
 const uint32_t border_color = EMGUI_COLOR32(40, 40, 40, 255);
 const uint32_t selection_color = EMGUI_COLOR32(0x5f, 0x5f, 0x5f, 0x4f);
 const uint32_t bookmark_color = EMGUI_COLOR32(0x3f, 0x2f, 0xaf, 0x7f);
+const uint32_t track_selection_color = EMGUI_COLOR32(0xff, 0xff, 0x00, 0xff);
 
 static bool s_needsUpdate = false;
 
@@ -300,6 +301,31 @@ int getGroupSize(TrackViewInfo* viewInfo, Group* group, int startTrack)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void drawSelectedTrackOutline(int width, int startX, int startY, int endY)
+{	
+	int drawWidth = width / 4;
+	
+	Emgui_setLayer(1);
+
+	// Draw top selection
+	
+	Emgui_fill(track_selection_color, startX, startY, drawWidth, 2);
+	Emgui_fill(track_selection_color, (startX + width) - drawWidth, startY, drawWidth, 2);
+	Emgui_fill(track_selection_color, startX, startY, 2, drawWidth);
+	Emgui_fill(track_selection_color, startX + width, startY, 2, drawWidth);
+	
+	// Draw bottom selection
+	
+	Emgui_fill(track_selection_color, startX, endY, drawWidth, 2);
+	Emgui_fill(track_selection_color, (startX + width) - drawWidth + 2, endY, drawWidth, 2);
+	Emgui_fill(track_selection_color, startX, endY - drawWidth, 2, drawWidth);
+	Emgui_fill(track_selection_color, startX + width, endY - drawWidth, 2, drawWidth);
+
+	Emgui_setLayer(0);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, bool valuesOnly)
 {
 	int y, y_offset;
@@ -311,6 +337,7 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 	struct sync_track* track = 0;
 	const uint32_t color = trackData->color;
 	bool folded = false;
+	const int yEnd = (info->endSizeY - info->startY) + 40;
 
 	if (!valuesOnly)
 	{
@@ -357,12 +384,12 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 
 	if (valuesOnly)
 	{
-		Emgui_fill(border_color, startX + size, info->startY - font_size * 4, 2, (info->endSizeY - info->startY) + 40);
-		Emgui_fill(border_color, startX, info->startY - font_size * 4, 2, (info->endSizeY - info->startY) + 40);
+		Emgui_fill(border_color, startX + size, info->startY - font_size * 4, 2, yEnd);
+		Emgui_fill(border_color, startX, info->startY - font_size * 4, 2, yEnd);
 	}
 	else
 	{
-		Emgui_drawBorder(border_color, border_color, startX, info->startY - font_size * 4, size, (info->endSizeY - info->startY) + 40);
+		Emgui_drawBorder(border_color, border_color, startX, info->startY - font_size * 4, size, yEnd);
 	}
 
 	// if folded we should skip rendering the rows that are covered by the text
@@ -422,6 +449,9 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 	{
 		if (trackData->selected)
 		{
+			if (!trackData->group->folded)
+				drawSelectedTrackOutline(size, startX, info->startY - font_size * 4, info->endSizeY + 8);
+
 			Emgui_fill(trackData->group->folded ? dark_active_track_color : active_track_color, startX, info->midPos, size, font_size + 1);
 
 			if (info->editText)
