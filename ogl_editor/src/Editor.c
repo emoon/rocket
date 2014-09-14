@@ -19,7 +19,10 @@
 #include "../../sync/data.h"
 #include <emgui/Emgui.h>
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void updateNeedsSaving();
+static bool doEditing(int key);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1450,6 +1453,13 @@ void Editor_menuEvent(int menuItem)
 {
 	int highlightRowStep = getTrackData()->highlightRowStep; 
 
+	if (menuItem == EDITOR_MENU_DELETE_KEY && is_editing)
+	{
+		doEditing(EMGUI_KEY_BACKSPACE);
+		Editor_update();
+		return;
+	}
+
 	switch (menuItem)
 	{
 		case EDITOR_MENU_ENTER_CURRENT_V : 
@@ -1501,6 +1511,7 @@ void Editor_menuEvent(int menuItem)
 
 		case EDITOR_MENU_CANCEL_EDIT :  onCancelEdit(); break;
 		case EDITOR_MENU_DELETE_KEY  :  onDeleteKey(); break;
+										
 		case EDITOR_MENU_CUT :          onCutAndCopy(true); break;
 		case EDITOR_MENU_COPY :         onCutAndCopy(false); break;
 		case EDITOR_MENU_PASTE :        onPaste(); break;
