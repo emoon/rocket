@@ -1323,7 +1323,9 @@ static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection
 
 	if (!TrackView_isSelectedTrackVisible(viewInfo, trackData, track))
 	{
-		s_editorData.trackViewInfo.startPixel += TrackView_getTracksOffset(viewInfo, trackData, oldTrack, track);
+		int offset = TrackView_getTracksOffset(viewInfo, trackData, oldTrack, track);
+
+		s_editorData.trackViewInfo.startPixel += offset;
 		Editor_updateTrackScroll();
 	}
 }

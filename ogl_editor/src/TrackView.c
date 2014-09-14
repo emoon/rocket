@@ -706,57 +706,46 @@ bool TrackView_isSelectedTrackVisible(TrackViewInfo* viewInfo, TrackData* trackD
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static int getTrackOffset(TrackViewInfo* viewInfo, TrackData* trackData, int track)
+{
+	int i = 0, j = 0; 
+	int size = 0;
+
+	for (i = 0; i < trackData->groupCount; ++i)
+	{
+		Group* g = &trackData->groups[i];
+		const int trackCount = g->trackCount; 
+
+		if (g->folded)
+			size += track_size_folded;
+
+		for (j = 0; j < trackCount; ++j)
+		{
+			Track* t = g->tracks[j];
+
+			if (!g->folded)
+				size += getTrackSize(viewInfo, t); 
+
+			if (t->index == track)
+				return size;
+		}
+	}
+
+	return size;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int TrackView_getTracksOffset(TrackViewInfo* viewInfo, TrackData* trackData, int prevTrack, int nextTrack)
 {
-	int i, j, size = 0;
-	bool flip = false;
+	int prevOffset, nextOffset;
 
 	if (prevTrack == nextTrack)
 		return 0;
 
-	// handle the case when tracks are flipped
+	prevOffset = getTrackOffset(viewInfo, trackData, prevTrack);
+	nextOffset = getTrackOffset(viewInfo, trackData, nextTrack);
 
-	if (prevTrack > nextTrack)
-	{
-		int temp = nextTrack;
-		nextTrack = prevTrack;
-		prevTrack = temp;
-		flip = true;
-	}
-
-	for (i = prevTrack; i < nextTrack; )
-	{
-		Track* t = &trackData->tracks[i];
-
-		// if track has no group its always safe to assume that can select the track
- 
-		if (t->group->trackCount == 1)
-		{
-			size += getTrackSize(viewInfo, t); ++i;
-			continue;
-		}
- 
-		if (t->group->folded)
-		{
-			size += track_size_folded;
-			i += t->group->trackCount;
-			continue;
-		}
-
-		for (j = 0; j < t->group->trackCount; ++j)
-		{
-			if (i + j == nextTrack)
-				goto end;
-			
-			size += getTrackSize(viewInfo, t->group->tracks[j]); 
-
-		}
-
-		i += t->group->trackCount;
-	}
-
-end:;
-
-	return flip ? -size : size; 
+	return nextOffset - prevOffset; 
 }
 
