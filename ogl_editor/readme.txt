@@ -12,7 +12,7 @@ Also the documentation hasn't been completed yet.
 Here are the links to the current version of the editor:
 
 Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.0.zip
-Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.0-win32.zip
+Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.1Beta-win32.zip
 
 About
 -----
