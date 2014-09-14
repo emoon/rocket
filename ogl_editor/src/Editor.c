@@ -1531,13 +1531,20 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_BIAS_N_10:   biasSelection(-10.0f); break;
 		case EDITOR_MENU_BIAS_N_100 : biasSelection(-100.0f); break;
 		case EDITOR_MENU_BIAS_N_1000: biasSelection(-1000.0f); break;
-		case EDITOR_MENU_SCALE_001 : scaleSelection(0.01f); break;
-		case EDITOR_MENU_SCALE_01 :  scaleSelection(0.1f); break;
-		case EDITOR_MENU_SCALE_1:    scaleSelection(1.0f); break;
-		case EDITOR_MENU_SCALE_10:   scaleSelection(10.0f); break;
-		case EDITOR_MENU_SCALE_100:  scaleSelection(100.0f); break;
-		case EDITOR_MENU_SCALE_1000: scaleSelection(1000.0f); break;
-		
+
+		case EDITOR_MENU_SCALE_101: scaleSelection(1.01f); break;
+		case EDITOR_MENU_SCALE_11:	scaleSelection(1.1f); break;
+		case EDITOR_MENU_SCALE_12:	scaleSelection(1.2f); break;
+		case EDITOR_MENU_SCALE_5:	scaleSelection(5.0f); break;
+		case EDITOR_MENU_SCALE_100:	scaleSelection(10.01f); break;
+		case EDITOR_MENU_SCALE_1000: scaleSelection(100.01f); break;
+		case EDITOR_MENU_SCALE_099:	scaleSelection(0.99f); break;
+		case EDITOR_MENU_SCALE_09:	scaleSelection(0.9f); break;
+		case EDITOR_MENU_SCALE_08:	scaleSelection(0.8f); break;
+		case EDITOR_MENU_SCALE_05:	scaleSelection(0.5f); break;
+		case EDITOR_MENU_SCALE_01:	scaleSelection(0.1f); break;
+		case EDITOR_MENU_SCALE_001:	scaleSelection(0.01f); break;
+
 		case EDITOR_MENU_INTERPOLATION : onInterpolation(); break;
 		case EDITOR_MENU_ENTER_CURRENT_V : onEnterCurrentValue(); break;
 
