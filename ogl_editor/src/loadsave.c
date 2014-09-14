@@ -277,12 +277,15 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 {
 	mxml_node_t* xml;
 	mxml_node_t* tracks;
+	mxml_node_t* rootElement;
+
 	FILE* fp;
 	size_t p;
 	struct sync_data* sync_data = &trackData->syncData;
 	int* bookmarks = trackData->bookmarks;
 
 	xml = mxmlNewXML("1.0");	
+	rootElement = mxmlNewElement(xml, "rootElement");
 
 	// save all bookmarks
 
@@ -294,7 +297,7 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 		if (bookmark == 0)
 			continue;
 
-		node = mxmlNewElement(xml, "bookmark");
+		node = mxmlNewElement(rootElement, "bookmark");
 		setElementInt(node, "row", "%d", bookmark); 
 	}
 
@@ -308,11 +311,11 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 		if (!group->folded)
 			continue;
 
-		node = mxmlNewElement(xml, "group");
+		node = mxmlNewElement(rootElement, "group");
 		mxmlElementSetAttr(node, "name", group->name); 
 	}
 
-	tracks = mxmlNewElement(xml, "tracks");
+	tracks = mxmlNewElement(rootElement, "tracks");
 
 	mxmlElementSetAttr(tracks, "rows", "10000");
 	setElementInt(tracks, "startRow", "%d", trackData->startRow); 
@@ -337,7 +340,6 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 			setElementInt(key, "interpolation", "%d", (int)t->keys[i].type);
 		}
 	}
-
 
 #if defined(_WIN32)
 	_wfopen_s(&fp, path, L"wt");
