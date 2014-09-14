@@ -1,6 +1,6 @@
 @echo off
 
-start t2-output\Marine.sln
+start t2-output\RocketEditor.sln
 
 REM ======= Wait 3 seconds, hopefully the VS window has appeared by then =========
 REM Without this delay, the VS window will be opened in the background
