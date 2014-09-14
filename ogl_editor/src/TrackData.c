@@ -52,7 +52,7 @@ static int findSeparator(const char* name)
 
 	for (i = 0; i < len; ++i)
 	{
-		if (name[i] == ':' || name[i] == '#')
+		if (name[i] == ':')
 			return i;
 	}
 
