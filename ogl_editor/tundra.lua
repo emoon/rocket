@@ -45,4 +45,22 @@ Build {
 		Config { Name = "win32-msvc", DefaultOnHost = { "windows" }, Inherit = win32, Tools = { "msvc" } },
 		Config { Name = "linux-gcc", DefaultOnHost = { "linux" }, Inherit = linux, Tools = { "gcc" } },
 	},
+
+    IdeGenerationHints = {
+        Msvc = {
+            PlatformMappings = {
+                ['win32-msvc'] = 'Win32',
+            },
+
+            VariantMappings = {
+                ['production'] = 'Production',
+                ['release'] = 'Release',
+                ['debug'] = 'Debug',
+            },
+        },
+
+		MsvcSolutions = {
+			['RocketEditor.sln'] = { } -- will get everything
+		},
+    },
 }
