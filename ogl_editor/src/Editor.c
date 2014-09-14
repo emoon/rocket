@@ -1020,13 +1020,6 @@ static void onCancelEdit()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onDeleteKey()
-{
-	deleteArea(getRowPos(), getActiveTrack(), 1, 1);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void onCutAndCopy(bool cut)
 {
 	TrackViewInfo* viewInfo = getTrackViewInfo();
@@ -1044,6 +1037,22 @@ static void onCutAndCopy(bool cut)
 		copySelection(getRowPos(), getActiveTrack(), selectLeft, selectRight, selectTop, selectBottom);
 		deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight);
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onDeleteKey()
+{
+	TrackViewInfo* viewInfo = getTrackViewInfo();
+	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+
+	if (selectLeft == selectRight && selectTop == selectBottom) 
+		deleteArea(getRowPos(), getActiveTrack(), 1, 1);
+	else
+		onCutAndCopy(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
