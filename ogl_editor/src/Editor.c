@@ -1137,21 +1137,13 @@ static void onInterpolation()
 	updateNeedsSaving();
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onEnterCurrentValue()
+static void enterCurrentValue(struct sync_track* track, int activeTrack, int rowPos)
 {
-	int idx;
 	struct track_key key;
-	struct sync_track* track;
-	struct sync_track** tracks = getTracks();
-	const int rowPos = getRowPos();
-	const int activeTrack = getActiveTrack();
-
-	if (!tracks)
-		return;
-
-	track = tracks[activeTrack];
+	int idx;
 
 	if (!track->keys)
 	{
@@ -1161,6 +1153,7 @@ static void onEnterCurrentValue()
 
 		Commands_addOrUpdateKey(activeTrack, &key);
 		updateNeedsSaving();
+
 		return;
 	}
 
@@ -1180,9 +1173,30 @@ static void onEnterCurrentValue()
         key.value = 0.0f;
         key.type = 0;
     }
-    
+	
 	Commands_addOrUpdateKey(activeTrack, &key);
 	updateNeedsSaving();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onEnterCurrentValue()
+{
+	int i;
+	struct sync_track** tracks = getTracks();
+	TrackViewInfo* viewInfo = getTrackViewInfo(); 
+	const int rowPos = getRowPos();
+	const int activeTrack = getActiveTrack();
+	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+
+	if (!tracks)
+		return;
+
+	enterCurrentValue(tracks[activeTrack], activeTrack, rowPos);
+	
+	for (i = selectLeft; i < selectRight; ++i)
+		enterCurrentValue(tracks[i], i, rowPos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
