@@ -21,8 +21,14 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 	mxml_node_t* node = rootNode;
 
 	free(trackData->bookmarks);
+	free(trackData->loopmarks);
+
 	trackData->bookmarks = NULL;
 	trackData->bookmarkCount = 0;
+
+	trackData->loopmarks = NULL;
+	trackData->loopmarkCount = 0;
+
 	trackData->highlightRowStep = 8;
 
 	// Traverse the tracks node data
@@ -46,6 +52,14 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 
                     if (row)
 						TrackData_toggleBookmark(trackData, atoi(row));
+				}
+
+				if (!strcmp("loopmark", element_name))
+				{
+                    const char* row = mxmlElementGetAttr(node, "row");
+
+                    if (row)
+						TrackData_toggleLoopmark(trackData, atoi(row));
 				}
 
 				if (!strcmp("group", element_name))
@@ -243,6 +257,9 @@ static const char* whitespaceCallback(mxml_node_t* node, int where)
 
 		if (!strcmp("bookmark", name))
 			return "\t";
+
+		if (!strcmp("loopmark", name))
+			return "\t";
 	}
 
 	if (where == MXML_WS_AFTER_OPEN) 
@@ -283,6 +300,7 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 	size_t p;
 	struct sync_data* sync_data = &trackData->syncData;
 	int* bookmarks = trackData->bookmarks;
+	int* loopmarks = trackData->loopmarks;
 
 	xml = mxmlNewXML("1.0");	
 	rootElement = mxmlNewElement(xml, "rootElement");
@@ -299,6 +317,20 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 
 		node = mxmlNewElement(rootElement, "bookmark");
 		setElementInt(node, "row", "%d", bookmark); 
+	}
+
+	// save all loopmarks
+
+	for (p = 0; p < (size_t)trackData->loopmarkCount; ++p)
+	{
+		mxml_node_t* node;
+		const int loopmark = *loopmarks++;
+
+		if (loopmark == 0)
+			continue;
+
+		node = mxmlNewElement(rootElement, "loopmark");
+		setElementInt(node, "row", "%d", loopmark); 
 	}
 
 	// save groups that are folded

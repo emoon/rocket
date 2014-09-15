@@ -36,6 +36,7 @@ const uint32_t inactive_text_color = EMGUI_COLOR32(0x5f, 0x5f, 0x5f, 0xff);
 const uint32_t border_color = EMGUI_COLOR32(40, 40, 40, 255);
 const uint32_t selection_color = EMGUI_COLOR32(0x5f, 0x5f, 0x5f, 0x4f);
 const uint32_t bookmark_color = EMGUI_COLOR32(0x3f, 0x2f, 0xaf, 0x7f);
+const uint32_t loopmark_color = EMGUI_COLOR32(0x9f, 0x9f, 0x2f, 0x7f);
 const uint32_t track_selection_color = EMGUI_COLOR32(0xff, 0xff, 0x00, 0xff);
 
 static bool s_needsUpdate = false;
@@ -448,6 +449,9 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 		{
 			if (TrackData_hasBookmark(info->trackData, y))
 				Emgui_fill(bookmark_color, startX, y_offset - font_size_half, size, 8); 
+
+			if (TrackData_hasLoopmark(info->trackData, y))
+				Emgui_fill(loopmark_color , startX, y_offset - font_size_half, size, 8); 
 		}
 		
 		y_offset += font_size;

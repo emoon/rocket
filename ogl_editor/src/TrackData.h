@@ -63,8 +63,10 @@ typedef struct TrackData
 	struct sync_data syncData;
 	Track tracks[EDITOR_MAX_TRACKS];
 	Group groups[EDITOR_MAX_TRACKS];
+	int* loopmarks;
 	int* bookmarks;
 	int bookmarkCount;
+	int loopmarkCount;
 	int groupCount;
 	int activeTrack;
 	int lastColor;
@@ -82,6 +84,13 @@ bool TrackData_hasBookmark(TrackData* trackData, int row);
 void TrackData_toggleBookmark(TrackData* trackData, int row);
 int TrackData_getNextBookmark(TrackData* trackData, int row);
 int TrackData_getPrevBookmark(TrackData* trackData, int row);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool TrackData_hasLoopmark(TrackData* trackData, int row);
+void TrackData_toggleLoopmark(TrackData* trackData, int row);
+int TrackData_getNextLoopmark(TrackData* trackData, int row);
+int TrackData_getPrevLoopmark(TrackData* trackData, int row);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Will get the get the track if it exists else create it

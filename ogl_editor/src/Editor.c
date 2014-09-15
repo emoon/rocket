@@ -1444,6 +1444,22 @@ static void onClearBookmarks()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void onToggleLoopmark()
+{
+	Commands_toggleLoopmark(getTrackData(), getRowPos());
+	updateNeedsSaving();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onClearLoopmarks()
+{
+	Commands_clearLoopmarks(getTrackData());
+	updateNeedsSaving();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void onTab()
 {
 	Emgui_setFirstControlFocus();
@@ -1567,6 +1583,8 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_UNFOLD_GROUP : onFoldGroup(false); break;
 		case EDITOR_MENU_TOGGLE_BOOKMARK : onToggleBookmark(); break;
 		case EDITOR_MENU_CLEAR_BOOKMARKS : onClearBookmarks(); break;
+		case EDITOR_MENU_TOGGLE_LOOPMARK : onToggleLoopmark(); break;
+		case EDITOR_MENU_CLEAR_LOOPMARKS : onClearLoopmarks(); break;
 		case EDITOR_MENU_TAB : onTab(); break;
 	}
 

@@ -324,4 +324,33 @@ int TrackData_getPrevBookmark(TrackData* trackData, int row)
 	return getPrevMark(trackData->bookmarks, trackData->bookmarkCount, row, trackData->startRow);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool TrackData_hasLoopmark(TrackData* trackData, int row)
+{
+	return hasMark(trackData->loopmarks, trackData->loopmarkCount, row);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void TrackData_toggleLoopmark(TrackData* trackData, int row)
+{
+	toogleMark(&trackData->loopmarks, &trackData->loopmarkCount, row);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int TrackData_getNextLoopmark(TrackData* trackData, int row)
+{
+	return getNextMark(trackData->loopmarks, trackData->loopmarkCount, row, -1);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int TrackData_getPrevLoopmark(TrackData* trackData, int row)
+{
+	return getPrevMark(trackData->loopmarks, trackData->loopmarkCount, row, -1);
+}
+
+
 

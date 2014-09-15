@@ -385,6 +385,66 @@ void Commands_clearBookmarks(TrackData* trackData)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+struct LoopmarkData
+{
+	struct TrackData* trackData;
+	int row;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void toggleLoopmark(void* userData)
+{
+	struct LoopmarkData* data = (struct LoopmarkData*)userData;
+	TrackData_toggleLoopmark(data->trackData, data->row);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Commands_toggleLoopmark(TrackData* trackData, int row)
+{
+	struct LoopmarkData* data;
+	Command* command;
+
+	command = malloc(sizeof(Command));
+	memset(command, 0, sizeof(Command));
+
+	command->userData = data = malloc(sizeof(struct LoopmarkData));
+	command->exec = toggleLoopmark;
+	command->undo = toggleLoopmark;
+	data->trackData = trackData;
+	data->row = row;
+
+	execCommand(command);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Commands_clearLoopmarks(TrackData* trackData)
+{
+	int i, loopmarkCount = trackData->loopmarkCount;
+	int* loopmarks = trackData->loopmarks;
+
+	if (trackData->loopmarkCount == 0)
+		return;
+
+	Commands_beginMulti("clearLoopmarks");
+
+	for (i = 0; i < loopmarkCount; ++i)
+	{
+		const int loopmark = *loopmarks++;
+
+		if (loopmark == 0)
+			continue;
+
+		Commands_toggleLoopmark(trackData, loopmark);
+	}
+
+	Commands_endMulti();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Commands_undo()
 {
 	Command* command;
