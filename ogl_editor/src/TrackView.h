@@ -21,6 +21,8 @@ typedef struct TrackViewInfo
 	int selectStopTrack;
 	int selectStartRow;
 	int selectStopRow;
+	int loopStart;
+	int loopEnd;
 
 } TrackViewInfo;
 

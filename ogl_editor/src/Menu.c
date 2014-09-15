@@ -65,6 +65,7 @@ MenuDescriptor g_editMenu[] =
 MenuDescriptor g_viewMenu[] =
 {
 	{ _T("Start/Stop Playback"), 		EDITOR_MENU_PLAY,				EMGUI_KEY_SPACE, 		0, 0 },	
+	{ _T("Start Loop Playback"), 		EDITOR_MENU_PLAY_LOOP,			EMGUI_KEY_SPACE, 		0, EMGUI_KEY_CTRL },	
 	{ _T(""), 							EDITOR_MENU_SEPARATOR,			0, 						0, 0 },	
 	{ _T("Jump 8 rows up"), 			EDITOR_MENU_ROWS_UP,			EMGUI_KEY_ARROW_UP, 	EMGUI_KEY_ALT, EMGUI_KEY_ALT },	
 	{ _T("Jump 8 rows down"), 			EDITOR_MENU_ROWS_DOWN,			EMGUI_KEY_ARROW_DOWN, 	EMGUI_KEY_ALT, EMGUI_KEY_ALT },	

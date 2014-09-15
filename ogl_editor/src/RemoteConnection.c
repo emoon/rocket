@@ -365,6 +365,8 @@ void RemoteConnection_sendSetRowCommand(int row)
 	if (!RemoteConnection_connected())
 		return;
 
+	printf("rom %d\n", row);
+
 	row = htonl(row);
 	RemoteConnection_send((char *)&cmd, 1, 0);
 	RemoteConnection_send((char *)&row, sizeof(int), 0);

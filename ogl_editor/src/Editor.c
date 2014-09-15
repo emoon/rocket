@@ -289,6 +289,7 @@ void Editor_create()
 	s_editorData.trackData.endRow = 10000;
 	s_editorData.trackData.highlightRowStep = 8;
 	s_editorData.trackData.isPlaying = false;
+	s_editorData.trackData.isLooping = false;
 
 	Emgui_setDefaultFont();
 }
@@ -518,6 +519,7 @@ static bool internalUpdate()
 
 void Editor_update()
 {
+	TrackData* trackData = getTrackData();
 	bool need_update = internalUpdate();
 
 	if (need_update)
@@ -525,6 +527,13 @@ void Editor_update()
 		Editor_updateTrackScroll();
 		internalUpdate();
 	}
+
+	if (trackData->isPlaying || trackData->isLooping)
+	{
+		printf("loop between %d %d\n", trackData->startLoop, trackData->endLoop);
+	}
+
+	// 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -854,7 +863,7 @@ static int processCommands()
 				{
 					viewInfo->rowPos = htonl(newRow);
 					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
-					rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
+					//rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
 				}
 
 				ret = 1;
@@ -1246,6 +1255,30 @@ static void onPlay()
 {
 	RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
 	getTrackData()->isPlaying = !RemoteConnection_isPaused();
+	getTrackData()->isLooping = false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onPlayLoop()
+{
+	TrackData* trackData = getTrackData();
+	const int rowPos = getRowPos();
+	const int startLoop = TrackData_getNextLoopmark(trackData, rowPos);
+	const int endLoop = TrackData_getPrevLoopmark(trackData, rowPos);
+
+	// Make sure we have a range to loop within
+
+	if (startLoop == -1 || endLoop == -1)
+		return;
+
+	trackData->startLoop = startLoop;
+	trackData->endLoop = endLoop;
+
+	RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
+
+	trackData->isPlaying = !RemoteConnection_isPaused();
+	trackData->isLooping = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1488,6 +1521,7 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_PREV_KEY :
 		case EDITOR_MENU_NEXT_KEY :
 		case EDITOR_MENU_PLAY : 
+		case EDITOR_MENU_PLAY_LOOP : 
 		{
 			endEditing();
 		}
@@ -1567,6 +1601,7 @@ void Editor_menuEvent(int menuItem)
 		// View
 
 		case EDITOR_MENU_PLAY : onPlay(); break;
+		case EDITOR_MENU_PLAY_LOOP : onPlayLoop(); break;
 		case EDITOR_MENU_ROWS_UP : onRowStep(-highlightRowStep , NO_SELECTION); break;
 		case EDITOR_MENU_ROWS_DOWN : onRowStep(highlightRowStep , NO_SELECTION); break;
 		case EDITOR_MENU_ROWS_2X_UP : onRowStep(-highlightRowStep * 2 , NO_SELECTION); break;
