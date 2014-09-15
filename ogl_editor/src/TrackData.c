@@ -169,23 +169,22 @@ void TrackData_setActiveTrack(TrackData* trackData, int track)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool TrackData_hasBookmark(TrackData* trackData, int row)
+static bool hasMark(int* marks, int count, int row)
 {
 	int middle, first, last;
-	int* bookmarks = trackData->bookmarks;
 
-	if (!bookmarks)
+	if (!marks)
 		return false;
 
 	first = 0;
-	last = trackData->bookmarkCount - 1;
+	last = count - 1;
 	middle = (first + last) / 2;
 
 	while (first <= last)
 	{
-		if (bookmarks[middle] < row)
+		if (marks[middle] < row)
 			first = middle + 1;    
-		else if (bookmarks[middle] == row) 
+		else if (marks[middle] == row) 
 			return true;
 		else
 			last = middle - 1;
@@ -203,6 +202,8 @@ int compare(const void* a, const void* b)
 	return *(int*)a - *(int*)b;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void sortArray(int* bookmarks, int count)
 {
 	qsort(bookmarks, count, sizeof(int), compare);
@@ -210,25 +211,26 @@ static void sortArray(int* bookmarks, int count)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackData_toggleBookmark(TrackData* trackData, int row)
+void toogleMark(int** marksPtr, int* countPtr, int row)
 {
-	int i, count = trackData->bookmarkCount;
-	int* bookmarks = trackData->bookmarks;
+	int i;
+	int* marks = *marksPtr; 
+	int count = *countPtr;
 
-	if (!bookmarks)
+	if (!marks)
 	{
-		bookmarks = trackData->bookmarks = malloc(sizeof(int));
-		*bookmarks = row;
-		trackData->bookmarkCount++;
+		*marksPtr = marks = malloc(sizeof(int));
+		*marks = row;
+		*countPtr = 1;
 		return;
 	}
 
 	for (i = 0; i < count; ++i)
 	{
-		if (bookmarks[i] == row)
+		if (marks[i] == row)
 		{
-			bookmarks[i] = 0;
-			sortArray(bookmarks, count);
+			marks[i] = 0;
+			sortArray(marks, count);
 			return;
 		}
 	}
@@ -237,63 +239,89 @@ void TrackData_toggleBookmark(TrackData* trackData, int row)
 
 	for (i = 0; i < count; ++i)
 	{
-		if (bookmarks[i] == 0)
+		if (marks[i] == 0)
 		{
-			bookmarks[i] = row;
-			sortArray(bookmarks, count);
+			marks[i] = row;
+			sortArray(marks, count);
 			return;
 		}
 	}
 
 	// no slot found so we will resize the array and add the bookmark at the end
 	
-	bookmarks = trackData->bookmarks = realloc(bookmarks, sizeof(int) * (count + 1));
-	bookmarks[count] = row;
-	sortArray(bookmarks, count + 1);
+	*marksPtr = marks = realloc(marks, sizeof(int) * (count + 1));
+	marks[count] = row;
+	sortArray(marks, count + 1);
 
-	trackData->bookmarkCount = count + 1;
+	*countPtr = count + 1;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int getNextMark(const int* marks, int count, int row, int defValue)
+{
+	int i;
+
+	if (!marks)
+		return defValue;
+
+	for (i = 0; i < count; ++i)
+	{
+		const int v = marks[i]; 
+
+		if (v > row)
+			return v;
+	}
+
+	return defValue;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int getPrevMark(const int* marks, int count, int row, int defValue)
+{
+	int i;
+
+	if (!marks)
+		return defValue;
+
+	for (i = count; i >= 0; --i)
+	{
+		const int v = marks[i]; 
+
+		if (v < row)
+			return v;
+	}
+
+	return defValue;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool TrackData_hasBookmark(TrackData* trackData, int row)
+{
+	return hasMark(trackData->bookmarks, trackData->bookmarkCount, row);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void TrackData_toggleBookmark(TrackData* trackData, int row)
+{
+	toogleMark(&trackData->bookmarks, &trackData->bookmarkCount, row);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int TrackData_getNextBookmark(TrackData* trackData, int row)
 {
-	int i, count = trackData->bookmarkCount;
-	int* bookmarks = trackData->bookmarks;
-
-	if (!bookmarks)
-		return trackData->endRow;
-
-	for (i = 0; i < count; ++i)
-	{
-		const int v = bookmarks[i]; 
-
-		if (v > row)
-			return v;
-	}
-
-	return trackData->endRow;
+	return getNextMark(trackData->bookmarks, trackData->bookmarkCount, row, trackData->endRow);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int TrackData_getPrevBookmark(TrackData* trackData, int row)
 {
-	int i, count = trackData->bookmarkCount - 1;
-	int* bookmarks = trackData->bookmarks;
-
-	if (!bookmarks)
-		return trackData->startRow;
-
-	for (i = count; i >= 0; --i)
-	{
-		const int v = bookmarks[i]; 
-
-		if (v < row)
-			return v;
-	}
-
-	return trackData->startRow;
+	return getPrevMark(trackData->bookmarks, trackData->bookmarkCount, row, trackData->startRow);
 }
 
 
