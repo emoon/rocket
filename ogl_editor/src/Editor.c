@@ -528,12 +528,15 @@ void Editor_update()
 		internalUpdate();
 	}
 
-	if (trackData->isPlaying || trackData->isLooping)
-	{
-		printf("loop between %d %d\n", trackData->startLoop, trackData->endLoop);
-	}
+	// Update if we are playing with loop enabled
 
-	// 
+	if (trackData->isPlaying && trackData->isLooping)
+	{
+		const int row = getRowPos();
+		
+		if (row >= trackData->endLoop)
+			setRowPos(trackData->startLoop);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1264,8 +1267,8 @@ static void onPlayLoop()
 {
 	TrackData* trackData = getTrackData();
 	const int rowPos = getRowPos();
-	const int startLoop = TrackData_getNextLoopmark(trackData, rowPos);
-	const int endLoop = TrackData_getPrevLoopmark(trackData, rowPos);
+	const int endLoop = TrackData_getNextLoopmark(trackData, rowPos);
+	const int startLoop = TrackData_getPrevLoopmark(trackData, rowPos);
 
 	// Make sure we have a range to loop within
 
