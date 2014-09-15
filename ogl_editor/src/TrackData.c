@@ -285,7 +285,7 @@ static int getPrevMark(const int* marks, int count, int row, int defValue)
 	if (!marks)
 		return defValue;
 
-	for (i = count; i >= 0; --i)
+	for (i = count - 1; i >= 0; --i)
 	{
 		const int v = marks[i]; 
 
