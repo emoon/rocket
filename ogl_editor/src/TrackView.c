@@ -58,6 +58,21 @@ struct TrackInfo
 	int midPos;
 };
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct DrawSelectedTrack
+{
+	int drawTrack; 
+	int width;
+	int startX; 
+	int startY; 
+	int endY;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static struct DrawSelectedTrack s_drawSelectedTrack;
+
 extern void Dialog_showColorPicker(uint32_t* color);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -305,8 +320,6 @@ static void drawSelectedTrackOutline(int width, int startX, int startY, int endY
 {	
 	int drawWidth = width / 4;
 	
-	Emgui_setLayer(1);
-
 	// Draw top selection
 	
 	Emgui_fill(track_selection_color, startX, startY, drawWidth, 2);
@@ -320,8 +333,6 @@ static void drawSelectedTrackOutline(int width, int startX, int startY, int endY
 	Emgui_fill(track_selection_color, (startX + width) - drawWidth + 2, endY, drawWidth, 2);
 	Emgui_fill(track_selection_color, startX, endY - drawWidth, 2, drawWidth);
 	Emgui_fill(track_selection_color, startX + width, endY - drawWidth, 2, drawWidth);
-
-	Emgui_setLayer(0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -450,7 +461,13 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 		if (trackData->selected)
 		{
 			if (!trackData->group->folded)
-				drawSelectedTrackOutline(size, startX, info->startY - font_size * 4, info->endSizeY + 8);
+			{
+				s_drawSelectedTrack.drawTrack = 1; 
+				s_drawSelectedTrack.width = size;
+				s_drawSelectedTrack.startX = startX;
+				s_drawSelectedTrack.startY = info->startY - font_size * 4;
+				s_drawSelectedTrack.endY = info->endSizeY + 8;
+			}
 
 			Emgui_fill(trackData->group->folded ? dark_active_track_color : active_track_color, startX, info->midPos, size, font_size + 1);
 
@@ -596,6 +613,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	int y_pos_row, end_row, y_end_border;
 
 	s_needsUpdate = false;
+	s_drawSelectedTrack.drawTrack = 0;
 
 	// Calc to position the selection in the ~middle of the screen 
 
@@ -660,6 +678,15 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 			int temp;
 			x_pos += renderGroup(group, x_pos, &temp, info, trackData);
 		}
+	}
+
+	if (s_drawSelectedTrack.drawTrack)
+	{
+		drawSelectedTrackOutline(
+				s_drawSelectedTrack.width, 
+				s_drawSelectedTrack.startX, 
+				s_drawSelectedTrack.startY, 
+				s_drawSelectedTrack.endY);
 	}
 
 	Emgui_setDefaultFont();
