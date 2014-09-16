@@ -86,8 +86,8 @@ MenuDescriptor g_viewMenu[] =
 	{ _T("Toogle bookmark"),			EDITOR_MENU_TOGGLE_BOOKMARK,	'b', 					0, 0 },	
 	{ _T("Clear bookmarks"),			EDITOR_MENU_CLEAR_BOOKMARKS,	'b', 					EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	
 	{ _T(""), 							EDITOR_MENU_SEPARATOR,			0, 						0, 0 },	
-	{ _T("Toogle loopmark"),			EDITOR_MENU_TOGGLE_LOOPMARK,	'l', 					0, 0 },	
-	{ _T("Clear loopmarks"),			EDITOR_MENU_CLEAR_LOOPMARKS,	'l', 					EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	
+	{ _T("Toogle loopmark"),			EDITOR_MENU_TOGGLE_LOOPMARK,	'z', 					0, 0 },	
+	{ _T("Clear loopmarks"),			EDITOR_MENU_CLEAR_LOOPMARKS,	'z', 					EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	
 	{ _T("Jump row,start/end & edit"), 	EDITOR_MENU_TAB,				EMGUI_KEY_TAB, 			0, 0 },	
 	{ 0 },
 };
