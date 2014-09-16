@@ -447,11 +447,21 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 
 		if (y != 0)
 		{
+			bool overlapping = false;
+
 			if (TrackData_hasBookmark(info->trackData, y))
+			{
+				overlapping = true;
 				Emgui_fill(bookmark_color, startX, y_offset - font_size_half, size, 8); 
+			}
 
 			if (TrackData_hasLoopmark(info->trackData, y))
-				Emgui_fill(loopmark_color , startX, y_offset - font_size_half, size, 8); 
+			{
+				if (!overlapping)
+					Emgui_fill(loopmark_color , startX, y_offset - font_size_half, size, 8); 
+				else
+					Emgui_fillStipple(loopmark_color , startX, y_offset - font_size_half, size, 8); 
+			}
 		}
 		
 		y_offset += font_size;

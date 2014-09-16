@@ -271,7 +271,6 @@ static void drawText(struct DrawTextCommand* commands, int fontId)
 static void drawFill(struct DrawFillCommand* command)
 {
 	glEnable(GL_BLEND);
-			  
 	glBegin(GL_QUADS);
 
 	while (command)
@@ -280,6 +279,12 @@ static void drawFill(struct DrawFillCommand* command)
 		const float y = (float)command->y;
 		const float w = (float)command->width;
 		const float h = (float)command->height;
+
+		if (command->stipple)
+		{
+			command = command->next;
+			continue;
+		}
 
 		setColor(command->color0);
 		glVertex2f(x, y);
@@ -293,6 +298,44 @@ static void drawFill(struct DrawFillCommand* command)
 
 	glEnd();
 
+	glDisable(GL_POLYGON_STIPPLE);
+	glDisable(GL_BLEND);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void drawFillStipple(struct DrawFillCommand* command)
+{
+	glEnable(GL_POLYGON_STIPPLE);
+	glEnable(GL_BLEND);
+	glBegin(GL_QUADS);
+
+	while (command)
+	{
+		const float x = (float)command->x;
+		const float y = (float)command->y;
+		const float w = (float)command->width;
+		const float h = (float)command->height;
+
+		if (!command->stipple)
+		{
+			command = command->next;
+			continue;
+		}
+
+		setColor(command->color0);
+		glVertex2f(x, y);
+		glVertex2f(x + w, y);
+		setColor(command->color1);
+		glVertex2f(x + w, y + h);
+		glVertex2f(x, y + h);
+
+		command = command->next;
+	}
+
+	glEnd();
+
+	glDisable(GL_POLYGON_STIPPLE);
 	glDisable(GL_BLEND);
 }
 
@@ -369,6 +412,7 @@ void EMGFXBackend_render()
 		}
 
 		drawFill(layer->fillCommands);
+		drawFillStipple(layer->fillCommands);
 
 		for (i = 0; i < EMGUI_MAX_FONTS; ++i)
 		{
@@ -387,5 +431,13 @@ void EMGFXBackend_render()
 
 	swapBuffers();
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void EMGFXBackend_setStippleMask(unsigned char* mask)
+{
+	glPolygonStipple(mask);
+}
+
 
 

@@ -236,6 +236,58 @@ void createDefaultFont()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void createStipplePattern()
+{
+	static unsigned char pattern[32*34];
+	static unsigned char tempData[32 * 34] = { 0 };
+	int x, y, i, startX = 8, width = 16, t = 0;
+
+	for (y = 0; y < 32; ++y)
+	{
+		unsigned char* line = &tempData[y * 32];
+
+		for (i = 0; i < width; ++i)
+			line[startX + i] = 0x1;
+
+		/*
+		for (int i = 0; i < width; ++i)
+		{
+			int p = startX + i;
+
+			if (p <= -1)
+				p = 32 + p;
+
+			line[p] = 0x1;
+		}
+		startX--;
+		*/
+
+	}
+
+	// pack data to bits
+
+	for (x = 0; x < (32 * 32) / 8; ++x)
+	{
+		unsigned char p = 0;
+
+		p = tempData[t + 0] << 0;
+		p |= tempData[t + 1] << 1;
+		p |= tempData[t + 2] << 2;
+		p |= tempData[t + 3] << 3;
+		p |= tempData[t + 4] << 4;
+		p |= tempData[t + 5] << 5;
+		p |= tempData[t + 6] << 6;
+		p |= tempData[t + 7] << 7;
+		
+		pattern[x] = p;
+		t += 8;
+	}
+
+	EMGFXBackend_setStippleMask(pattern);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int Emgui_loadFontBitmap(const char* buffer, int size, enum EmguiMemoryLocation location, 
 						int rangeStart, int rangeEnd, EmguiFontLayout* layout)
 
@@ -318,6 +370,7 @@ bool Emgui_create()
 	const uint32_t size = 1024 * 1024;
 	LinearAllocator_create(&s_allocator, malloc(size), size);
 	createDefaultFont();
+	createStipplePattern();
 	g_emguiGuiState.kbdItem = -1;
 	return true;
 }
@@ -397,14 +450,7 @@ static bool Emgui_regionHitSlider(const EmguiControlInfo* control)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Emgui_fill(uint32_t color, int x, int y, int w, int h)
-{
-	Emgui_fillGrad(color, color, x, y, w, h);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Emgui_fillGrad(uint32_t color0, uint32_t color1, int x, int y, int w, int h)
+static void fillGrad(uint32_t color0, uint32_t color1, int x, int y, int w, int h, int stipple)
 {
 	const int active_layer = s_activeLayer;
 	struct DrawFillCommand* command = LinearAllocator_allocZero(&s_allocator, struct DrawFillCommand);
@@ -415,6 +461,7 @@ void Emgui_fillGrad(uint32_t color0, uint32_t color1, int x, int y, int w, int h
 	command->height = h;
 	command->color0 = color0;
 	command->color1 = color1;
+	command->stipple = stipple;
 
 	if (!s_renderData.layers[active_layer].fillCommands)
 	{
@@ -426,6 +473,28 @@ void Emgui_fillGrad(uint32_t color0, uint32_t color1, int x, int y, int w, int h
 		s_renderData.layers[active_layer].fillCommandsTail->next = command;
 		s_renderData.layers[active_layer].fillCommandsTail = command;
 	}
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Emgui_fill(uint32_t color, int x, int y, int w, int h)
+{
+	Emgui_fillGrad(color, color, x, y, w, h);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Emgui_fillStipple(uint32_t color, int x, int y, int w, int h)
+{
+	fillGrad(color, color, x, y, w, h, 1);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Emgui_fillGrad(uint32_t color0, uint32_t color1, int x, int y, int w, int h)
+{
+	fillGrad(color0, color1, x, y, w, h, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

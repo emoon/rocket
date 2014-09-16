@@ -104,6 +104,7 @@ void Emgui_beginHorizontalPanel();
 
 void Emgui_setLayer(int layer);
 void Emgui_setScissor(int x, int y, int w, int h);
+void Emgui_setStipple(int enabled);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Font functions
@@ -133,6 +134,7 @@ void Emgui_drawTextFlipped(const char* text, int x, int y, uint32_t color);
 
 void Emgui_staticImage(const char* filename);
 void Emgui_fill(uint32_t color, int x, int y, int w, int h);
+void Emgui_fillStipple(uint32_t color, int x, int y, int w, int h);
 void Emgui_fillGrad(uint32_t color0, uint32_t color1, int x, int y, int w, int h);
 void Emgui_drawBorder(uint32_t color0, uint32_t color1, int x, int y, int w, int h);
 void Emgui_drawDots(uint32_t color, int* coords, int count);
