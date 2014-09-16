@@ -1437,6 +1437,22 @@ static void onPrevNextKey(bool prevKey, enum Selection selection)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void onScrollView(enum ArrowDirection direction)
+{
+	TrackViewInfo* viewInfo = getTrackViewInfo();
+	Track* t = &getTrackData()->tracks[getActiveTrack()];
+	int trackSize = Track_getSize(viewInfo, t);
+
+	if (direction == ARROW_RIGHT)
+		s_editorData.trackViewInfo.startPixel += trackSize;
+	else
+		s_editorData.trackViewInfo.startPixel -= trackSize;
+
+	Editor_updateTrackScroll();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void onFoldTrack(bool fold)
 {
 	Track* t = &getTrackData()->tracks[getActiveTrack()];
@@ -1611,8 +1627,8 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_ROWS_2X_DOWN : onRowStep(highlightRowStep * 2 , NO_SELECTION); break;
 		case EDITOR_MENU_PREV_BOOKMARK : onBookmarkDir(ARROW_UP, NO_SELECTION); break;
 		case EDITOR_MENU_NEXT_BOOKMARK : onBookmarkDir(ARROW_DOWN, NO_SELECTION); break;
-		case EDITOR_MENU_FIRST_TRACK : onTrackSide(ARROW_LEFT, true, NO_SELECTION); break;
-		case EDITOR_MENU_LAST_TRACK : onTrackSide(ARROW_RIGHT, true, NO_SELECTION); break;
+		case EDITOR_MENU_SCROLL_LEFT : onScrollView(ARROW_LEFT); break;
+		case EDITOR_MENU_SCROLL_RIGHT : onScrollView(ARROW_RIGHT); break;
 		case EDITOR_MENU_PREV_KEY : onPrevNextKey(true, NO_SELECTION); break;
 		case EDITOR_MENU_NEXT_KEY : onPrevNextKey(false, NO_SELECTION); break;
 		case EDITOR_MENU_FOLD_TRACK : onFoldTrack(true); break;
