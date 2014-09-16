@@ -116,6 +116,38 @@ static void printRowNumbers(int x, int y, int rowCount, int rowOffset, int rowSp
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// TODO: Optimize (only one draw is needed)
+
+static void printLoopmarks(int x, int y, int rowCount, int rowOffset, int rowSpacing, int maskBpm, int endY,
+						   int loopStart, int loopEnd)
+{
+	int i;
+
+	Emgui_setDefaultFont();
+
+	if (rowOffset < 0)
+	{
+		y += rowSpacing * -rowOffset;
+		rowOffset = 0;
+	}
+
+	for (i = 0; i < rowCount; ++i)
+	{
+		if (loopStart != -1 && loopEnd != -1)
+		{
+			if (rowOffset >= loopStart && rowOffset <= loopEnd)
+				Emgui_fill(loopmark_color, x + 46, y, 2, rowSpacing);
+		}
+
+		y += rowSpacing;
+		rowOffset++;
+
+		if (y > endY)
+			break;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
 static void drawBookmarks(TrackData* trackData, int x, int y, int rowCount, int rowOffset, int width, int endY)
@@ -625,6 +657,8 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	int adjust_top_size;
 	int mid_screen_y ;
 	int y_pos_row, end_row, y_end_border;
+	const int endLoop = TrackData_getNextLoopmark(trackData, viewInfo->rowPos);
+	const int startLoop = TrackData_getPrevLoopmark(trackData, viewInfo->rowPos);
 
 	s_needsUpdate = false;
 	s_drawSelectedTrack.drawTrack = 0;
@@ -661,6 +695,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	x_pos = TrackView_getStartOffset() + -viewInfo->startPixel;
 
 	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, trackData->highlightRowStep, y_end_border);
+
 	Emgui_drawBorder(border_color, border_color, 48, info.startY - font_size * 4, viewInfo->windowSizeX - 80, (info.endSizeY - info.startY) + 40);
 
 	Emgui_setLayer(1);
@@ -702,6 +737,21 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 				s_drawSelectedTrack.startY, 
 				s_drawSelectedTrack.endY);
 	}
+
+	printLoopmarks(2, adjust_top_size, end_row, y_pos_row, font_size, trackData->highlightRowStep, y_end_border, startLoop, endLoop);
+
+	// draw loop outline if we are with in the range
+	
+	/*
+	if (startLoop != -1 && endLoop != -1)
+	{
+		int x = TrackView_getStartOffset() + -viewInfo->startPixel;
+		int y = y_pos_row + (startLoop * font_size);
+		int end_y = endLoop * font_size;
+	
+		Emgui_fill(loopmark_color, x + 2, y, 2, end_y);
+	}
+	*/
 
 	Emgui_setDefaultFont();
 
