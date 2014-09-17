@@ -56,6 +56,7 @@ MenuDescriptor g_editMenu[] =
 	{ _T("Scale 0.01"), 			EDITOR_MENU_SCALE_001,		'h', 	EMGUI_KEY_SHIFT, EMGUI_KEY_SHIFT },	
 	{ _T(""), 						EDITOR_MENU_SEPARATOR,		  0, 	0, 0 },	
 	{ _T("Interpolation"),			EDITOR_MENU_INTERPOLATION,	'i', 	0, 0 },	
+	{ _T("Invert Selection"),		EDITOR_MENU_INVERT_SELECTION,	'i', 	EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL  },	
 	{ _T("Insert current value"),	EDITOR_MENU_ENTER_CURRENT_V,EMGUI_KEY_ENTER,0, 0 },	
 	{ 0 },
 };

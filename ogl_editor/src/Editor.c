@@ -1190,6 +1190,66 @@ static void onInterpolation()
 	updateNeedsSaving();
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onInvertSelection()
+{
+	int track, row, rowCount;
+	TrackViewInfo* viewInfo = getTrackViewInfo();
+	struct sync_track** tracks = getTracks();
+	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+
+	if (selectLeft == selectRight && selectTop == selectBottom)
+		return;
+
+	rowCount = (selectBottom - selectTop) + 1;
+	CopyEntry* entries = malloc(rowCount * sizeof(CopyEntry));
+
+	Commands_beginMulti("invertSelection");
+
+	for (track = selectLeft; track <= selectRight; ++track) 
+	{
+		int i = 0;
+		memset(entries, 0, rowCount * sizeof(CopyEntry));
+
+		struct sync_track* t = tracks[track];
+
+		// Take a copy of the data and delete the keys
+
+		for (i = 0, row = selectTop; row <= selectBottom; ++row, ++i) 
+		{
+			int idx = sync_find_key(t, row);
+			if (idx < 0) 
+				continue;
+
+			entries[i].track = 1; // just to mark that we should use it
+			entries[i].keyFrame = t->keys[idx];
+
+			Commands_deleteKey(track, row);
+		}
+
+		// Add back the keys but in inverted order
+
+		for (i = 0, row = selectBottom; row >= selectTop; --row, ++i) 
+		{
+			CopyEntry* entry = &entries[i];
+
+			if (!entry->track)
+				continue;
+
+			entry->keyFrame.row = row;
+			Commands_addOrUpdateKey(track, &entry->keyFrame);
+		}
+	}
+
+	free(entries);
+
+	Commands_endMulti();
+	updateNeedsSaving();
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1246,10 +1306,14 @@ static void onEnterCurrentValue()
 	if (!tracks)
 		return;
 
+	Commands_beginMulti("enterCurrentValues");
+
 	enterCurrentValue(tracks[activeTrack], activeTrack, rowPos);
-	
+
 	for (i = selectLeft; i < selectRight; ++i)
 		enterCurrentValue(tracks[i], i, rowPos);
+
+	Commands_endMulti();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1615,6 +1679,7 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_SCALE_001:	scaleSelection(0.01f); break;
 
 		case EDITOR_MENU_INTERPOLATION : onInterpolation(); break;
+		case EDITOR_MENU_INVERT_SELECTION: onInvertSelection(); break;
 		case EDITOR_MENU_ENTER_CURRENT_V : onEnterCurrentValue(); break;
 
 		// View
