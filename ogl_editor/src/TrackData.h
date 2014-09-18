@@ -27,11 +27,13 @@ typedef struct Track
 {
 	char* displayName;
 	struct Group* group;
+	struct track_key* muteBackup;
 	uint32_t color;
 
 	int width;           // width in pixels of the track
 	int index;
 	int groupIndex;
+	int muteKeyCount;
 	bool hidden;
 	bool folded;
 	bool selected;

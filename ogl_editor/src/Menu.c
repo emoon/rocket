@@ -58,6 +58,8 @@ MenuDescriptor g_editMenu[] =
 	{ _T("Interpolation"),			EDITOR_MENU_INTERPOLATION,	'i', 	0, 0 },	
 	{ _T("Invert Selection"),		EDITOR_MENU_INVERT_SELECTION,	'i', 	EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL  },	
 	{ _T("Insert current value"),	EDITOR_MENU_ENTER_CURRENT_V,EMGUI_KEY_ENTER,0, 0 },	
+	{ _T(""), 						EDITOR_MENU_SEPARATOR,		  0, 	0, 0 },	
+	{ _T("Mute/Unmute track"),		EDITOR_MENU_MUTE_TRACK,		'm', 	0, 0 },	
 	{ 0 },
 };
 

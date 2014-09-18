@@ -387,6 +387,7 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 	const int endPos = info->endPos;
 	struct sync_track* track = 0;
 	const uint32_t color = trackData->color;
+	bool renderTrack = true;
 	bool folded = false;
 	const int yEnd = (info->endSizeY - info->startY) + 40;
 
@@ -433,6 +434,11 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 	folded = valuesOnly ? true : folded;
 	size = valuesOnly ? track_size_folded : size;
 
+	// don't render anything if it's muted
+
+	if (trackData->muteBackup)
+		renderTrack = false;
+
 	if (valuesOnly)
 	{
 		Emgui_fill(border_color, startX + size, info->startY - font_size * 4, 2, yEnd);
@@ -475,8 +481,11 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 
 		renderInterpolation(info, track, size, idx, offset, y_offset, folded);
 
-		if (!(trackData->selected && info->viewInfo->rowPos == y && info->editText))
-			renderText(info, track, y, idx, offset, y_offset, folded);
+		if (renderTrack)
+		{
+			if (!(trackData->selected && info->viewInfo->rowPos == y && info->editText))
+				renderText(info, track, y, idx, offset, y_offset, folded);
+		}
 
 		selected = (trackIndex >= info->selectLeft && trackIndex <= info->selectRight) && 
 			       (y >= info->selectTop && y <= info->selectBottom);

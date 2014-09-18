@@ -442,6 +442,95 @@ void Commands_clearLoopmarks(TrackData* trackData)
 
 	Commands_endMulti();
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct MuteData
+{
+	Track* track;
+	struct sync_track* syncTrack;
+	int row;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void toggleMute(void* userData)
+{
+	struct MuteData* data = (struct MuteData*)userData;
+
+	// if we have mute data we should toggle back the track to it's old form
+
+	if (data->track->muteBackup)
+	{
+		int i;
+
+		sync_del_key(data->syncTrack, 0);
+		RemoteConnection_sendDeleteKeyCommand(data->syncTrack->name, 0);
+
+		for (i = 0; i < data->track->muteKeyCount; ++i)
+		{
+			struct track_key* key = &data->track->muteBackup[i];
+
+			sync_set_key(data->syncTrack, key);
+			RemoteConnection_sendSetKeyCommand(data->syncTrack->name, key);
+		}
+
+		free(data->track->muteBackup);
+
+		data->track->muteBackup = 0;
+		data->track->muteKeyCount = 0;
+	}
+	else
+	{
+		struct track_key defKey;
+		int i, keysSize = sizeof(struct track_key) * data->syncTrack->num_keys;
+		float currentValue = (float)sync_get_val(data->syncTrack, data->row);
+
+		// No muteBackup, this means that we want to mute the channel
+
+		data->track->muteBackup = malloc(keysSize);
+		data->track->muteKeyCount = data->syncTrack->num_keys;
+
+		memcpy(data->track->muteBackup, data->syncTrack->keys, keysSize);
+
+		for (i = 0; i < data->syncTrack->num_keys; ++i)
+		{
+			int row = data->track->muteBackup[i].row;
+
+			sync_del_key(data->syncTrack, row);
+			RemoteConnection_sendDeleteKeyCommand(data->syncTrack->name, row);
+		}
+
+		defKey.row = 0;
+		defKey.value = currentValue;
+		defKey.type = KEY_STEP;
+
+		// insert key with the current value
+
+		sync_set_key(data->syncTrack, &defKey);
+		RemoteConnection_sendSetKeyCommand(data->syncTrack->name, &defKey);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Commands_toggleMute(struct Track* track, struct sync_track* syncTrack, int row)
+{
+	struct MuteData* data;
+	Command* command;
+
+	command = malloc(sizeof(Command));
+	memset(command, 0, sizeof(Command));
+
+	command->userData = data = malloc(sizeof(struct MuteData));
+	command->exec = toggleMute;
+	command->undo = toggleMute;
+
+	data->track = track;
+	data->syncTrack = syncTrack;
+	data->row = row;
+
+	execCommand(command);
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

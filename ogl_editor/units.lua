@@ -49,7 +49,7 @@ StaticLibrary {
 	Sources = { 
 		FGlob {
 			Dir = "emgui/src",
-			Extensions = { ".c" },
+			Extensions = { ".c", ".h" },
 			Filters = {
 				{ Pattern = "macosx"; Config = "linux-*-*" },
 				{ Pattern = "macosx"; Config = "macosx-*-*" },
@@ -96,7 +96,7 @@ Program {
 	Sources = { 
 		FGlob {
 			Dir = "src",
-			Extensions = { ".c", ".m" },
+			Extensions = { ".c", ".m", ".h" },
 			Filters = {
 				{ Pattern = "linux"; Config = "linux-*-*" },
 				{ Pattern = "macosx"; Config = "macosx-*-*" },

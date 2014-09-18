@@ -1319,6 +1319,24 @@ static void onEnterCurrentValue()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void onMuteToggle()
+{
+	struct sync_track** tracks = getTracks();
+	const int activeTrack = getActiveTrack();
+	TrackData* trackData = getTrackData();
+	Track* t = &trackData->tracks[activeTrack];
+
+	if (!tracks)
+		return;
+
+	if (tracks[activeTrack]->num_keys < 2 && !t->muteBackup)
+		return;
+
+	Commands_toggleMute(t, tracks[activeTrack], getRowPos());
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void onPlay()
 {
 	RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
@@ -1682,6 +1700,7 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_INTERPOLATION : onInterpolation(); break;
 		case EDITOR_MENU_INVERT_SELECTION: onInvertSelection(); break;
 		case EDITOR_MENU_ENTER_CURRENT_V : onEnterCurrentValue(); break;
+		case EDITOR_MENU_MUTE_TRACK : onMuteToggle(); break;
 
 		// View
 

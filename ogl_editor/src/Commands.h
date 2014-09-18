@@ -4,6 +4,7 @@
 struct sync_track;
 struct track_key;
 struct TrackData;
+struct Track;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -20,6 +21,7 @@ void Commands_redo();
 
 void Commands_deleteKey(int track, int row);
 void Commands_addOrUpdateKey(int track, struct track_key* key);
+void Commands_toggleMute(struct Track* track, struct sync_track* syncTrack, int row);
 void Commands_toggleBookmark(struct TrackData* trackData, int row);
 void Commands_clearBookmarks(struct TrackData* trackData);
 void Commands_toggleLoopmark(struct TrackData* trackData, int row);
