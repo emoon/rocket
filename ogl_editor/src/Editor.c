@@ -1195,6 +1195,7 @@ static void onInterpolation()
 static void onInvertSelection()
 {
 	int track, row, rowCount;
+	CopyEntry* entries;
 	TrackViewInfo* viewInfo = getTrackViewInfo();
 	struct sync_track** tracks = getTracks();
 	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
@@ -1206,16 +1207,16 @@ static void onInvertSelection()
 		return;
 
 	rowCount = (selectBottom - selectTop) + 1;
-	CopyEntry* entries = malloc(rowCount * sizeof(CopyEntry));
+	entries = malloc(rowCount * sizeof(CopyEntry));
 
 	Commands_beginMulti("invertSelection");
 
 	for (track = selectLeft; track <= selectRight; ++track) 
 	{
 		int i = 0;
-		memset(entries, 0, rowCount * sizeof(CopyEntry));
-
 		struct sync_track* t = tracks[track];
+
+		memset(entries, 0, rowCount * sizeof(CopyEntry));
 
 		// Take a copy of the data and delete the keys
 
