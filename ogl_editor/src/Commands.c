@@ -474,6 +474,8 @@ static void toggleMute(void* userData)
 			RemoteConnection_sendSetKeyCommand(data->syncTrack->name, key);
 		}
 
+		data->track->disabled = false;
+
 		free(data->track->muteBackup);
 
 		data->track->muteBackup = 0;
@@ -484,6 +486,8 @@ static void toggleMute(void* userData)
 		struct track_key defKey;
 		int i, keysSize = sizeof(struct track_key) * data->syncTrack->num_keys;
 		float currentValue = (float)sync_get_val(data->syncTrack, data->row);
+
+		data->track->disabled = true;
 
 		// No muteBackup, this means that we want to mute the channel
 

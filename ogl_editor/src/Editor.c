@@ -187,6 +187,13 @@ static inline int getRowPos()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static bool canEditCurrentTrack()
+{
+	return !getTrackData()->tracks[getActiveTrack()].disabled;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static inline void setRowPos(int pos)
 {
 	s_editorData.trackViewInfo.rowPos = pos;
@@ -633,12 +640,13 @@ static void scaleOrBiasSelection(float value, BiasOperation biasOp)
 {
 	int track, row;
 	struct sync_track** tracks = getTracks();
+	TrackData* trackData = getTrackData();
 	TrackViewInfo* viewInfo = getTrackViewInfo();
 	int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
 	int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
 	int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
 	int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	
+
 	// If we have no selection and no currenty key bias the previous key
 
 	if (selectLeft == selectRight && selectTop == selectBottom)
@@ -651,6 +659,9 @@ static void scaleOrBiasSelection(float value, BiasOperation biasOp)
 			return;
 
 		track = tracks[getActiveTrack()];
+	
+		if (!canEditCurrentTrack())
+			return;
 
 		idx = sync_find_key(track, getRowPos());
 		
@@ -669,6 +680,9 @@ static void scaleOrBiasSelection(float value, BiasOperation biasOp)
 	for (track = selectLeft; track <= selectRight; ++track) 
 	{
 		struct sync_track* t = tracks[track];
+
+		if (trackData->tracks[track].disabled)
+			continue;
 
 		for (row = selectTop; row <= selectBottom; ++row) 
 		{
@@ -1179,6 +1193,9 @@ static void onInterpolation()
 
 	track = tracks[getActiveTrack()];
 
+	if (!canEditCurrentTrack())
+		return;
+
 	idx = key_idx_floor(track, getRowPos());
 	if (idx < 0) 
 		return;
@@ -1305,6 +1322,9 @@ static void onEnterCurrentValue()
 	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
 
 	if (!tracks)
+		return;
+
+	if (!canEditCurrentTrack())
 		return;
 
 	Commands_beginMulti("enterCurrentValues");
@@ -1740,6 +1760,12 @@ void Editor_destroy()
 
 static bool doEditing(int key)
 {
+	if (!canEditCurrentTrack())
+	{
+		is_editing = false;
+		return false;
+	}
+
 	// special case if '.' key (in case of dvorak) would clatch with the same key for biasing we do this special case
 	
 	if ((key == '.' || key == EMGUI_KEY_BACKSPACE) && !is_editing)

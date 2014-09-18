@@ -34,6 +34,7 @@ typedef struct Track
 	int index;
 	int groupIndex;
 	int muteKeyCount;
+	bool disabled;
 	bool hidden;
 	bool folded;
 	bool selected;
