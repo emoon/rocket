@@ -1224,15 +1224,15 @@ static void onMoveSelection(bool down)
 
 	if (viewInfo->selectStartRow < viewInfo->selectStopRow)
 	{
-		deleteArea(viewInfo->selectStartRow - 1, getActiveTrack(), buffer_width, 1, true);
+		deleteArea(viewInfo->selectStartRow - 1, selectLeft, buffer_width, 1, true);
 		setRowPos(viewInfo->selectStartRow);
-		deleteArea(viewInfo->selectStopRow + 1, getActiveTrack(), buffer_width, 1, true);
+		deleteArea(viewInfo->selectStopRow + 1, selectLeft, buffer_width, 1, true);
 	}
 	else
 	{
-		deleteArea(viewInfo->selectStopRow - 1, getActiveTrack(), buffer_width, 1, true);
+		deleteArea(viewInfo->selectStopRow - 1, selectLeft, buffer_width, 1, true);
 		setRowPos(viewInfo->selectStopRow);
-		deleteArea(viewInfo->selectStartRow + 1, getActiveTrack(), buffer_width, 1, true);
+		deleteArea(viewInfo->selectStartRow + 1, selectLeft, buffer_width, 1, true);
 	}
 
 	Commands_endMulti();
