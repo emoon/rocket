@@ -174,6 +174,9 @@ static void execDeleteKey(void* userData)
 	struct sync_track* t = s_syncTracks[data->track];
 	int idx = sync_find_key(t, data->row);
 
+	if (idx == -1)
+		return;
+
 	data->oldKey = t->keys[idx];
 	sync_del_key(t, data->row);
 
@@ -230,6 +233,9 @@ static void execUpdateKey(void* userData)
 	struct UpdateKeyData* data = (struct UpdateKeyData*)userData;
 	struct sync_track* t = s_syncTracks[data->track];
 	int idx = sync_find_key(t, data->key.row);
+
+	if (idx == -1)
+		return;
 
 	data->oldKey = t->keys[idx];
 	sync_set_key(t, &data->key);
@@ -310,6 +316,25 @@ void Commands_addOrUpdateKey(int track, struct track_key* key)
 		Commands_updateKey(track, key);
 		return;
 	}
+
+	command = malloc(sizeof(Command));
+	memset(command, 0, sizeof(Command));
+
+	command->userData = data = malloc(sizeof(struct InsertKeyData));
+	command->exec = execInsertKey;
+	command->undo = undoInsertKey;
+	data->track = track;
+	data->key = *key;
+
+	execCommand(command);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Commands_addKey(int track, struct track_key* key)
+{
+	struct InsertKeyData* data;
+	Command* command;
 
 	command = malloc(sizeof(Command));
 	memset(command, 0, sizeof(Command));

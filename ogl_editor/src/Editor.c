@@ -595,13 +595,14 @@ static void copySelection(int row, int track, int selectLeft, int selectRight, i
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
+static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight, bool externalMulti)
 {
 	int i, j;
 	const int track_count = getTrackCount();
 	struct sync_track** tracks = getTracks();
 
-	Commands_beginMulti("deleteArea");
+	if (!externalMulti)
+		Commands_beginMulti("deleteArea");
 
 	for (i = 0; i < bufferWidth; ++i) 
 	{
@@ -622,8 +623,11 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight)
 		}
 	}
 
-	Commands_endMulti();
-	updateNeedsSaving();
+	if (!externalMulti)
+	{
+		Commands_endMulti();
+		updateNeedsSaving();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1078,7 +1082,7 @@ static void onCancelEdit()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onCutAndCopy(bool cut)
+static void onCutAndCopy(bool cut, bool externalMulti)
 {
 	TrackViewInfo* viewInfo = getTrackViewInfo();
 	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
@@ -1093,7 +1097,7 @@ static void onCutAndCopy(bool cut)
 	else
 	{
 		copySelection(getRowPos(), getActiveTrack(), selectLeft, selectRight, selectTop, selectBottom);
-		deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight);
+		deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight, externalMulti);
 	}
 }
 
@@ -1108,14 +1112,14 @@ static void onDeleteKey()
 	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
 	if (selectLeft == selectRight && selectTop == selectBottom) 
-		deleteArea(getRowPos(), getActiveTrack(), 1, 1);
+		deleteArea(getRowPos(), getActiveTrack(), 1, 1, false);
 	else
-		onCutAndCopy(true);
+		onCutAndCopy(true, false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onPaste()
+static void onPaste(bool externalMulti)
 {
 	const int buffer_width = s_copyData.bufferWidth;
 	const int buffer_height = s_copyData.bufferHeight;
@@ -1130,9 +1134,10 @@ static void onPaste()
 
 	// First clear the paste area
 
-	deleteArea(row_pos, active_track, buffer_width, buffer_height);
+	deleteArea(row_pos, active_track, buffer_width, buffer_height, externalMulti);
 
-	Commands_beginMulti("pasteArea");
+	if (!externalMulti)
+		Commands_beginMulti("pasteArea");
 
 	for (i = 0; i < buffer_size; ++i)
 	{
@@ -1149,23 +1154,89 @@ static void onPaste()
 		}
 	}
 
-	Commands_endMulti();
-	updateNeedsSaving();
+	if (!externalMulti)
+	{
+		Commands_endMulti();
+		updateNeedsSaving();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void onMoveSelection(bool down)
 {
-	const int row_pos = getRowPos();
-	onCutAndCopy(true);
+	int buffer_width, track, row;
+	TrackViewInfo* viewInfo = getTrackViewInfo();
+	struct sync_track** tracks = getTracks();
+	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+
+	// cut the selection
+
+	Commands_beginMulti("moveSelection");
+
+	for (track = selectLeft; track <= selectRight; ++track) 
+	{
+		struct sync_track* t = tracks[track];
+		for (row = selectTop; row <= selectBottom; ++row) 
+		{
+			struct track_key newKey;
+
+			int idx = sync_find_key(t, row);
+			if (idx < 0) 
+				continue;
+
+			newKey = t->keys[idx];
+			newKey.row = down ? newKey.row + 1 : newKey.row - 1;
+
+			Commands_addOrUpdateKey(track, &newKey);
+		}
+	}
+
+	buffer_width = (selectRight - selectLeft) + 1;
+
+	// move the selection to the next position
 
 	if (down)
-		setRowPos(row_pos + 1);
+	{
+		viewInfo->selectStartRow++; 
+		viewInfo->selectStopRow++;
+	}
 	else
-		setRowPos(row_pos - 1);
+	{
+		// can't paste up here
 
-	onPaste();
+		if (getRowPos() == 0)
+		{
+			//onPaste(true);
+			Commands_endMulti();
+			return;
+		}
+
+		viewInfo->selectStartRow--; 
+		viewInfo->selectStopRow--;
+
+		viewInfo->selectStopRow = maxi(viewInfo->selectStopRow, 0);
+		viewInfo->selectStartRow = maxi(viewInfo->selectStartRow, 0);
+	}
+
+	if (viewInfo->selectStartRow < viewInfo->selectStopRow)
+	{
+		deleteArea(viewInfo->selectStartRow - 1, getActiveTrack(), buffer_width, 1, true);
+		setRowPos(viewInfo->selectStartRow);
+		deleteArea(viewInfo->selectStopRow + 1, getActiveTrack(), buffer_width, 1, true);
+	}
+	else
+	{
+		deleteArea(viewInfo->selectStopRow - 1, getActiveTrack(), buffer_width, 1, true);
+		setRowPos(viewInfo->selectStopRow);
+		deleteArea(viewInfo->selectStartRow + 1, getActiveTrack(), buffer_width, 1, true);
+	}
+
+	Commands_endMulti();
+	updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1701,9 +1772,9 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_CANCEL_EDIT :  onCancelEdit(); break;
 		case EDITOR_MENU_DELETE_KEY  :  onDeleteKey(); break;
 										
-		case EDITOR_MENU_CUT :          onCutAndCopy(true); break;
-		case EDITOR_MENU_COPY :         onCutAndCopy(false); break;
-		case EDITOR_MENU_PASTE :        onPaste(); break;
+		case EDITOR_MENU_CUT :          onCutAndCopy(true, false); break;
+		case EDITOR_MENU_COPY :         onCutAndCopy(false, false); break;
+		case EDITOR_MENU_PASTE :        onPaste(false); break;
 		case EDITOR_MENU_MOVE_UP :      onMoveSelection(true); break;
 		case EDITOR_MENU_MOVE_DOWN :    onMoveSelection(false); break;
 		case EDITOR_MENU_SELECT_TRACK : onSelectTrack(); break;
