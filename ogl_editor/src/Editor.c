@@ -1155,6 +1155,21 @@ static void onPaste()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void onMoveSelection(bool down)
+{
+	const int row_pos = getRowPos();
+	onCutAndCopy(true);
+
+	if (down)
+		setRowPos(row_pos + 1);
+	else
+		setRowPos(row_pos - 1);
+
+	onPaste();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void onSelectTrack()
 {
 	int activeTrack = getActiveTrack();
@@ -1689,6 +1704,8 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_CUT :          onCutAndCopy(true); break;
 		case EDITOR_MENU_COPY :         onCutAndCopy(false); break;
 		case EDITOR_MENU_PASTE :        onPaste(); break;
+		case EDITOR_MENU_MOVE_UP :      onMoveSelection(true); break;
+		case EDITOR_MENU_MOVE_DOWN :    onMoveSelection(false); break;
 		case EDITOR_MENU_SELECT_TRACK : onSelectTrack(); break;
 
 		case EDITOR_MENU_BIAS_P_001 : biasSelection(0.01f); break;

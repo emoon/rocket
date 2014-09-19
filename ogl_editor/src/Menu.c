@@ -26,6 +26,8 @@ MenuDescriptor g_editMenu[] =
 	{ _T("Cut"), 					EDITOR_MENU_CUT,			'x', 	EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	
 	{ _T("Copy"), 					EDITOR_MENU_COPY,			'c', 	EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	
 	{ _T("Paste"), 					EDITOR_MENU_PASTE,			'v',	EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	
+	{ _T("Move selection up"),		EDITOR_MENU_MOVE_UP,		'x',	0 , 0 },	
+	{ _T("Move selection down"),	EDITOR_MENU_MOVE_DOWN,			'c',	0 , 0 },	
 	{ _T(""), 						EDITOR_MENU_SEPARATOR,		  0, 				0, 0 },	
 	{ _T("Select Track"), 			EDITOR_MENU_SELECT_TRACK,	't',	EMGUI_KEY_COMMAND, EMGUI_KEY_CTRL },	
 	{ _T(""), 						EDITOR_MENU_SEPARATOR,		  0, 				0, 0 },	
