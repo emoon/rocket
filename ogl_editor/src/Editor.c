@@ -1177,6 +1177,8 @@ static void onMoveSelection(bool down)
 
 	Commands_beginMulti("moveSelection");
 
+	// Delete at the bottom as we are about to move the selection down otherwise in the top
+
 	for (track = selectLeft; track <= selectRight; ++track) 
 	{
 		struct sync_track* t = tracks[track];
@@ -1188,10 +1190,12 @@ static void onMoveSelection(bool down)
 			if (idx < 0) 
 				continue;
 
+
 			newKey = t->keys[idx];
 			newKey.row = down ? newKey.row + 1 : newKey.row - 1;
 
-			Commands_addOrUpdateKey(track, &newKey);
+			Commands_deleteKey(track, row);
+			Commands_addKey(track, &newKey);
 		}
 	}
 

@@ -163,6 +163,7 @@ struct DeleteKeyData
 {
 	int track;
 	int row;
+	int noDelete;
 	struct track_key oldKey;
 };
 
@@ -174,8 +175,11 @@ static void execDeleteKey(void* userData)
 	struct sync_track* t = s_syncTracks[data->track];
 	int idx = sync_find_key(t, data->row);
 
-	if (idx == -1)
+	if (idx <= -1)
+	{
+		data->noDelete = 1;
 		return;
+	}
 
 	data->oldKey = t->keys[idx];
 	sync_del_key(t, data->row);
@@ -189,6 +193,10 @@ static void undoDeleteKey(void* userData)
 {
 	struct DeleteKeyData* data = (struct DeleteKeyData*)userData;
 	struct sync_track* t = s_syncTracks[data->track];
+
+	if (data->noDelete)
+		return;
+
 	sync_set_key(t, &data->oldKey);
 
 	RemoteConnection_sendSetKeyCommand(t->name, &data->oldKey);
@@ -213,6 +221,7 @@ void Commands_deleteKey(int track, int row)
 	command->undo = undoDeleteKey;
 	data->track = track;
 	data->row = row;
+	data->noDelete = 0;
 
 	execCommand(command);
 }
