@@ -1168,6 +1168,7 @@ static void onMoveSelection(bool down)
 	int buffer_width, track, row;
 	TrackViewInfo* viewInfo = getTrackViewInfo();
 	struct sync_track** tracks = getTracks();
+	int startTrack, stopTrack, startRow, stopRow;
 	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
 	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
 	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
@@ -1190,7 +1191,6 @@ static void onMoveSelection(bool down)
 			if (idx < 0) 
 				continue;
 
-
 			newKey = t->keys[idx];
 			newKey.row = down ? newKey.row + 1 : newKey.row - 1;
 
@@ -1201,12 +1201,17 @@ static void onMoveSelection(bool down)
 
 	buffer_width = (selectRight - selectLeft) + 1;
 
+	startTrack = viewInfo->selectStartTrack;
+	stopTrack = viewInfo->selectStopTrack;
+	startRow = viewInfo->selectStartRow;
+	stopRow = viewInfo->selectStopRow;
+
 	// move the selection to the next position
 
 	if (down)
 	{
-		viewInfo->selectStartRow++; 
-		viewInfo->selectStopRow++;
+		startRow++; 
+		stopRow++;
 	}
 	else
 	{
@@ -1219,24 +1224,26 @@ static void onMoveSelection(bool down)
 			return;
 		}
 
-		viewInfo->selectStartRow--; 
-		viewInfo->selectStopRow--;
+		startRow--; 
+		stopRow--;
 
-		viewInfo->selectStopRow = maxi(viewInfo->selectStopRow, 0);
-		viewInfo->selectStartRow = maxi(viewInfo->selectStartRow, 0);
+		stopRow = maxi(stopRow, 0);
+		startRow = maxi(startRow, 0);
 	}
 
-	if (viewInfo->selectStartRow < viewInfo->selectStopRow)
+	Commands_setSelection(viewInfo, startTrack, stopTrack, startRow, stopRow);
+
+	if (startRow < stopRow)
 	{
-		deleteArea(viewInfo->selectStartRow - 1, selectLeft, buffer_width, 1, true);
-		setRowPos(viewInfo->selectStartRow);
-		deleteArea(viewInfo->selectStopRow + 1, selectLeft, buffer_width, 1, true);
+		deleteArea(startRow - 1, selectLeft, buffer_width, 1, true);
+		setRowPos(startRow);
+		deleteArea(stopRow + 1, selectLeft, buffer_width, 1, true);
 	}
 	else
 	{
-		deleteArea(viewInfo->selectStopRow - 1, selectLeft, buffer_width, 1, true);
-		setRowPos(viewInfo->selectStopRow);
-		deleteArea(viewInfo->selectStartRow + 1, selectLeft, buffer_width, 1, true);
+		deleteArea(stopRow - 1, selectLeft, buffer_width, 1, true);
+		setRowPos(stopRow);
+		deleteArea(startRow + 1, selectLeft, buffer_width, 1, true);
 	}
 
 	Commands_endMulti();

@@ -1,6 +1,7 @@
 #include "Commands.h"
 #include "RemoteConnection.h"
 #include "TrackData.h"
+#include "TrackView.h"
 #include "../../sync/sync.h"
 #include "../../sync/track.h"
 #include <stdlib.h>
@@ -278,6 +279,69 @@ void Commands_updateKey(int track, struct track_key* key)
 	command->undo = undoUpdateKey;
 	data->track = track;
 	data->key = *key;
+
+	execCommand(command);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct ChangeSelectionData
+{
+	struct TrackViewInfo* viewInfo;
+	struct TrackViewInfo oldViewInfo;
+
+	int selectStartTrack;
+	int selectStopTrack;
+	int selectStartRow;
+	int selectStopRow;
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void execChangeSelection(void* userData)
+{
+	struct ChangeSelectionData* data = (struct ChangeSelectionData*)userData;
+
+	data->viewInfo->selectStartTrack = data->selectStartTrack;
+	data->viewInfo->selectStopTrack = data->selectStopTrack;
+	data->viewInfo->selectStartRow = data->selectStartRow;
+	data->viewInfo->selectStopRow = data->selectStopRow;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void execUndoSelection(void* userData)
+{
+	struct ChangeSelectionData* data = (struct ChangeSelectionData*)userData;
+
+	data->viewInfo->selectStartTrack = data->oldViewInfo.selectStartTrack;
+	data->viewInfo->selectStopTrack = data->oldViewInfo.selectStopTrack;
+	data->viewInfo->selectStartRow = data->oldViewInfo.selectStartRow;
+	data->viewInfo->selectStopRow = data->oldViewInfo.selectStopRow;
+	data->viewInfo->rowPos = data->oldViewInfo.rowPos;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Commands_setSelection(struct TrackViewInfo* viewInfo, int startTrack, int endTrack, int startRow, int endRow)
+{
+	struct ChangeSelectionData* data;
+	Command* command;
+	
+	command = malloc(sizeof(Command));
+	memset(command, 0, sizeof(Command));
+
+	command->userData = data = malloc(sizeof(struct ChangeSelectionData));
+	command->exec = execChangeSelection;
+	command->undo = execUndoSelection;
+
+	data->viewInfo = viewInfo;
+	data->oldViewInfo = *viewInfo;
+
+	data->selectStartTrack = startTrack;
+	data->selectStopTrack = endTrack;
+	data->selectStartRow = startRow;
+	data->selectStopRow = endRow;
 
 	execCommand(command);
 }
