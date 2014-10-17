@@ -422,8 +422,6 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 		setElementInt(track, "muteKeyCount", "%d", trackData->tracks[p].muteKeyCount);
 		setElementInt(track, "color", "%08x", trackData->tracks[p].color);
 
-		printf("mute %d\n", isMuted);
-
 		if (isMuted)
 		{
 			setElementFloat(track, "muteValue", t->keys[0].value);
