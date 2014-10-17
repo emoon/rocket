@@ -412,7 +412,6 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 
 	for (p = 0; p < sync_data->num_tracks; ++p) 
 	{
-		int i;
 		const struct sync_track* t = sync_data->tracks[p];
 		mxml_node_t* track = mxmlNewElement(tracks, "track");
 
@@ -423,6 +422,8 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 		setElementInt(track, "muteKeyCount", "%d", trackData->tracks[p].muteKeyCount);
 		setElementInt(track, "color", "%08x", trackData->tracks[p].color);
 
+		printf("mute %d\n", isMuted);
+
 		if (isMuted)
 		{
 			setElementFloat(track, "muteValue", t->keys[0].value);
@@ -431,13 +432,6 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 		else
 		{
 			saveTrackData(track, t->keys, (int)t->num_keys);
-			for (i = 0; i < (int)t->num_keys; ++i) 
-			{
-				mxml_node_t* key = mxmlNewElement(track, "key");
-				setElementInt(key, "row", "%d", (int)t->keys[i].row);
-				setElementFloat(key, "value", t->keys[i].value);
-				setElementInt(key, "interpolation", "%d", (int)t->keys[i].type);
-			}
 		}
 	}
 
