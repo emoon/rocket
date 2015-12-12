@@ -3,7 +3,6 @@
 #include "TrackData.h"
 #include "../external/mxml/mxml.h"
 #include "RemoteConnection.h"
-#include "../../sync/data.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <emgui/Types.h>

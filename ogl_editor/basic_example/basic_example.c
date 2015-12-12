@@ -5,7 +5,7 @@
 #else
 #include <unistd.h>
 #endif
-#include "../../sync/sync.h"
+#include "../../lib/sync.h"
 
 static struct sync_device *device;
 #if !defined(SYNC_PLAYER)

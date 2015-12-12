@@ -2,8 +2,8 @@
 #include "RemoteConnection.h"
 #include "TrackData.h"
 #include "TrackView.h"
-#include "../../sync/sync.h"
-#include "../../sync/track.h"
+#include "../../lib/sync.h"
+#include "../../lib/track.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <emgui/Types.h>

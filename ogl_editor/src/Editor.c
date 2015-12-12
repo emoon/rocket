@@ -14,9 +14,8 @@
 #include "Commands.h"
 #include "MinecraftiaFont.h"
 #include "Window.h"
-#include "../../sync/sync.h"
-#include "../../sync/base.h"
-#include "../../sync/data.h"
+#include "../../lib/sync.h"
+#include "../../lib/base.h"
 #include <emgui/Emgui.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

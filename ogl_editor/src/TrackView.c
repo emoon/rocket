@@ -7,9 +7,8 @@
 #include "rlog.h"
 #include "minmax.h"
 #include "ImageData.h"
-#include "../../sync/sync.h"
-#include "../../sync/data.h"
-#include "../../sync/track.h"
+#include "../../lib/sync.h"
+#include "../../lib/track.h"
 
 #if defined(__APPLE__)
 #include <OpenGL/OpenGL.h>

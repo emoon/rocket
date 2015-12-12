@@ -22,8 +22,8 @@
 #include <arpa/inet.h>
 #endif
 
-#include "../../sync/base.h"
-#include "../../sync/track.h"
+#include "../../lib/base.h"
+#include "../../lib/track.h"
 #include "rlog.h"
 #include <stdio.h>
 
