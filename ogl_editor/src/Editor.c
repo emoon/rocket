@@ -18,6 +18,14 @@
 #include "../../lib/base.h"
 #include <emgui/Emgui.h>
 
+enum {
+	SET_KEY = 0,
+	DELETE_KEY = 1,
+	GET_TRACK = 2,
+	SET_ROW = 3,
+	PAUSE = 4,
+	SAVE_TRACKS = 5
+};
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void updateNeedsSaving();
@@ -139,7 +147,7 @@ void setMostRecentFile(const text_t* filename)
 
 static inline struct sync_track** getTracks()
 {
-	return s_editorData.trackData.syncData.tracks;
+	return s_editorData.trackData.syncTracks;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -174,7 +182,7 @@ static inline int getActiveTrack()
 
 static inline int getTrackCount()
 {
-	return s_editorData.trackData.syncData.num_tracks;
+	return s_editorData.trackData.num_syncTracks;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -864,7 +872,7 @@ static int processCommands()
 
 				// setup remap and send the keyframes to the demo
 				RemoteConnection_mapTrackName(trackName);
-				RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncData.tracks[serverIndex]);
+				RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncTracks[serverIndex]);
 				TrackData_linkTrack(serverIndex, trackName, &s_editorData.trackData);
 
 				s_editorData.trackData.tracks[serverIndex].active = true;

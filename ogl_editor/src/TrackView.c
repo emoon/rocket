@@ -396,8 +396,8 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 
 		folded = trackData->folded;
 		
-		if (info->trackData->syncData.tracks)
-			track = info->trackData->syncData.tracks[trackData->index];
+		if (info->trackData->syncTracks)
+			track = info->trackData->syncTracks[trackData->index];
 
 		size = renderName(trackData->displayName, startX, info->startY - (font_size * 2), min_track_size, folded, trackData->active);
 

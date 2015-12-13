@@ -2,22 +2,54 @@
 #include "Commands.h"
 #include "rlog.h"
 #include <stdio.h>
+#include <assert.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+int sync_find_track(struct sync_track **tracks, size_t num_tracks, const char *name)
+{
+	int i;
+
+	for (i = 0; i < (int)num_tracks; ++i)
+		if (!strcmp(name, tracks[i]->name))
+			return i;
+	return -1; /* not found */
+}
+
+int sync_create_track(struct sync_track ***tracksPtr, size_t *num_tracksPtr, const char *name)
+{
+	struct sync_track *t;
+	struct sync_track **tracks = *tracksPtr;
+	size_t num_tracks = *num_tracksPtr;
+	assert(sync_find_track(tracks, num_tracks, name) < 0);
+
+	t = malloc(sizeof(*t));
+	t->name = strdup(name);
+	t->keys = NULL;
+	t->num_keys = 0;
+
+	tracks = realloc(tracks, sizeof(tracks[0]) * (num_tracks+1));
+	tracks[num_tracks] = t;
+
+	*num_tracksPtr = num_tracks+1;
+	*tracksPtr = tracks;
+
+	return (int)num_tracks;
+}
+
 int TrackData_createGetTrack(TrackData* trackData, const char* name)
 {
-	int index = sync_find_track(&trackData->syncData, name); 
+	int index = sync_find_track(trackData->syncTracks, trackData->num_syncTracks, name);
 	if (index < 0)
 	{
-        index = sync_create_track(&trackData->syncData, name);
+        index = sync_create_track(&trackData->syncTracks, &trackData->num_syncTracks, name);
 		memset(&trackData->tracks[index], 0, sizeof(Track));
 		trackData->tracks[index].index = index;
 		trackData->tracks[index].color = TrackData_getNextColor(trackData); 
 	}
 
-	if (trackData->syncData.tracks)
-		Commands_init(trackData->syncData.tracks, trackData);
+	if (trackData->syncTracks)
+		Commands_init(trackData->syncTracks, trackData);
 
 	return index;
 }
@@ -151,10 +183,9 @@ void TrackData_linkTrack(int index, const char* name, TrackData* trackData)
 void TrackData_linkGroups(TrackData* trackData)
 {
 	int i, track_count;
-	struct sync_data* sync = &trackData->syncData;
 
-	for (i = 0, track_count = sync->num_tracks; i < track_count; ++i)
-		TrackData_linkTrack(i, sync->tracks[i]->name, trackData); 
+	for (i = 0, track_count = trackData->num_syncTracks; i < track_count; ++i)
+		TrackData_linkTrack(i, trackData->syncTracks[i]->name, trackData);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
