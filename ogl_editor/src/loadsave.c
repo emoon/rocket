@@ -3,10 +3,10 @@
 #include "TrackData.h"
 #include "../external/mxml/mxml.h"
 #include "RemoteConnection.h"
-#include "../../sync/data.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <emgui/Types.h>
+#include <assert.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -101,7 +101,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					track_index = TrackData_createGetTrack(trackData, track_name);
 
 					t = &trackData->tracks[track_index];
-					track = trackData->syncData.tracks[track_index];
+					track = trackData->syncTracks[track_index];
 
 					if (!color_text && t->color == 0)
 					{
@@ -162,7 +162,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 				}
 				else if (!strcmp("key", element_name))
 				{
-					struct sync_track* track = trackData->syncData.tracks[track_index];
+					struct sync_track* track = trackData->syncTracks[track_index];
 					Track* t = &trackData->tracks[track_index];
 
 					const char* row = mxmlElementGetAttr(node, "row"); 
@@ -354,7 +354,6 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 
 	FILE* fp;
 	size_t p;
-	struct sync_data* sync_data = &trackData->syncData;
 	int* bookmarks = trackData->bookmarks;
 	int* loopmarks = trackData->loopmarks;
 
@@ -410,9 +409,9 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 	setElementInt(tracks, "endRow", "%d", trackData->endRow); 
 	setElementInt(tracks, "highlightRowStep", "%d", trackData->highlightRowStep); 
 
-	for (p = 0; p < sync_data->num_tracks; ++p) 
+	for (p = 0; p < trackData->num_syncTracks; ++p)
 	{
-		const struct sync_track* t = sync_data->tracks[p];
+		const struct sync_track* t = trackData->syncTracks[p];
 		mxml_node_t* track = mxmlNewElement(tracks, "track");
 
 		bool isMuted = trackData->tracks[p].muteBackup ? true : false; 

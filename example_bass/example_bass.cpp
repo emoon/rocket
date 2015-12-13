@@ -1,21 +1,24 @@
-/* Copyright (C) 2007-2008 Erik Faye-Lund and Egbert Teeselink
- * For conditions of distribution and use, see copyright notice in COPYING
- * sdl+opengl examle by rasmus/loonies http://visualizethis.tumblr.com 2011
- */
-
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 #include <SDL.h>
+#ifdef WIN32
 #undef main /* avoid SDL's nasty SDLmain hack */
+#endif
 #include <SDL_opengl.h>
 #include <bass.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <math.h>
 
-#include "../sync/sync.h"
+#if defined(__APPLE__) && defined(__MACH__)
+#include <GLKit/GLKMatrix4.h>
+#define gluPerspective(f, a, zn, zf) glMultMatrixf(GLKMatrix4MakePerspective((f) * M_PI / 180, a, zn, zf).m)
+#define gluLookAt(ex, ey, ez, cx, cy, cz, ux, uy, uz) glMultMatrixf(GLKMatrix4MakeLookAt(ex, ey, ez, cx, cy, cz, ux, uy, uz).m)
+#endif
+
+#include "../lib/sync.h"
 
 static const float bpm = 150.0f; /* beats per minute */
 static const int rpb = 8; /* rows per beat */
@@ -80,7 +83,7 @@ static void die(const char *fmt, ...)
 static const unsigned int width  = 800;
 static const unsigned int height = 600;
 
-SDL_Surface *setup_sdl()
+void setup_sdl()
 {
 	if (SDL_Init(SDL_INIT_VIDEO))
 		die("%s", SDL_GetError());
@@ -93,7 +96,8 @@ SDL_Surface *setup_sdl()
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 
-	return SDL_SetVideoMode(width, height, 32, SDL_OPENGL);
+	if (!SDL_SetVideoMode(width, height, 32, SDL_OPENGL))
+		die("%s", SDL_GetError());
 }
 
 void draw_cube()
@@ -147,13 +151,12 @@ void draw_cube()
 
 int main(int argc, char *argv[])
 {
-	SDL_Surface *screen;
 	HSTREAM stream;
 
 	const struct sync_track *clear_r, *clear_g, *clear_b;
 	const struct sync_track *cam_rot, *cam_dist;
 
-	screen = setup_sdl();
+	setup_sdl();
 
 	/* init BASS */
 	if (!BASS_Init(-1, 44100, 0, 0, 0))
@@ -193,13 +196,13 @@ int main(int argc, char *argv[])
 
 		/* draw */
 
-		glClearColor(sync_get_val(clear_r, row),
-		             sync_get_val(clear_g, row),
-		             sync_get_val(clear_b, row), 1.0f);
+		glClearColor(float(sync_get_val(clear_r, row)),
+		             float(sync_get_val(clear_g, row)),
+		             float(sync_get_val(clear_b, row)), 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		float rot = sync_get_val(cam_rot, row);
-		float dist = sync_get_val(cam_dist, row);
+		float rot = float(sync_get_val(cam_rot, row));
+		float dist = float(sync_get_val(cam_dist, row));
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();

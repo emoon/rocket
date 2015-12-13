@@ -22,10 +22,12 @@
 #include <arpa/inet.h>
 #endif
 
-#include "../../sync/base.h"
-#include "../../sync/track.h"
+#include "../../lib/base.h"
+#include "../../lib/track.h"
 #include "rlog.h"
 #include <stdio.h>
+
+#include <assert.h>
 
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
@@ -34,6 +36,69 @@
 #ifndef SOCKET_ERROR
 #define SOCKET_ERROR -1
 #endif
+
+
+/* configure socket-stack */
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define USE_GETADDRINFO
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#include <limits.h>
+#elif defined(USE_AMITCP)
+#include <sys/socket.h>
+#include <proto/exec.h>
+#include <proto/socket.h>
+#include <netdb.h>
+#define SOCKET int
+#define INVALID_SOCKET -1
+#define select(n,r,w,e,t) WaitSelect(n,r,w,e,t,0)
+#define closesocket(x) CloseSocket(x)
+#else
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <unistd.h>
+#define SOCKET int
+#define INVALID_SOCKET -1
+#define closesocket(x) close(x)
+#endif
+
+#define CLIENT_GREET "hello, synctracker!"
+#define SERVER_GREET "hello, demo!"
+
+enum {
+    SET_KEY = 0,
+    DELETE_KEY = 1,
+    GET_TRACK = 2,
+    SET_ROW = 3,
+    PAUSE = 4,
+    SAVE_TRACKS = 5
+};
+
+static inline int socket_poll(SOCKET socket)
+{
+    struct timeval to = { 0, 0 };
+    fd_set fds;
+    
+    FD_ZERO(&fds);
+    
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4127)
+#endif
+    FD_SET(socket, &fds);
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+    
+    return select((int)socket + 1, &fds, NULL, NULL, &to) > 0;
+}
 
 static int s_clientIndex;
 int s_socket = INVALID_SOCKET;

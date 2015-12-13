@@ -1,9 +1,13 @@
-Beta Disclaimar
+GNU Rocket OpenGL editor
+========================
+
+Beta Disclaimer
 ---------------
 
-First a screenshot of how it looks: https://dl.dropbox.com/u/5205843/RocketEditor.png
+First a screenshot of how it looks: 
+![Rocket Opengl editor screenshot](https://dl.dropbox.com/u/5205843/RocketEditor.png)
 
-Regular disclaimar: Backup your stuff before using software :)
+Regular disclaimer: Backup your stuff before using software :)
 
 If you encounter any issues please try to report them at https://github.com/emoon/rocket/issues as
 this would make my life much easier and I will try to fix them given time. Hopefully the editor should be useful even if still not 100% finalized bug wise.
@@ -11,8 +15,8 @@ Also the documentation hasn't been completed yet.
 
 Here are the links to the current version of the editor:
 
-Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.1Beta1.zip
-Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.1Beta-win32.zip
+* Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.1Beta1.zip
+* Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.1Beta-win32.zip
 
 About
 -----
@@ -20,7 +24,7 @@ About
 RocketEditor is coded by Daniel 'emoon' Collin with documentation and testing by Heine 'bstrr' Gundersen.
 Daniel Collin can be contacted at daniel aat collin dot com
 
-Latest version of this program should be availible at https://github.com/emoon/rocket
+Latest version of this program should be available at https://github.com/emoon/rocket
 
 The SDL-based linux support is written by Konsta 'sooda' Hölttä at https://github.com/sooda/rocket
 
@@ -59,8 +63,8 @@ Building the code
 All Mac, Windows and Linux versions use the Tundra build system (https://github.com/deplinenoise/tundra) so in order to build the code you need a tundra executable for your OS
 I have made two of the available here for your convenience if you don't want to build the code yourself.
 
-Mac: https://dl.dropbox.com/u/5205843/tundra-mac.zip
-Windows: https://dl.dropbox.com/u/5205843/tundra-win.zip
+* Mac: https://dl.dropbox.com/u/5205843/tundra-mac.zip
+* Windows: https://dl.dropbox.com/u/5205843/tundra-win.zip
 
 Mac
 ---
@@ -102,85 +106,103 @@ Tips & tricks
 Keys
 ----
 
-OSX:
+### OSX:
 
-Editing:
-0-9                     -       Edit value
-Esc                     -       Cancel edit
-QWERTY                  -       Bias selection +0.01, +0.1, +1, +10, +100, +1000
-ASDFGH                  -       Bias selection -0.01, -0.1, -1, -10, -100, -1000
-Alt+Trackpad scroll     -       Bias selection +1/-1
-Shift+Alt+Trackpad      -       Bias selection +10/-10
-I                       -       Toggle interpolation (step/linear/smooth/ramp)
-Return                  -       Insert current interpolated value
-Shift+Arrows            -       Select
-Cmd+T                   -       Select all keys in track
-Cmd+X                   -       Cut
-Cmd+C                   -       Copy
-Cmd+V                   -       Paste
-Cmd+Z                   -       Undo
-Cmd+Shift+Z             -       Redo
-Delete                  -       Delete key
+#### Editing:
 
-View:
-Space                   -       Start/Stop
-Arrows                  -       Move cursor around
-Alt+Up/Down             -       Jump 8 rows
-Alt+Cmd+Up/Down         -       Jump to StartRow/NextBookmark - PrevBookmark/EndRow
-Cmd+Left/Right          -       Jump to first/last track
-Ctrl+Up/Down            -       Jump to Previous/Next key in current track
-Alt+Left/Right          -       Fold/Unfold track
-Ctrl+Alt+Left/Right     -       Fold/Unfold group
-Trackpad scroll         -       Scroll
-B                       -       Toggle Bookmark
-Cmd+B                   -       Clear all Bookmarks
-Tab                     -       Jump between Row, Start Row, End Row, Track editing
+Key | Action
+--- | ---
+0-9                 | Edit value
+Esc                 | Cancel edit
+QWERTY              | Bias selection +0.01, +0.1, +1, +10, +100, +1000
+ASDFGH              | Bias selection -0.01, -0.1, -1, -10, -100, -1000
+Alt+Trackpad scroll | Bias selection +1/-1
+Shift+Alt+Trackpad  | Bias selection +10/-10
+I                   | Toggle interpolation (step/linear/smooth/ramp)
+Return              | Insert current interpolated value
+Shift+Arrows        | Select
+Cmd+T               | Select all keys in track
+Cmd+X               | Cut
+Cmd+C               | Copy
+Cmd+V               | Paste
+Cmd+Z               | Undo
+Cmd+Shift+Z         | Redo
+Delete              | Delete key
 
-Files:
-Cmd+O                   -       Open file
-Cmd+S                   -       Quicksave
-Cmd+Shift+S             -       Save as
-Cmd+1/2/3/4             -       Quickload recent files
-Cmd+E                   -       Remote export
+#### View:
+
+Key | Action
+--- | ---
+Space               | Start/Stop
+Arrows              | Move cursor around
+Alt+Up/Down         | Jump 8 rows
+Alt+Cmd+Up/Down     | Jump to StartRow/NextBookmark - PrevBookmark/EndRow
+Cmd+Left/Right      | Jump to first/last track
+Ctrl+Up/Down        | Jump to Previous/Next key in current track
+Alt+Left/Right      | Fold/Unfold track
+Ctrl+Alt+Left/Right | Fold/Unfold group
+Trackpad scroll     | Scroll
+B                   | Toggle Bookmark
+Cmd+B               | Clear all Bookmarks
+Tab                 | Jump between Row, Start Row, End Row, Track editing
+
+#### Files:
+
+Key | Action
+--- | ---
+Cmd+O               | Open file
+Cmd+S               | Quicksave
+Cmd+Shift+S         | Save as
+Cmd+1/2/3/4         | Quickload recent files
+Cmd+E               | Remote export
 
 ---------------------------------------------------------------------------------
 
-Windows and Linux:
+### Windows and Linux:
 
-Editing:
-0-9                     -       Edit value
-Esc                     -       Cancel edit
-QWERTY                  -       Bias selection +0.01, +0.1, +1, +10, +100, +1000
-ASDFGH                  -       Bias selection -0.01, -0.1, -1, -10, -100, -1000
-I                       -       Toggle interpolation (step/linear/smooth/ramp)
-Return                  -       Insert current interpolated value
-Shift+Arrows            -       Select
-Ctrl+T                  -       Select all keys in track
-Ctrl+X                  -       Cut
-Ctrl+C                  -       Copy
-Ctrl+V                  -       Paste
-Ctrl+Z                  -       Undo
-Ctrl+Shift+Z            -       Redo
-Delete                  -       Delete key
+#### Editing:
 
-View:
-Space                   -       Start/Stop
-Arrows                  -       Move cursor around
-Alt+Up/Down             -       Jump 8 rows
-Ctrl+Alt+Up/Down        -       Jump to StartRow/NextBookmark - PrevBookmark/EndRow
-Ctrl+Left/Right         -       Jump to first/last track
-Ctrl+Up/Down            -       Jump to Previous/Next key in current track
-Alt+Left/Right          -       Fold/Unfold track
-Ctrl+Alt+Left/Right     -       Fold/Unfold group
-Trackpad scroll         -       Scroll
-B                       -       Toggle Bookmark
-Ctrl+B                  -       Clear all Bookmarks
-Tab                     -       Jump between Row, Start Row, End Row, Track editing
+Key | Action
+--- | ---
+0-9                 | Edit value
+Esc                 | Cancel edit
+QWERTY              | Bias selection +0.01, +0.1, +1, +10, +100, +1000
+ASDFGH              | Bias selection -0.01, -0.1, -1, -10, -100, -1000
+I                   | Toggle interpolation (step/linear/smooth/ramp)
+Return              | Insert current interpolated value
+Shift+Arrows        | Select
+Ctrl+T              | Select all keys in track
+Ctrl+X              | Cut
+Ctrl+C              | Copy
+Ctrl+V              | Paste
+Ctrl+Z              | Undo
+Ctrl+Shift+Z        | Redo
+Delete              | Delete key
 
-Files:
-Ctrl+O                  -       Open file
-Ctrl+S                  -       Quicksave
-Ctrl+Shift+S            -       Save as
-Ctrl+1/2/3/4            -       Quickload recent files
-Ctrl+E                  -       Remote export
+#### View:
+
+Key | Action
+--- | ---
+Space               | Start/Stop
+Arrows              | Move cursor around
+Alt+Up/Down         | Jump 8 rows
+Ctrl+Alt+Up/Down    | Jump to StartRow/NextBookmark - PrevBookmark/EndRow
+Ctrl+Left/Right     | Jump to first/last track
+Ctrl+Up/Down        | Jump to Previous/Next key in current track
+Alt+Left/Right      | Fold/Unfold track
+Ctrl+Alt+Left/Right | Fold/Unfold group
+Trackpad scroll     | Scroll
+B                   | Toggle Bookmark
+Ctrl+B              | Clear all Bookmarks
+Tab                 | Jump between Row, Start Row, End Row, Track editing
+
+#### Files:
+
+Key | Action
+--- | ---
+Ctrl+O              | Open file
+Ctrl+S              | Quicksave
+Ctrl+Shift+S        | Save as
+Ctrl+1/2/3/4        | Quickload recent files
+Ctrl+E              | Remote export
 

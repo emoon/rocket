@@ -1,121 +1,120 @@
-/* Copyright (C) 2007-2008 Erik Faye-Lund and Egbert Teeselink
- * For conditions of distribution and use, see copyright notice in COPYING
- */
-
 #include "trackview.h"
-#include <vector>
-#include <algorithm>
-#include <stdio.h>
+#include "syncdocument.h"
+#include <qdrawutil.h>
+#include <QApplication>
+#include <QByteArray>
+#include <QClipboard>
+#include <QScrollBar>
+#include <QMouseEvent>
+#include <QMimeData>
+#include <QLineEdit>
+#include <QDoubleValidator>
 
-using std::min;
-using std::max;
-
-static const char *trackViewWindowClassName = "TrackView";
-
-static DWORD darken(DWORD col, float amt)
+TrackView::TrackView(QWidget *parent) :
+    QAbstractScrollArea(parent),
+    paused(true),
+    connected(false),
+    windowRows(0),
+    document(NULL),
+    dragging(false)
 {
-	return RGB(GetRValue(col) * amt, GetGValue(col) * amt, GetBValue(col) * amt);
-}
+#ifdef Q_OS_WIN
+	setFont(QFont("Fixedsys"));
+#else
+	QFont font("Monospace");
+	font.setStyleHint(QFont::TypeWriter);
+	setFont(font);
+#endif
 
-static int getMaxCharacterWidth(HDC hdc, const char *chars, size_t len)
-{
-	int maxDigitWidth = 0;
-	for (size_t i = 0; i < len; ++i)
-	{
-		SIZE size;
-		GetTextExtentPoint32(hdc, &chars[i], 1, &size);
-		maxDigitWidth = max(maxDigitWidth, int(size.cx));
-	}
-	return maxDigitWidth;
-}
+	lineEdit = new QLineEdit(this);
+	lineEdit->setAutoFillBackground(true);
+	lineEdit->hide();
+	QDoubleValidator *lineEditValidator = new QDoubleValidator();
+	lineEditValidator->setNotation(QDoubleValidator::StandardNotation);
+	lineEditValidator->setLocale(QLocale::c());
+	lineEdit->setValidator(lineEditValidator);
 
-static int getMaxCharacterWidthFromString(HDC hdc, const char *chars)
-{
-	return getMaxCharacterWidth(hdc, chars, strlen(chars));
-}
+	QObject::connect(lineEdit, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()));
 
-TrackView::TrackView() :
-	document(NULL)
-{
+	viewport()->setAutoFillBackground(false);
+
+	setFocus(Qt::OtherFocusReason);
+
+	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+
 	scrollPosX = 0;
 	scrollPosY = 0;
-	windowWidth  = -1;
-	windowHeight = -1;
-	
+
 	editRow = 0;
 	editTrack = 0;
 	
 	selectStartTrack = selectStopTrack = 0;
 	selectStartRow = selectStopRow = 0;
-	
-	this->hwnd = NULL;
-	
-	bgBaseBrush = GetSysColorBrush(COLOR_WINDOW);
-	bgDarkBrush = CreateSolidBrush(darken(GetSysColor(COLOR_WINDOW), 0.9f));
-	
-	selectBaseBrush = GetSysColorBrush(COLOR_HIGHLIGHT);
-	selectDarkBrush = CreateSolidBrush(darken(GetSysColor(COLOR_HIGHLIGHT), 0.9f));
-	
-	rowPen       = CreatePen(PS_SOLID, 1, darken(GetSysColor(COLOR_WINDOW), 0.7f));
-	rowSelectPen = CreatePen(PS_SOLID, 1, darken(GetSysColor(COLOR_HIGHLIGHT), 0.7f));
-	
-	lerpPen   = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
-	cosinePen = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
-	rampPen   = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
 
-	editBrush = CreateSolidBrush(RGB(255, 255, 0)); // yellow
-	bookmarkBrush = CreateSolidBrush(RGB(128, 128, 255)); // red
+	updateFont();
+	updatePalette();
 
-	handCursor = LoadCursor(NULL, IDC_HAND);
+	handCursor = QCursor(Qt::OpenHandCursor);
+	setMouseTracking(true);
 
-	clipboardFormat = RegisterClipboardFormat("syncdata");
-	assert(0 != clipboardFormat);
+	setupScrollBars();
+	QObject::connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(onHScroll(int)));
+	QObject::connect(verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(onVScroll(int)));
+}
+
+void TrackView::updatePalette()
+{
+	bgBaseBrush = palette().base();
+	bgDarkBrush = palette().window();
+
+	selectBaseBrush = palette().highlight();
+	selectDarkBrush = palette().highlight().color().darker(100.0 / 0.9);
+
+	rowPen       = QPen(QBrush(palette().base().color().darker(100.0 / 0.7)), 1);
+	rowSelectPen = QPen(QBrush(palette().highlight().color().darker(100.0 / 0.7)), 1);
+
+	lerpPen   = QPen(QBrush(QColor(255, 0, 0)), 2);
+	cosinePen = QPen(QBrush(QColor(0, 255, 0)), 2);
+	rampPen   = QPen(QBrush(QColor(0, 0, 255)), 2);
+
+	editBrush = Qt::yellow;
+	bookmarkBrush = QColor(128, 128, 255);
+}
+
+void TrackView::updateFont()
+{
+	rowHeight = fontMetrics().lineSpacing();
+	trackWidth = fontMetrics().width('0') * 16;
+
+	topMarginHeight = rowHeight + 4;
+	leftMarginWidth = fontMetrics().width('0') * 8;
 }
 
 TrackView::~TrackView()
 {
-	DeleteObject(bgBaseBrush);
-	DeleteObject(bgDarkBrush);
-	DeleteObject(selectBaseBrush);
-	DeleteObject(selectDarkBrush);
-	DeleteObject(lerpPen);
-	DeleteObject(cosinePen);
-	DeleteObject(rampPen);
-	DeleteObject(editBrush);
-	DeleteObject(bookmarkBrush);
-	DeleteObject(rowPen);
-	DeleteObject(rowSelectPen);
 	if (document)
 		delete document;
 }
 
-void TrackView::setFont(HFONT font)
+int TrackView::getLogicalX(int track) const
 {
-	this->font = font;
-	
-	assert(NULL != hwnd);
-	HDC hdc = GetDC(hwnd);
-	SelectObject(hdc, font);
-	
-	TEXTMETRIC tm;
-	GetTextMetrics(hdc, &tm);
-	
-	rowHeight = tm.tmHeight + tm.tmExternalLeading;
-	fontWidth = tm.tmAveCharWidth;
-	trackWidth = getMaxCharacterWidthFromString(hdc, "0123456789.") * 16;
-	
-	topMarginHeight = rowHeight + 4;
-	leftMarginWidth = getMaxCharacterWidthFromString(hdc, "0123456789abcdefh") * 8;
+	return track * trackWidth;
 }
 
-int TrackView::getScreenY(int row) const
+int TrackView::getLogicalY(int row) const
 {
-	return topMarginHeight + (row * rowHeight) - scrollPosY;
+	return row * rowHeight;
 }
 
-int TrackView::getScreenX(size_t track) const
+int TrackView::getPhysicalX(int track) const
 {
-	return int(leftMarginWidth + (track * trackWidth)) - scrollPosX;
+	return leftMarginWidth + getLogicalX(track) - scrollPosX;
+}
+
+int TrackView::getPhysicalY(int row) const
+{
+	return topMarginHeight + getLogicalY(row) - scrollPosY;
 }
 
 inline int divfloor(int a, int b)
@@ -125,272 +124,291 @@ inline int divfloor(int a, int b)
 	return a / b;
 }
 
-int TrackView::getTrackFromX(int x) const
+int TrackView::getTrackFromLogicalX(int x) const
 {
-	return divfloor(x + scrollPosX - leftMarginWidth, trackWidth);
+	return divfloor(x, trackWidth);
 }
 
-
-LRESULT TrackView::onCreate()
+int TrackView::getTrackFromPhysicalX(int x) const
 {
-//	setFont((HFONT)GetStockObject(SYSTEM_FONT));
-	setFont((HFONT)GetStockObject(SYSTEM_FIXED_FONT));
-
-	setupScrollBars();
-	return FALSE;
+	return getTrackFromLogicalX(x - leftMarginWidth + scrollPosX);
 }
 
-LRESULT TrackView::onPaint()
+void TrackView::paintEvent(QPaintEvent *event)
 {
-	PAINTSTRUCT ps;
-	HDC hdc = BeginPaint(hwnd, &ps);
-	
-//	SelectObject(hdc, GetStockObject(SYSTEM_FIXED_FONT));
-	SelectObject(hdc, font);
-	paintTracks(hdc, ps.rcPaint);
-	
-	EndPaint(hwnd, &ps);
-	
-	return FALSE;
+	QPainter painter(this->viewport());
+	paintTopMargin(painter, event->rect());
+	paintLeftMargin(painter, event->rect());
+	paintTracks(painter, event->rect());
 }
 
-void TrackView::paintTopMargin(HDC hdc, RECT rcTracks)
+void TrackView::paintTopMargin(QPainter &painter, const QRect &rcTracks)
 {
-	RECT fillRect;
-	RECT topLeftMargin;
+	QRect topLeftMargin;
 	const SyncDocument *doc = getDocument();
 	if (NULL == doc) return;
 	
-	topLeftMargin.top = 0;
-	topLeftMargin.bottom = topMarginHeight;
-	topLeftMargin.left = 0;
-	topLeftMargin.right = leftMarginWidth;
-	fillRect = topLeftMargin;
-	DrawEdge(hdc, &fillRect, BDR_RAISEDINNER | BDR_RAISEDOUTER, BF_ADJUST | BF_BOTTOM);
-	FillRect(hdc, &fillRect, GetSysColorBrush(COLOR_3DFACE));
-	
-	int startTrack = scrollPosX / trackWidth;
-	int endTrack  = min(startTrack + windowTracks + 1, int(getTrackCount()));
-	
-	SetTextColor(hdc, GetSysColor(COLOR_WINDOWTEXT));
-	
+	topLeftMargin.setTop(-1);
+	topLeftMargin.setBottom(topMarginHeight - 1);
+	topLeftMargin.setLeft(-1);
+	topLeftMargin.setRight(leftMarginWidth + 1);
+	painter.fillRect(topLeftMargin, palette().button());
+	qDrawWinButton(&painter, topLeftMargin, palette());
+
+	QRect topRightMargin;
+	topRightMargin.setTop(-1);
+	topRightMargin.setBottom(topMarginHeight - 1);
+	topRightMargin.setLeft(getPhysicalX(getTrackCount()) - 1);
+	topRightMargin.setRight(rcTracks.right() + 1);
+	painter.fillRect(topRightMargin, palette().button());
+	qDrawWinButton(&painter, topRightMargin, palette());
+
+	int startTrack = qBound(0, getTrackFromPhysicalX(qMax(rcTracks.left(), leftMarginWidth)), int(getTrackCount()));
+	int endTrack   = qBound(0, getTrackFromPhysicalX(rcTracks.right()) + 1, int(getTrackCount()));
+
 	for (int track = startTrack; track < endTrack; ++track) {
-		size_t index = doc->getTrackIndexFromPos(track);
-		const sync_track *t = doc->tracks[index];
+		int index = doc->getTrackIndexFromPos(track);
+		const SyncTrack *t = doc->getTrack(index);
 
-		RECT topMargin;
-		topMargin.top = 0;
-		topMargin.bottom = topMarginHeight;
-		topMargin.left = getScreenX(track);
-		topMargin.right = topMargin.left + trackWidth;
-
-		if (!RectVisible(hdc, &topMargin))
+		QRect topMargin(getPhysicalX(track), 0, trackWidth, topMarginHeight);
+		if (!rcTracks.intersects(topMargin))
 			continue;
 
-		RECT fillRect = topMargin;
+		QRect fillRect = topMargin;
 
-		HBRUSH bgBrush = GetSysColorBrush(COLOR_3DFACE);
+		QBrush bgBrush = palette().button();
 		if (track == editTrack)
 			bgBrush = editBrush;
 
-		DrawEdge(hdc, &fillRect, BDR_RAISEDINNER | BDR_RAISEDOUTER, BF_ADJUST | BF_LEFT | BF_RIGHT | BF_BOTTOM);
-		FillRect(hdc, &fillRect, bgBrush);
+		painter.fillRect(fillRect, bgBrush);
+		qDrawWinButton(&painter, fillRect, palette());
 
-		if (!doc->clientSocket.clientTracks.count(t->name))
-			SetTextColor(hdc, GetSysColor(COLOR_GRAYTEXT));
+		if (!t->isActive())
+			painter.setPen(QColor(128, 128, 128));
 		else
-			SetTextColor(hdc, GetSysColor(COLOR_WINDOWTEXT));
-		TextOut(hdc, fillRect.left, 0, t->name, int(strlen(t->name)));
+			painter.setPen(QColor(0, 0, 0));
+
+		painter.drawText(fillRect, t->name);
 	}
-	
-	RECT topRightMargin;
-	topRightMargin.top = 0;
-	topRightMargin.bottom = topMarginHeight;
-	topRightMargin.left = getScreenX(getTrackCount());
-	topRightMargin.right = rcTracks.right;
-	fillRect = topRightMargin;
-	DrawEdge(hdc, &fillRect, BDR_RAISEDINNER | BDR_RAISEDOUTER, BF_ADJUST | BF_BOTTOM);
-	FillRect(hdc, &fillRect, GetSysColorBrush(COLOR_3DFACE));
-	
+
 	// make sure that the top margin isn't overdrawn by the track-data
-	ExcludeClipRect(hdc, 0, 0, rcTracks.right, topMarginHeight);
+	painter.setClipRegion(QRect(0, topMarginHeight, rcTracks.right() + 1, rcTracks.bottom() + 1));
 }
 
-void TrackView::paintTracks(HDC hdc, RECT rcTracks)
+void TrackView::paintLeftMargin(QPainter &painter, const QRect &rcTracks)
 {
 	const SyncDocument *doc = getDocument();
 	if (NULL == doc) return;
-	
-	char temp[256];
-	
+
 	int firstRow = editRow - windowRows / 2 - 1;
 	int lastRow  = editRow + windowRows / 2 + 1;
-	
-	/* clamp first & last row */
-	firstRow = min(max(firstRow, 0), int(getRows()) - 1);
-	lastRow  = min(max(lastRow,  0), int(getRows()) - 1);
-	
-	SetBkMode(hdc, TRANSPARENT);
-	paintTopMargin(hdc, rcTracks);
-	
-	for (int row = firstRow; row <= lastRow; ++row)
-	{
-		RECT leftMargin;
-		leftMargin.left  = 0;
-		leftMargin.right = leftMarginWidth;
-		leftMargin.top    = getScreenY(row);
-		leftMargin.bottom = leftMargin.top + rowHeight;
-		
-		if (!RectVisible(hdc, &leftMargin)) continue;
 
-		HBRUSH fillBrush;
+	/* clamp first & last row */
+	firstRow = qBound(0, firstRow, int(getRows()) - 1);
+	lastRow  = qBound(0, lastRow,  int(getRows()) - 1);
+
+	for (int row = firstRow; row <= lastRow; ++row) {
+		QRect leftMargin(0, getPhysicalY(row), leftMarginWidth, rowHeight);
+		if (!rcTracks.intersects(leftMargin))
+			continue;
+
+		QBrush fillBrush;
 		if (row == editRow)
 			fillBrush = editBrush;
 		else if (doc->isRowBookmark(row))
 			fillBrush = bookmarkBrush;
 		else
-			fillBrush = GetSysColorBrush(COLOR_3DFACE);
-		FillRect(hdc, &leftMargin, fillBrush);
+			fillBrush = palette().button();
+		painter.fillRect(leftMargin, fillBrush);
 
-		DrawEdge(hdc, &leftMargin, BDR_RAISEDINNER | BDR_RAISEDOUTER, BF_RIGHT | BF_BOTTOM | BF_TOP);
-		if ((row % 8) == 0)      SetTextColor(hdc, RGB(0, 0, 0));
-		else if ((row % 4) == 0) SetTextColor(hdc, RGB(64, 64, 64));
-		else                     SetTextColor(hdc, RGB(128, 128, 128));
-		
-/*		if ((row % 4) == 0) SetTextColor(hdc, GetSysColor(COLOR_BTNTEXT));
-		else                SetTextColor(hdc, GetSysColor(COLOR_GRAYTEXT)); */
-		
-		snprintf(temp, 256, "%0*Xh", 5, row);
-		TextOut(hdc,
-			leftMargin.left, leftMargin.top,
-			temp, int(strlen(temp))
-		);
+		qDrawWinButton(&painter, leftMargin, palette());
+		if ((row % 8) == 0)      painter.setPen(QColor(0, 0, 0));
+		else if ((row % 4) == 0) painter.setPen(QColor(64, 64, 64));
+		else                     painter.setPen(QColor(128, 128, 128));
+
+		painter.drawText(leftMargin, QString("%1").arg(row, 5, 16, QChar('0')).toUpper() + "h");
 	}
-	
-	SetTextColor(hdc, GetSysColor(COLOR_WINDOWTEXT));
-	
-	int selectLeft  = min(selectStartTrack, selectStopTrack);
-	int selectRight = max(selectStartTrack, selectStopTrack);
-	int selectTop    = min(selectStartRow, selectStopRow);
-	int selectBottom = max(selectStartRow, selectStopRow);
-	
-	int startTrack = scrollPosX / trackWidth;
-	int endTrack  = min(startTrack + windowTracks + 1, int(getTrackCount()));
-	
-	for (int track = startTrack; track < endTrack; ++track) {
-		const sync_track *t = doc->tracks[doc->getTrackIndexFromPos(track)];
-		for (int row = firstRow; row <= lastRow; ++row) {
-			RECT patternDataRect;
-			patternDataRect.left = getScreenX(track);
-			patternDataRect.right = patternDataRect.left + trackWidth;
-			patternDataRect.top = getScreenY(row);
-			patternDataRect.bottom = patternDataRect.top + rowHeight;
-			
-			if (!RectVisible(hdc, &patternDataRect))
-				continue;
+}
 
-			int idx = sync_find_key(t, row);
-			int fidx = idx >= 0 ? idx : -idx - 2;
-			key_type interpolationType = (fidx >= 0) ? t->keys[fidx].type : KEY_STEP;
-			bool selected = (track >= selectLeft && track <= selectRight) && (row >= selectTop && row <= selectBottom);
+void TrackView::paintTracks(QPainter &painter, const QRect &rcTracks)
+{
+	const SyncDocument *doc = getDocument();
+	if (NULL == doc) return;
 
-			HBRUSH baseBrush = bgBaseBrush;
-			HBRUSH darkBrush = bgDarkBrush;
-			if (selected)
-			{
-				baseBrush = selectBaseBrush;
-				darkBrush = selectDarkBrush;
-			}
-			
-			HBRUSH bgBrush = baseBrush;
-			if (row % 8 == 0) bgBrush = darkBrush;
-			
-			RECT fillRect = patternDataRect;
-			FillRect( hdc, &fillRect, bgBrush);
-			if (row % 8 == 0) {
-				MoveToEx(hdc, patternDataRect.left, patternDataRect.top, (LPPOINT) NULL); 
-				if (selected) SelectObject(hdc, rowSelectPen);
-				else          SelectObject(hdc, rowPen);
-				LineTo(hdc,   patternDataRect.right, patternDataRect.top); 
-			}
-			
-			switch (interpolationType) {
-			case KEY_STEP:
-				break;
-			case KEY_LINEAR:
-				SelectObject(hdc, lerpPen);
-				break;
-			case KEY_SMOOTH:
-				SelectObject(hdc, cosinePen);
-				break;
-			case KEY_RAMP:
-				SelectObject(hdc, rampPen);
-				break;
-			}
-			if (interpolationType != KEY_STEP) {
-				MoveToEx(hdc, patternDataRect.right - 1, patternDataRect.top, (LPPOINT) NULL); 
-				LineTo(hdc,   patternDataRect.right - 1, patternDataRect.bottom);
-			}
+	int firstRow = editRow - windowRows / 2 - 1;
+	int lastRow  = editRow + windowRows / 2 + 1;
 
-			bool drawEditString = false;
-			if (row == editRow && track == editTrack) {
-				FrameRect(hdc, &fillRect, (HBRUSH)GetStockObject(BLACK_BRUSH));
-				if (editString.size() > 0)
-					drawEditString = true;
-			}
-			/* format the text */
-			if (drawEditString)
-				snprintf(temp, 256, editString.c_str());
-			else if (idx < 0)
-				snprintf(temp, 256, "  ---");
-			else {
-				float val = t->keys[idx].value;
-				snprintf(temp, 256, "% .2f", val);
-			}
+	/* clamp first & last row */
+	firstRow = qBound(0, firstRow, int(getRows()) - 1);
+	lastRow  = qBound(0, lastRow,  int(getRows()) - 1);
 
-			COLORREF oldCol;
-			if (selected) oldCol = SetTextColor(hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
-			TextOut(hdc,
-				patternDataRect.left, patternDataRect.top,
-				temp, int(strlen(temp))
-			);
-			if (selected) SetTextColor(hdc, oldCol);
+	int startTrack = qBound(0, getTrackFromPhysicalX(qMax(rcTracks.left(), leftMarginWidth)), int(getTrackCount()));
+	int endTrack   = qBound(0, getTrackFromPhysicalX(rcTracks.right()) + 1, int(getTrackCount()));
+
+	QRect topPadding(QPoint(rcTracks.left(), qMax(int(rcTracks.top()), topMarginHeight)),
+			 QPoint(rcTracks.right(), getPhysicalY(0) - 1));
+	painter.fillRect(topPadding, palette().dark());
+
+	QRect bottomPadding(QPoint(rcTracks.left(), getPhysicalY(int(getRows()))),
+			    QPoint(rcTracks.right(), rcTracks.bottom()));
+	painter.fillRect(bottomPadding, palette().dark());
+
+	painter.setClipRect(leftMarginWidth,
+			    topMarginHeight,
+			    viewport()->width() - leftMarginWidth,
+			    viewport()->height() - topMarginHeight);
+
+	for (int track = startTrack; track < endTrack; ++track)
+		paintTrack(painter, rcTracks, track);
+
+	QRect rightMargin(QPoint(getPhysicalX(getTrackCount()), getPhysicalY(0)),
+	                  QPoint(rcTracks.right(), getPhysicalY(int(getRows())) - 1));
+	painter.fillRect(rightMargin, palette().dark());
+}
+
+static QPen getInterpolationBrush(SyncTrack::TrackKey::KeyType type)
+{
+	switch (type) {
+	case SyncTrack::TrackKey::STEP:
+		return QPen();
+
+	case SyncTrack::TrackKey::LINEAR:
+		return QPen(QBrush(QColor(255, 0, 0)), 2);
+
+	case SyncTrack::TrackKey::SMOOTH:
+		return QPen(QBrush(QColor(0, 255, 0)), 2);
+
+	case SyncTrack::TrackKey::RAMP:
+		return QPen(QBrush(QColor(0, 0, 255)), 2);
+
+	default:
+		Q_ASSERT(false);
+		return QPen();
+	}
+}
+
+void TrackView::paintTrack(QPainter &painter, const QRect &rcTracks, int track)
+{
+	int firstRow = editRow - windowRows / 2 - 1;
+	int lastRow  = editRow + windowRows / 2 + 1;
+
+	/* clamp first & last row */
+	firstRow = qBound(0, firstRow, int(getRows()) - 1);
+	lastRow  = qBound(0, lastRow,  int(getRows()) - 1);
+
+	QRect selection = getSelection();
+
+	const SyncTrack *t = getDocument()->getTrack(getDocument()->getTrackIndexFromPos(track));
+	QMap<int, SyncTrack::TrackKey> keyMap = t->getKeyMap();
+
+	for (int row = firstRow; row <= lastRow; ++row) {
+		QRect patternDataRect(getPhysicalX(track), getPhysicalY(row), trackWidth, rowHeight);
+		if (!rcTracks.intersects(patternDataRect))
+			continue;
+
+		QMap<int, SyncTrack::TrackKey>::const_iterator it = keyMap.lowerBound(row);
+		if (it != keyMap.constBegin() && it.key() != row)
+			--it;
+
+		SyncTrack::TrackKey::KeyType interpolationType =
+				(it != keyMap.constEnd() && it.key() <= row) ?
+				it->type : SyncTrack::TrackKey::STEP;
+		bool selected = selection.contains(track, row);
+
+		QBrush baseBrush = bgBaseBrush;
+		QBrush darkBrush = bgDarkBrush;
+
+		if (selected) {
+			baseBrush = selectBaseBrush;
+			darkBrush = selectDarkBrush;
 		}
+
+		QBrush bgBrush = (row % 8 == 0) ? darkBrush : baseBrush;
+
+		QRect fillRect = patternDataRect;
+		painter.fillRect(fillRect, bgBrush);
+		if (row % 8 == 0) {
+			painter.setPen(selected ? rowSelectPen : rowPen);
+			painter.drawLine(patternDataRect.topLeft(),
+			                 patternDataRect.topRight());
+		}
+
+		if (interpolationType != SyncTrack::TrackKey::STEP) {
+			painter.setPen(getInterpolationBrush(interpolationType));
+			painter.drawLine(patternDataRect.topRight(),
+			                 patternDataRect.bottomRight());
+		}
+
+		if (row == editRow && track == editTrack) {
+			painter.setPen(QColor(0, 0, 0));
+			painter.drawRect(fillRect.x(), fillRect.y(), fillRect.width() - 1, fillRect.height() - 1);
+		}
+
+		painter.setPen(selected ?
+		    palette().color(QPalette::HighlightedText) :
+		    palette().color(QPalette::WindowText));
+		painter.drawText(patternDataRect, t->isKeyFrame(row) ?
+		                 QString::number(t->getKeyFrame(row).value, 'f', 2) :
+		                 "  ---");
 	}
-	
-	/* right margin */
-	{
-		RECT rightMargin;
-		rightMargin.top    = getScreenY(0);
-		rightMargin.bottom = getScreenY(int(getRows()));
-		rightMargin.left  = getScreenX(getTrackCount());
-		rightMargin.right = rcTracks.right;
-		FillRect( hdc, &rightMargin, GetSysColorBrush(COLOR_APPWORKSPACE));
+}
+
+void TrackView::mouseMoveEvent(QMouseEvent *event)
+{
+	int track = getTrackFromPhysicalX(event->pos().x());
+	if (dragging) {
+		SyncDocument *doc = getDocument();
+		const int trackCount = getTrackCount();
+
+		if (!doc || track < 0 || track >= trackCount)
+			return;
+
+		if (track > anchorTrack) {
+			for (int i = anchorTrack; i < track; ++i)
+				doc->swapTrackOrder(i, i + 1);
+			anchorTrack = track;
+			setEditTrack(track);
+			viewport()->update();
+		} else if (track < anchorTrack) {
+			for (int i = anchorTrack; i > track; --i)
+				doc->swapTrackOrder(i, i - 1);
+			anchorTrack = track;
+			setEditTrack(track);
+			viewport()->update();
+		}
+	} else {
+		if (event->pos().y() < topMarginHeight &&
+		    track >= 0 && track < int(getTrackCount())) {
+			setCursor(handCursor);
+		} else
+			setCursor(QCursor(Qt::ArrowCursor));
 	}
-	
-	{
-		RECT bottomPadding;
-		bottomPadding.top = getScreenY(int(getRows()));
-		bottomPadding.bottom = rcTracks.bottom;
-		bottomPadding.left = rcTracks.left;
-		bottomPadding.right = rcTracks.right;
-		FillRect(hdc, &bottomPadding, GetSysColorBrush(COLOR_APPWORKSPACE));
+}
+
+void TrackView::mousePressEvent(QMouseEvent *event)
+{
+	int track = getTrackFromPhysicalX(event->pos().x());
+	if (event->button() == Qt::LeftButton &&
+	    event->pos().y() < topMarginHeight &&
+	    track >= 0 && track < int(getTrackCount())) {
+		dragging = true;
+		anchorTrack = track;
 	}
-	
-	{
-		RECT topPadding;
-		topPadding.top = max(int(rcTracks.top), topMarginHeight);
-		topPadding.bottom = getScreenY(0);
-		topPadding.left = rcTracks.left;
-		topPadding.right = rcTracks.right;
-		FillRect(hdc, &topPadding, GetSysColorBrush(COLOR_APPWORKSPACE));
+}
+
+void TrackView::mouseReleaseEvent(QMouseEvent *event)
+{
+	if (event->button() == Qt::LeftButton) {
+		dragging = false;
+		setCursor(QCursor(Qt::ArrowCursor));
+		setEditTrack(editTrack);
 	}
 }
 
 struct CopyEntry
 {
 	int track;
-	track_key keyFrame;
+	SyncTrack::TrackKey keyFrame;
 };
 
 void TrackView::editCopy()
@@ -399,69 +417,52 @@ void TrackView::editCopy()
 	if (NULL == doc) return;
 	
 	if (0 == getTrackCount()) {
-		MessageBeep(~0U);
-		return;
-	}
-	
-	int selectLeft  = min(selectStartTrack, selectStopTrack);
-	int selectRight = max(selectStartTrack, selectStopTrack);
-	int selectTop    = min(selectStartRow, selectStopRow);
-	int selectBottom = max(selectStartRow, selectStopRow);
-	
-	if (FAILED(OpenClipboard(getWin())))
-	{
-		MessageBox(NULL, "Failed to open clipboard", NULL, MB_OK);
+		QApplication::beep();
 		return;
 	}
 
-	std::vector<struct CopyEntry> copyEntries;
-	for (int track = selectLeft; track <= selectRight; ++track) {
-		const size_t trackIndex  = doc->getTrackIndexFromPos(track);
-		const sync_track *t = doc->tracks[trackIndex];
+	QRect selection = getSelection();
 
-		for (int row = selectTop; row <= selectBottom; ++row) {
-			int idx = sync_find_key(t, row);
-			if (idx >= 0) {
+	QVector<struct CopyEntry> copyEntries;
+	for (int track = selection.left(); track <= selection.right(); ++track) {
+		const int trackIndex  = doc->getTrackIndexFromPos(track);
+		const SyncTrack *t = doc->getTrack(trackIndex);
+
+		for (int row = selection.top(); row <= selection.bottom(); ++row) {
+			if (t->isKeyFrame(row)) {
 				CopyEntry ce;
-				ce.track = track - selectLeft;
-				ce.keyFrame = t->keys[idx];
-				ce.keyFrame.row -= selectTop;
+				ce.track = track - selection.left();
+				ce.keyFrame = t->getKeyFrame(row);
+				ce.keyFrame.row -= selection.top();
 				copyEntries.push_back(ce);
 			}
 		}
 	}
 	
-	int buffer_width  = selectRight - selectLeft + 1;
-	int buffer_height = selectBottom - selectTop + 1;
+	int buffer_width  = selection.width();
+	int buffer_height = selection.height();
 	size_t buffer_size = copyEntries.size();
-	
-	HGLOBAL hmem = GlobalAlloc(GMEM_MOVEABLE, sizeof(int) * 3 + sizeof(CopyEntry) * copyEntries.size());
-	char *clipbuf = (char *)GlobalLock(hmem);
-	
-	// copy data
-	memcpy(clipbuf + 0,                                &buffer_width,  sizeof(int));
-	memcpy(clipbuf + sizeof(int),                      &buffer_height, sizeof(int));
-	memcpy(clipbuf + 2 * sizeof(int),                  &buffer_size,   sizeof(size_t));
-	if (copyEntries.size() > 0 ) memcpy(clipbuf + 2 * sizeof(int) + sizeof(size_t), &copyEntries[0], sizeof(CopyEntry) * copyEntries.size());
-	
-	GlobalUnlock(hmem);
-	clipbuf = NULL;
-	
-	// update clipboard
-	EmptyClipboard();
-	SetClipboardData(clipboardFormat, hmem);
-	CloseClipboard();
+
+	QByteArray data;
+	data.append((char *)&buffer_width, sizeof(int));
+	data.append((char *)&buffer_height, sizeof(int));
+	data.append((char *)&buffer_size, sizeof(size_t));
+	data.append((char *)&copyEntries[0], sizeof(CopyEntry) * copyEntries.size());
+
+	QMimeData *mimeData = new QMimeData;
+	mimeData->setData("application/x-gnu-rocket", data);
+	QApplication::clipboard()->setMimeData(mimeData);
 }
 
 void TrackView::editCut()
 {
 	if (0 == getTrackCount()) {
-		MessageBeep(~0U);
+		QApplication::beep();
 		return;
 	}
 	
 	editCopy();
-	editDelete();
+	editClear();
 }
 
 void TrackView::editPaste()
@@ -470,134 +471,169 @@ void TrackView::editPaste()
 	if (NULL == doc) return;
 	
 	if (0 == getTrackCount()) {
-		MessageBeep(~0U);
+		QApplication::beep();
 		return;
 	}
-	
-	if (FAILED(OpenClipboard(getWin())))
-	{
-		MessageBox(NULL, "Failed to open clipboard", NULL, MB_OK);
-		return;
-	}
-	
-	if (IsClipboardFormatAvailable(clipboardFormat))
-	{
-		HGLOBAL hmem = GetClipboardData(clipboardFormat);
-		char *clipbuf = (char *)GlobalLock(hmem);
+
+	const QMimeData *mimeData = QApplication::clipboard()->mimeData();
+	if (mimeData->hasFormat("application/x-gnu-rocket")) {
+		const QByteArray mimeDataBuffer = mimeData->data("application/x-gnu-rocket");
+		const char *clipbuf = mimeDataBuffer.data();
 		
 		// copy data
 		int buffer_width, buffer_height, buffer_size;
 		memcpy(&buffer_width,  clipbuf + 0,               sizeof(int));
 		memcpy(&buffer_height, clipbuf + sizeof(int),     sizeof(int));
-		memcpy(&buffer_size,   clipbuf + 2 * sizeof(int), sizeof(size_t));
-		
-		SyncDocument::MultiCommand *multiCmd = new SyncDocument::MultiCommand();
+		memcpy(&buffer_size,   clipbuf + 2 * sizeof(int), sizeof(int));
+
+		doc->beginMacro("paste");
 		for (int i = 0; i < buffer_width; ++i) {
-			size_t trackPos = editTrack + i;
+			int trackPos = editTrack + i;
 			if (trackPos >= getTrackCount()) continue;
 
-			size_t trackIndex = doc->getTrackIndexFromPos(trackPos);
-			const sync_track *t = doc->tracks[trackIndex];
+			int trackIndex = doc->getTrackIndexFromPos(trackPos);
+			SyncTrack *t = doc->getTrack(trackIndex);
 			for (int j = 0; j < buffer_height; ++j) {
 				int row = editRow + j;
-				if (is_key_frame(t, row))
-					multiCmd->addCommand(new SyncDocument::DeleteCommand(int(trackIndex), row));
+				if (t->isKeyFrame(row))
+					doc->deleteKeyFrame(t, row);
 			}
 		}
 		
-		char *src = clipbuf + 2 * sizeof(int) + sizeof(size_t);
+		const char *src = clipbuf + 2 * sizeof(int) + sizeof(size_t);
 		for (int i = 0; i < buffer_size; ++i)
 		{
 			struct CopyEntry ce;
 			memcpy(&ce, src, sizeof(CopyEntry));
 			src += sizeof(CopyEntry);
-			
-			assert(ce.track >= 0);
-			assert(ce.track < buffer_width);
-			assert(ce.keyFrame.row >= 0);
-			assert(ce.keyFrame.row < buffer_height);
 
-			size_t trackPos = editTrack + ce.track;
-			if (trackPos < getTrackCount())
-			{
-				size_t trackIndex = doc->getTrackIndexFromPos(trackPos);
-				track_key key = ce.keyFrame;
+			Q_ASSERT(ce.track >= 0);
+			Q_ASSERT(ce.track < buffer_width);
+			Q_ASSERT(ce.keyFrame.row >= 0);
+			Q_ASSERT(ce.keyFrame.row < buffer_height);
+
+			int trackPos = editTrack + ce.track;
+			if (trackPos < getTrackCount()) {
+				int track = doc->getTrackIndexFromPos(trackPos);
+				SyncTrack::TrackKey key = ce.keyFrame;
 				key.row += editRow;
 
 				// since we deleted all keyframes in the edit-box already, we can just insert this one. 
-				SyncDocument::Command *cmd = new SyncDocument::InsertCommand(int(trackIndex), key);
-				multiCmd->addCommand(cmd);
+				doc->setKeyFrame(doc->getTrack(track), key);
 			}
 		}
-		doc->exec(multiCmd);
-		
-		GlobalUnlock(hmem);
+		doc->endMacro();
+
+		invalidateRange(editTrack, editTrack + buffer_width - 1, editRow, editRow + buffer_height - 1);
+		dirtyCurrentValue();
+
 		clipbuf = NULL;
-	}
-	else
-		MessageBeep(~0U);
-	
-	CloseClipboard();
+	} else
+		QApplication::beep();
 }
+
+void TrackView::editUndo()
+{
+	SyncDocument *doc = getDocument();
+	if (!doc)
+		return;
+
+	if (!doc->canUndo())
+		QApplication::beep();
+	else
+		doc->undo();
+
+	// unfortunately, we don't know how much to invalidate... so we'll just invalidate it all.
+	invalidateAll();
+}
+
+void TrackView::editRedo()
+{
+	SyncDocument *doc = getDocument();
+	if (!doc)
+		return;
+
+	if (!doc->canRedo())
+		QApplication::beep();
+	else
+		doc->redo();
+
+	// unfortunately, we don't know how much to invalidate... so we'll just invalidate it all.
+	invalidateAll();
+}
+
+void TrackView::selectAll()
+{
+	selectStartTrack = int(this->getTrackCount()) - 1;
+	selectStopTrack = editTrack = 0;
+	selectStartRow = int(this->getRows()) - 1;
+	selectStopRow = editRow = 0;
+	invalidateAll();
+}
+
+void TrackView::selectTrack()
+{
+	selectStartTrack = selectStopTrack = editTrack;
+	selectStartRow = int(this->getRows()) - 1;
+	selectStopRow = editRow = 0;
+	invalidateAll();
+}
+
+void TrackView::selectRow()
+{
+	selectStartTrack = int(this->getTrackCount()) - 1;
+	selectStopTrack = editTrack = 0;
+	selectStartRow = selectStopRow = editRow;
+	invalidateAll();
+}
+
 
 void TrackView::setupScrollBars()
 {
-	SCROLLINFO si = { sizeof(si) };
-	si.fMask = SIF_POS | SIF_PAGE | SIF_RANGE | SIF_DISABLENOSCROLL;
-	si.nPos  = editRow;
-	si.nPage = windowRows;
-	si.nMin  = 0;
-	si.nMax  = int(getRows()) - 1 + windowRows - 1;
-	SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
-	
-	si.fMask = SIF_POS | SIF_PAGE | SIF_RANGE | SIF_DISABLENOSCROLL;
-	si.nPos  = editTrack;
-	si.nPage = windowTracks;
-	si.nMin  = 0;
-	si.nMax  = int(getTrackCount()) - 1 + windowTracks - 1;
-	SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
+	verticalScrollBar()->setValue(editRow);
+	verticalScrollBar()->setMinimum(0);
+	verticalScrollBar()->setMaximum(int(getRows()) - 1);
+	verticalScrollBar()->setPageStep(windowRows);
+
+	int contentWidth = getTrackCount() * trackWidth;
+	int viewWidth = qMax(viewport()->width() - leftMarginWidth, 0);
+	horizontalScrollBar()->setValue(editTrack * trackWidth);
+	horizontalScrollBar()->setRange(0, contentWidth - viewWidth);
+	horizontalScrollBar()->setSingleStep(20);
+	horizontalScrollBar()->setPageStep(viewWidth);
 }
 
 void TrackView::scrollWindow(int scrollX, int scrollY)
 {
-	RECT clip;
-	GetClientRect(hwnd, &clip);
-	
-	if (scrollX == 0) clip.top  = topMarginHeight; // don't scroll the top margin
-	if (scrollY == 0) clip.left = leftMarginWidth; // don't scroll the left margin
-	
-	ScrollWindowEx(
-		hwnd,
-		scrollX,
-		scrollY,
-		NULL,
-		&clip,
-		NULL,
-		NULL,
-		SW_INVALIDATE
-	);
+	QRect clip = viewport()->geometry();
+
+	if (scrollX == 0) clip.setTop(topMarginHeight); // don't scroll the top margin
+	if (scrollY == 0) clip.setLeft(leftMarginWidth); // don't scroll the left margin
+
+	viewport()->scroll(scrollX, scrollY, clip);
 }
 
 void TrackView::setScrollPos(int newScrollPosX, int newScrollPosY)
 {
 	// clamp newscrollPosX
-	newScrollPosX = max(newScrollPosX, 0);
+	newScrollPosX = qMax(newScrollPosX, 0);
 	
-	if (newScrollPosX != scrollPosX || newScrollPosY != scrollPosY)
-	{
-		int scrollX = scrollPosX - newScrollPosX;
-		int scrollY = scrollPosY - newScrollPosY;
-		
+	if (newScrollPosX != scrollPosX || newScrollPosY != scrollPosY) {
+		int deltaX = scrollPosX - newScrollPosX;
+		int deltaY = scrollPosY - newScrollPosY;
+
 		// update scrollPos
 		scrollPosX = newScrollPosX;
 		scrollPosY = newScrollPosY;
-		
-		scrollWindow(scrollX, scrollY);
+
+		scrollWindow(deltaX, deltaY);
 	}
-	setupScrollBars();
+
+	horizontalScrollBar()->setValue(newScrollPosX);
+	verticalScrollBar()->setValue(editRow);
 }
 
-void TrackView::setEditRow(int newEditRow)
+void TrackView::setEditRow(int newEditRow, bool selecting)
 {
 	SyncDocument *doc = getDocument();
 	if (NULL == doc) return;
@@ -606,34 +642,28 @@ void TrackView::setEditRow(int newEditRow)
 	editRow = newEditRow;
 	
 	// clamp to document
-	editRow = min(max(editRow, 0), int(getRows()) - 1);
+	editRow = qBound(0, editRow, int(getRows()) - 1);
 	
-	if (oldEditRow != editRow)
-	{
-		if (GetKeyState(VK_SHIFT) < 0)
-		{
+	if (oldEditRow != editRow) {
+		if (selecting) {
 			selectStopRow = editRow;
 			invalidateRange(selectStartTrack, selectStopTrack, oldEditRow, editRow);
-		}
-		else
-		{
+		} else {
 			invalidateRange(selectStartTrack, selectStopTrack, selectStartRow, selectStopRow);
 			selectStartRow   = selectStopRow   = editRow;
 			selectStartTrack = selectStopTrack = editTrack;
-		} if (doc->clientSocket.clientPaused) {
-			doc->clientSocket.sendSetRowCommand(editRow);
 		}
-		SendMessage(GetParent(getWin()), WM_ROWCHANGED, 0, editRow);
-		SendMessage(GetParent(getWin()), WM_CURRVALDIRTY, 0, 0);
+		dirtyPosition();
+		dirtyCurrentValue();
 	}
 	
 	invalidateRow(oldEditRow);
 	invalidateRow(editRow);
 	
-	setScrollPos(scrollPosX, (editRow * rowHeight) - ((windowHeight - topMarginHeight) / 2) + rowHeight / 2);
+	setScrollPos(scrollPosX, (editRow * rowHeight) - ((viewport()->height() - topMarginHeight) / 2) + rowHeight / 2);
 }
 
-void TrackView::setEditTrack(int newEditTrack, bool autoscroll)
+void TrackView::setEditTrack(int newEditTrack, bool autoscroll, bool selecting)
 {
 	if (0 == getTrackCount()) return;
 	
@@ -641,12 +671,11 @@ void TrackView::setEditTrack(int newEditTrack, bool autoscroll)
 	editTrack = newEditTrack;
 	
 	// clamp to document
-	editTrack = max(editTrack, 0);
-	editTrack = min(editTrack, int(getTrackCount()) - 1);
+	editTrack = qBound(0, editTrack, int(getTrackCount()) - 1);
 	
 	if (oldEditTrack != editTrack)
 	{
-		if (GetKeyState(VK_SHIFT) < 0)
+		if (selecting)
 		{
 			selectStopTrack = editTrack;
 			invalidateRange(oldEditTrack, editTrack, selectStartRow, selectStopRow);
@@ -657,142 +686,93 @@ void TrackView::setEditTrack(int newEditTrack, bool autoscroll)
 			selectStartRow   = selectStopRow   = editRow;
 			selectStartTrack = selectStopTrack = editTrack;
 		}
-		SendMessage(GetParent(getWin()), WM_TRACKCHANGED, 0, editTrack);
-		SendMessage(GetParent(getWin()), WM_CURRVALDIRTY, 0, 0);
+		dirtyPosition();
+		dirtyCurrentValue();
+		invalidateTrack(oldEditTrack);
+		invalidateTrack(editTrack);
 	}
-	
-	invalidateTrack(oldEditTrack);
-	invalidateTrack(editTrack);
 
-	if (autoscroll) {
-		int firstTrack = scrollPosX / trackWidth;
-		int lastTrack  = firstTrack + windowTracks;
+	if (autoscroll && viewport()->width() > 0) {
+		int viewportWidth = viewport()->width() - leftMarginWidth;
+		int minX = getLogicalX(editTrack);
+		int maxX = getLogicalX(editTrack + 1);
 
-		int newFirstTrack = firstTrack;
-		if (editTrack >= lastTrack)
-			newFirstTrack = editTrack - lastTrack + firstTrack + 1;
-		if (editTrack < firstTrack)
-			newFirstTrack = editTrack;
-		setScrollPos(newFirstTrack * trackWidth, scrollPosY);
+		if (minX < scrollPosX)
+			setScrollPos(minX, scrollPosY);
+		else if (maxX > scrollPosX + viewportWidth)
+			setScrollPos(maxX - viewportWidth, scrollPosY);
 	} else
 		setupScrollBars();
 }
 
-static int getScrollPos(HWND hwnd, int bar)
-{
-	SCROLLINFO si = { sizeof(si), SIF_TRACKPOS };
-	GetScrollInfo(hwnd, bar, &si);
-	return int(si.nTrackPos);
-}
-
-void TrackView::setRows(size_t rows)
+void TrackView::setRows(int rows)
 {
 	SyncDocument *doc = getDocument();
-	assert(doc);
+	Q_ASSERT(doc);
 
 	doc->setRows(rows);
-	InvalidateRect(getWin(), NULL, FALSE);
-	setEditRow(min(editRow, int(rows) - 1));
+	viewport()->update();
+	setEditRow(qMin(editRow, int(rows) - 1));
 }
 
-
-LRESULT TrackView::onVScroll(UINT sbCode, int /*newPos*/)
+int TrackView::getRows() const
 {
-	switch (sbCode)
-	{
-	case SB_TOP:
-		setEditRow(0);
-		break;
-	
-	case SB_LINEUP:
-		setEditRow(editRow - 1);
-		break;
-	
-	case SB_LINEDOWN:
-		setEditRow(editRow + 1);
-		break;
-	
-	case SB_PAGEUP:
-		setEditRow(editRow - windowRows / 2);
-		break;
-	
-	case SB_PAGEDOWN:
-		setEditRow(editRow + windowRows / 2);
-		break;
-	
-	case SB_THUMBPOSITION:
-	case SB_THUMBTRACK:
-		setEditRow(getScrollPos(hwnd, SB_VERT));
-		break;
-	}
-	
-	return FALSE;
+	const SyncDocument *doc = getDocument();
+	if (!doc)
+		return 0;
+	return doc->getRows();
 }
 
-LRESULT TrackView::onHScroll(UINT sbCode, int /*newPos*/)
+int TrackView::getTrackCount() const
 {
-	switch (sbCode)
-	{
-	case SB_LEFT:
-		setEditTrack(0);
-		break;
-	
-	case SB_RIGHT:
-		setEditTrack(int(getTrackCount()) - 1);
-		break;
-	
-	case SB_LINELEFT:
-		setEditTrack(editTrack - 1);
-		break;
-	
-	case SB_LINERIGHT:
-		setEditTrack(editTrack + 1);
-		break;
-	
-	case SB_PAGELEFT:
-		setEditTrack(editTrack - windowTracks);
-		break;
-	
-	case SB_PAGEDOWN:
-		setEditTrack(editTrack + windowTracks);
-		break;
-	
-	case SB_THUMBPOSITION:
-	case SB_THUMBTRACK:
-		setEditTrack(getScrollPos(hwnd, SB_HORZ));
-		break;
-	}
-	
-	return FALSE;
+	const SyncDocument *doc = getDocument();
+	if (!doc)
+		return 0;
+	return doc->getTrackCount();
+};
+
+void TrackView::onVScroll(int value)
+{
+	setEditRow(value);
+}
+
+void TrackView::onHScroll(int value)
+{
+	setScrollPos(value, scrollPosY);
+}
+
+void TrackView::onEditingFinished()
+{
+	editEnterValue();
 }
 
 void TrackView::editEnterValue()
 {
 	SyncDocument *doc = getDocument();
-	if (NULL == doc) return;
-	
-	if (int(editString.size()) > 0 && editTrack < int(getTrackCount()))
-	{
-		size_t trackIndex = doc->getTrackIndexFromPos(editTrack);
-		const sync_track *t = doc->tracks[trackIndex];
+	if (!doc || !lineEdit->isVisible())
+		return;
 
-		track_key newKey;
-		newKey.type = KEY_STEP;
+	if (lineEdit->text().length() > 0 && editTrack < int(getTrackCount())) {
+		int track = doc->getTrackIndexFromPos(editTrack);
+		SyncTrack *t = doc->getTrack(track);
+
+		SyncTrack::TrackKey newKey;
+		newKey.type = SyncTrack::TrackKey::STEP;
 		newKey.row = editRow;
-		int idx = sync_find_key(t, editRow);
-		if (idx >= 0)
-			newKey = t->keys[idx]; // copy old key
-		newKey.value = float(atof(editString.c_str())); // modify value
-		editString.clear();
+		if (t->isKeyFrame(editRow))
+			newKey = t->getKeyFrame(editRow); // copy old key
+		QString text = lineEdit->text();
+		text.remove(lineEdit->validator()->locale().groupSeparator()); // workaround QTBUG-40456
+		newKey.value = lineEdit->validator()->locale().toFloat(text); // modify value
 
-		SyncDocument::Command *cmd = doc->getSetKeyFrameCommand(int(trackIndex), newKey);
-		doc->exec(cmd);
+		doc->setKeyFrame(t, newKey);
 
-		SendMessage(GetParent(getWin()), WM_CURRVALDIRTY, 0, 0);
-		InvalidateRect(getWin(), NULL, FALSE);
-	}
-	else
-		MessageBeep(~0U);
+		dirtyCurrentValue();
+		invalidateTrack(editTrack);
+	} else
+		QApplication::beep();
+
+	lineEdit->hide();
 }
 
 void TrackView::editToggleInterpolationType()
@@ -801,512 +781,271 @@ void TrackView::editToggleInterpolationType()
 	if (NULL == doc) return;
 	
 	if (editTrack < int(getTrackCount())) {
-		size_t trackIndex = doc->getTrackIndexFromPos(editTrack);
-		const sync_track *t = doc->tracks[trackIndex];
+		int track = doc->getTrackIndexFromPos(editTrack);
+		SyncTrack *t = doc->getTrack(track);
+		QMap<int, SyncTrack::TrackKey> keyMap = t->getKeyMap();
 
-		int idx = key_idx_floor(t, editRow);
-		if (idx < 0) {
-			MessageBeep(~0U);
+		QMap<int, SyncTrack::TrackKey>::const_iterator it = keyMap.lowerBound(editRow);
+		if (it != keyMap.constBegin() && it.key() != editRow)
+			--it;
+
+		if (it.key() > editRow || it == keyMap.constEnd()) {
+			QApplication::beep();
 			return;
 		}
 
 		// copy and modify
-		track_key newKey = t->keys[idx];
-		newKey.type = (enum key_type)
-		    ((newKey.type + 1) % KEY_TYPE_COUNT);
+		SyncTrack::TrackKey newKey = *it;
+		newKey.type = (SyncTrack::TrackKey::KeyType)
+		    ((newKey.type + 1) % SyncTrack::TrackKey::KEY_TYPE_COUNT);
 
 		// apply change to data-set
-		SyncDocument::Command *cmd = doc->getSetKeyFrameCommand(int(trackIndex), newKey);
-		doc->exec(cmd);
+		doc->setKeyFrame(t, newKey);
 
 		// update user interface
-		SendMessage(GetParent(getWin()), WM_CURRVALDIRTY, 0, 0);
-		InvalidateRect(getWin(), NULL, FALSE);
+		dirtyCurrentValue();
+		invalidateTrack(editTrack);
 	}
 	else
-		MessageBeep(~0U);
+		QApplication::beep();
 }
 
-void TrackView::editDelete()
+void TrackView::editClear()
 {
 	SyncDocument *doc = getDocument();
 	if (NULL == doc) return;
-	
-	int selectLeft  = min(selectStartTrack, selectStopTrack);
-	int selectRight = max(selectStartTrack, selectStopTrack);
-	int selectTop    = min(selectStartRow, selectStopRow);
-	int selectBottom = max(selectStartRow, selectStopRow);
-	
-	if (0 == getTrackCount()) return;
-	assert(selectRight < int(getTrackCount()));
-	
-	SyncDocument::MultiCommand *multiCmd = new SyncDocument::MultiCommand();
-	for (int track = selectLeft; track <= selectRight; ++track) {
-		size_t trackIndex = doc->getTrackIndexFromPos(track);
-		const sync_track *t = doc->tracks[trackIndex];
 
-		for (int row = selectTop; row <= selectBottom; ++row) {
-			if (is_key_frame(t, row)) {
-				SyncDocument::Command *cmd = new SyncDocument::DeleteCommand(int(trackIndex), row);
-				multiCmd->addCommand(cmd);
-			}
+	QRect selection = getSelection();
+
+	if (0 == getTrackCount()) return;
+	Q_ASSERT(selection.right() < int(getTrackCount()));
+	
+	doc->beginMacro("clear");
+	for (int track = selection.left(); track <= selection.right(); ++track) {
+		int trackIndex = doc->getTrackIndexFromPos(track);
+		SyncTrack *t = doc->getTrack(trackIndex);
+
+		for (int row = selection.top(); row <= selection.bottom(); ++row) {
+			if (t->isKeyFrame(row))
+				doc->deleteKeyFrame(t, row);
 		}
 	}
-	
-	if (0 == multiCmd->getSize()) {
-		MessageBeep(~0U);
-		delete multiCmd;
-	}
-	else
-	{
-		doc->exec(multiCmd);
-		
-		SendMessage(GetParent(getWin()), WM_CURRVALDIRTY, 0, 0);
-		InvalidateRect(getWin(), NULL, FALSE);
-	}
+
+	doc->endMacro();
+	dirtyCurrentValue();
+	invalidateRange(selection.left(), selection.right(), selection.top(), selection.bottom());
 }
 
 void TrackView::editBiasValue(float amount)
 {
 	SyncDocument *doc = getDocument();
 	if (NULL == doc) return;
-	
-	int selectLeft  = min(selectStartTrack, selectStopTrack);
-	int selectRight = max(selectStartTrack, selectStopTrack);
-	int selectTop    = min(selectStartRow, selectStopRow);
-	int selectBottom = max(selectStartRow, selectStopRow);
-	
+
 	if (0 == getTrackCount()) {
-		MessageBeep(~0U);
+		QApplication::beep();
 		return;
 	}
-	
-	SyncDocument::MultiCommand *multiCmd = new SyncDocument::MultiCommand();
-	for (int track = selectLeft; track <= selectRight; ++track) {
-		assert(track < int(getTrackCount()));
-		size_t trackIndex = doc->getTrackIndexFromPos(track);
-		const sync_track *t = doc->tracks[trackIndex];
 
-		for (int row = selectTop; row <= selectBottom; ++row) {
-			int idx = sync_find_key(t, row);
-			if (idx >= 0) {
-				struct track_key k = t->keys[idx]; // copy old key
+	QRect selection = getSelection();
+
+	doc->beginMacro("bias");
+	for (int track = selection.left(); track <= selection.right(); ++track) {
+		Q_ASSERT(track < int(getTrackCount()));
+		int trackIndex = doc->getTrackIndexFromPos(track);
+		SyncTrack *t = doc->getTrack(trackIndex);
+
+		for (int row = selection.top(); row <= selection.bottom(); ++row) {
+			if (t->isKeyFrame(row)) {
+				SyncTrack::TrackKey k = t->getKeyFrame(row); // copy old key
 				k.value += amount; // modify value
 
 				// add sub-command
-				SyncDocument::Command *cmd = doc->getSetKeyFrameCommand(int(trackIndex), k);
-				multiCmd->addCommand(cmd);
+				doc->setKeyFrame(t, k);
 			}
 		}
 	}
-	
-	if (0 == multiCmd->getSize()) {
-		MessageBeep(~0U);
-		delete multiCmd;
-	}
-	else
-	{
-		doc->exec(multiCmd);
-		
-		SendMessage(GetParent(getWin()), WM_CURRVALDIRTY, 0, 0);
-		invalidateRange(selectLeft, selectRight, selectTop, selectBottom);
-	}
+	doc->endMacro();
+
+	dirtyCurrentValue();
+	invalidateRange(selection.left(), selection.right(), selection.top(), selection.bottom());
 }
 
-LRESULT TrackView::onKeyDown(UINT keyCode, UINT /*flags*/)
+void TrackView::keyPressEvent(QKeyEvent *event)
 {
 	SyncDocument *doc = getDocument();
-	if (NULL == doc) return FALSE;
+	if (NULL == doc) return;
 	
-	if (!editString.empty())
-	{
-		switch(keyCode)
-		{
-		case VK_UP:
-		case VK_DOWN:
-		case VK_LEFT:
-		case VK_RIGHT:
-		case VK_PRIOR:
-		case VK_NEXT:
-		case VK_HOME:
-		case VK_END:
+	if (paused && lineEdit->isVisible()) {
+		switch (event->key()) {
+		case Qt::Key_Up:
+		case Qt::Key_Down:
+		case Qt::Key_Left:
+		case Qt::Key_Right:
+		case Qt::Key_PageUp:
+		case Qt::Key_PageDown:
+		case Qt::Key_Home:
+		case Qt::Key_End:
+		case Qt::Key_Space:
 			editEnterValue();
 		}
 	}
-	
-	if (editString.empty())
-	{
-		switch (keyCode)
-		{
-		case VK_LEFT:
-			if (GetKeyState(VK_CONTROL) < 0) {
+
+	bool shiftDown = (event->modifiers() & Qt::ShiftModifier) != 0;
+	bool ctrlDown = (event->modifiers() & Qt::ControlModifier) != 0;
+	bool selecting = shiftDown;
+
+	if (lineEdit->isHidden()) {
+		switch (event->key()) {
+		case Qt::Key_Backtab:
+			ctrlDown = false;
+			selecting = false;
+			// FALLTHROUGH
+		case Qt::Key_Left:
+			if (ctrlDown) {
 				if (0 < editTrack)
 					doc->swapTrackOrder(editTrack, editTrack - 1);
 				else
-					MessageBeep(~0U);
+					QApplication::beep();
 			}
 			if (0 != getTrackCount())
-				setEditTrack(editTrack - 1);
+				setEditTrack(editTrack - 1, true, selecting);
 			else
-				MessageBeep(~0U);
-			break;
-		
-		case VK_RIGHT:
-			if (GetKeyState(VK_CONTROL) < 0) {
+				QApplication::beep();
+			return;
+
+		case Qt::Key_Tab:
+			ctrlDown = false;
+			selecting = false;
+			// FALLTHROUGH
+		case Qt::Key_Right:
+			if (ctrlDown) {
 				if (int(getTrackCount()) > editTrack + 1)
 					doc->swapTrackOrder(editTrack, editTrack + 1);
 				else
-					MessageBeep(~0U);
+					QApplication::beep();
 			}
 			if (0 != getTrackCount())
-				setEditTrack(editTrack + 1);
+				setEditTrack(editTrack + 1, true, selecting);
 			else
-				MessageBeep(~0U);
-			break;
+				QApplication::beep();
+			return;
 		}
 	}
 
-	if (editString.empty() && doc->clientSocket.clientPaused) {
-		switch (keyCode) {
-		case VK_UP:
-			if (GetKeyState(VK_CONTROL) < 0)
-			{
-				float bias = 1.0f;
-				if (GetKeyState(VK_SHIFT) < 0) bias = 0.1f;
-				if (int(getTrackCount()) > editTrack) editBiasValue(bias);
+	if (lineEdit->isHidden() && paused) {
+		switch (event->key()) {
+		case Qt::Key_Up:
+			if (ctrlDown) {
+				if (int(getTrackCount()) > editTrack)
+					editBiasValue(shiftDown ? 0.1f : 1.0f);
 				else
-					MessageBeep(~0U);
-			}
-			else setEditRow(editRow - 1);
-			break;
-		
-		case VK_DOWN:
-			if (GetKeyState(VK_CONTROL) < 0)
-			{
-				float bias = 1.0f;
-				if (GetKeyState(VK_SHIFT) < 0) bias = 0.1f;
-				if (int(getTrackCount()) > editTrack) editBiasValue(-bias);
+					QApplication::beep();
+			} else
+				setEditRow(editRow - 1, selecting);
+			return;
+
+		case Qt::Key_Down:
+			if (ctrlDown) {
+				if (int(getTrackCount()) > editTrack)
+					editBiasValue(shiftDown ? -0.1f : -1.0f);
 				else
-					MessageBeep(~0U);
-			}
-			else setEditRow(editRow + 1);
-			break;
-		
-		case VK_PRIOR:
-			if (GetKeyState(VK_CONTROL) < 0) {
-				float bias = 10.0f;
-				if (GetKeyState(VK_SHIFT) < 0)
-					bias = 100.0f;
-				editBiasValue(bias);
+					QApplication::beep();
 			} else
-				setEditRow(editRow - 0x10);
-			break;
-		
-		case VK_NEXT:
-			if (GetKeyState(VK_CONTROL) < 0) {
-				float bias = 10.0f;
-				if (GetKeyState(VK_SHIFT) < 0)
-					bias = 100.0f;
-				editBiasValue(-bias);
-			} else
-				setEditRow(editRow + 0x10);
-			break;
-		
-		case VK_HOME:
-			if (GetKeyState(VK_CONTROL) < 0) setEditTrack(0);
-			else setEditRow(0);
-			break;
-		
-		case VK_END:
-			if (GetKeyState(VK_CONTROL) < 0) setEditTrack(int(getTrackCount()) - 1);
-			else setEditRow(int(getRows()) - 1);
-			break;
+				setEditRow(editRow + 1, selecting);
+			return;
+
+		case Qt::Key_PageUp:
+			if (ctrlDown)
+				editBiasValue(shiftDown ? 100.0f : 10.0f);
+			else
+				setEditRow(editRow - 0x10, selecting);
+			return;
+
+		case Qt::Key_PageDown:
+			if (ctrlDown)
+				editBiasValue(shiftDown ? -100.0f : -10.0f);
+			else
+				setEditRow(editRow + 0x10, selecting);
+			return;
+
+		case Qt::Key_Home:
+			if (ctrlDown)
+				setEditTrack(0);
+			else
+				setEditRow(0, selecting);
+			return;
+
+		case Qt::Key_End:
+			if (ctrlDown)
+				setEditTrack(int(getTrackCount()) - 1);
+			else
+				setEditRow(int(getRows()) - 1, selecting);
+			return;
 		}
 	}
-	
-	switch (keyCode)
-	{
-	case VK_RETURN: editEnterValue(); break;
-	case VK_DELETE: editDelete(); break;
-	
-	case VK_BACK:
-		if (!editString.empty())
-		{
-			editString.resize(editString.size() - 1);
-			invalidatePos(editTrack, editRow);
-		}
-		else
-			MessageBeep(~0U);
-		break;
-	
-	case VK_CANCEL:
-	case VK_ESCAPE:
-		if (!editString.empty()) {
+
+	switch (event->key()) {
+	case Qt::Key_Delete: editClear(); return;
+
+	case Qt::Key_Cancel:
+	case Qt::Key_Escape:
+		if (paused && lineEdit->isVisible()) {
 			// return to old value (i.e don't clear)
-			editString.clear();
-			invalidatePos(editTrack, editRow);
-			MessageBeep(~0U);
+			lineEdit->hide();
+			QApplication::beep();
 		}
-		break;
-	case VK_SPACE:
-		if (!editString.empty()) {
-			editString.clear();
-			invalidatePos(editTrack, editRow);
-			MessageBeep(~0U);
-		}
-		doc->clientSocket.sendPauseCommand( !doc->clientSocket.clientPaused );
-		break;
-	}
-	return FALSE;
-}
+		return;
 
-LRESULT TrackView::onChar(UINT keyCode, UINT /*flags*/)
-{
-	switch (char(keyCode))
-	{
-	case '-':
-		if (editString.empty())
-		{
-			editString.push_back(char(keyCode));
-			invalidatePos(editTrack, editRow);
+	case Qt::Key_Space:
+		if (connected) {
+			paused = !paused;
+			emit pauseChanged(paused);
 		}
-		break;
-	case '.':
-		// only one '.' allowed
-		if (std::string::npos != editString.find('.')) {
-			MessageBeep(~0U);
-			break;
-		}
-	case '0':
-	case '1':
-	case '2':
-	case '3':
-	case '4':
-	case '5':
-	case '6':
-	case '7':
-	case '8':
-	case '9':
-		if (editTrack < int(getTrackCount()))
-		{
-			editString.push_back(char(keyCode));
-			invalidatePos(editTrack, editRow);
-		}
-		else
-			MessageBeep(~0U);
-		break;
-	
-	case 'i':
+		return;
+
+	case Qt::Key_I:
 		editToggleInterpolationType();
-		break;
+		return;
 
-	case 'k':
+	case Qt::Key_K:
 		getDocument()->toggleRowBookmark(getEditRow());
 		invalidateRow(getEditRow());
-		break;
+		return;
 	}
-	return FALSE;
+
+	if (paused && lineEdit->isHidden() && event->text().length() && doc->getTrackCount()) {
+		// no line-edit, check if input matches a double
+		QString str = event->text();
+		int pos = 0;
+		if (lineEdit->validator()->validate(str, pos) != QValidator::Invalid) {
+			lineEdit->move(getPhysicalX(getEditTrack()), getPhysicalY(getEditRow()));
+			lineEdit->resize(trackWidth, rowHeight);
+			lineEdit->setText("");
+			lineEdit->show();
+			lineEdit->event(event);
+			lineEdit->setFocus();
+		}
+	}
 }
 
-LRESULT TrackView::onSize(int width, int height)
+void TrackView::resizeEvent(QResizeEvent *event)
 {
-	windowWidth  = width;
-	windowHeight = height;
-	
-	windowRows   = (height - topMarginHeight) / rowHeight;
-	windowTracks = (width  - leftMarginWidth) / trackWidth;
-	
+	windowRows   = (event->size().height() - topMarginHeight) / rowHeight;
 	setEditRow(editRow);
 	setupScrollBars();
-	return FALSE;
 }
 
-LRESULT TrackView::onSetCursor(HWND /*win*/, UINT hitTest, UINT message)
+void TrackView::changeEvent(QEvent *event)
 {
-	POINT cpos;
-	GetCursorPos(&cpos);
-	ScreenToClient(hwnd, &cpos);
-	int track = getTrackFromX(cpos.x);
-	if (cpos.y < topMarginHeight &&
-	    track >= 0 && track < int(getTrackCount())) {
-		SetCursor(handCursor);
-		return TRUE;
-	}
-	return DefWindowProc(this->hwnd, WM_SETCURSOR, (WPARAM)hwnd,
-	    MAKELPARAM(hitTest, message));
-}
-
-LRESULT TrackView::onLButtonDown(UINT /*flags*/, POINTS pos)
-{
-	int track = getTrackFromX(pos.x);
-	if (pos.y < topMarginHeight &&
-	    track >= 0 && track < int(getTrackCount())) {
-		setEditTrack(track, false);
-		SetCapture(hwnd);
-		anchorTrack = track;
-	}
-	return FALSE;
-}
-
-LRESULT TrackView::onLButtonUp(UINT /*flags*/, POINTS /*pos*/)
-{
-	ReleaseCapture();
-	setEditTrack(editTrack);
-	return FALSE;
-}
-
-LRESULT TrackView::onMouseMove(UINT /*flags*/, POINTS pos)
-{
-	if (GetCapture() == hwnd) {
-		SyncDocument *doc = getDocument();
-		const int posTrack = getTrackFromX(pos.x),
-		    trackCount = getTrackCount();
-
-		if (!doc || posTrack < 0 || posTrack >= trackCount)
-			return FALSE;
-
-		if (posTrack > anchorTrack) {
-			for (int i = anchorTrack; i < posTrack; ++i)
-				doc->swapTrackOrder(i, i + 1);
-			anchorTrack = posTrack;
-			setEditTrack(posTrack);
-			InvalidateRect(hwnd, NULL, FALSE);
-		} else if (posTrack < anchorTrack) {
-			for (int i = anchorTrack; i > posTrack; --i)
-				doc->swapTrackOrder(i, i - 1);
-			anchorTrack = posTrack;
-			setEditTrack(posTrack);
-			InvalidateRect(hwnd, NULL, FALSE);
-		}
-	}
-	return FALSE;
-}
-
-LRESULT TrackView::windowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	assert(hwnd == this->hwnd);
-	
-	switch(msg)
-	{
-	case WM_CREATE:  return onCreate();
-	case WM_SIZE:    return onSize(LOWORD(lParam), HIWORD(lParam));
-	case WM_VSCROLL: return onVScroll(LOWORD(wParam), getScrollPos(hwnd, SB_VERT));
-	case WM_HSCROLL: return onHScroll(LOWORD(wParam), getScrollPos(hwnd, SB_HORZ));
-	case WM_PAINT:   return onPaint();
-	case WM_KEYDOWN: return onKeyDown((UINT)wParam, (UINT)lParam);
-	case WM_CHAR:    return onChar((UINT)wParam, (UINT)lParam);
-	case WM_LBUTTONDOWN:
-		return onLButtonDown((UINT)wParam, MAKEPOINTS(lParam));
-	case WM_LBUTTONUP:
-		return onLButtonUp((UINT)wParam, MAKEPOINTS(lParam));
-	case WM_MOUSEMOVE:
-		return onMouseMove((UINT)wParam, MAKEPOINTS(lParam));
-	case WM_SETCURSOR:
-		return onSetCursor((HWND)wParam, LOWORD(lParam),
-		    HIWORD(lParam));
-
-	case WM_COPY:  editCopy();  break;
-	case WM_CUT:   editCut();   break;
-	case WM_PASTE:
-		editPaste();
-		SendMessage(GetParent(getWin()), WM_CURRVALDIRTY, 0, 0);
-		InvalidateRect(hwnd, NULL, FALSE);
+	switch (event->type()) {
+	case QEvent::FontChange:
+		updateFont();
 		break;
-	
-	case WM_UNDO:
-		if (NULL == getDocument()) return FALSE;
-		if (!getDocument()->undo())
-			MessageBeep(~0U);
-		// unfortunately, we don't know how much to invalidate... so we'll just invalidate it all.
-		InvalidateRect(hwnd, NULL, FALSE);
-		break;
-	
-	case WM_REDO:
-		if (NULL == getDocument()) return FALSE;
-		if (!getDocument()->redo())
-			MessageBeep(~0U);
-		// unfortunately, we don't know how much to invalidate... so we'll just invalidate it all.
-		InvalidateRect(hwnd, NULL, FALSE);
-		break;
-	
-	default:
-		return DefWindowProc(hwnd, msg, wParam, lParam);
-	}
-	return FALSE;
-}
 
-LRESULT CALLBACK trackViewWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	// Get the TrackView instance (if any)
-#pragma warning(suppress:4312) /* remove a pointless warning */
-	TrackView *trackView = (TrackView*)GetWindowLongPtr(hwnd, 0);
-	
-	switch(msg)
-	{
-	case WM_NCCREATE:
-		// Get TrackView from createstruct
-		trackView = (TrackView*)((CREATESTRUCT*)lParam)->lpCreateParams;
-		trackView->hwnd = hwnd;
-		
-		// Set the TrackView instance
-#pragma warning(suppress:4244) /* remove a pointless warning */
-		SetWindowLongPtr(hwnd, 0, (LONG_PTR)trackView);
-		
-		// call the proper window procedure
-		return trackView->windowProc(hwnd, msg, wParam, lParam);
+	case QEvent::PaletteChange:
+		updatePalette();
 		break;
-	
-	case WM_NCDESTROY:
-		assert(NULL != trackView);
-		{
-			// call the window proc and store away the return code
-			LRESULT res = trackView->windowProc(hwnd, msg, wParam, lParam);
-			
-			// get rid of the TrackView instance
-			trackView = NULL;
-			SetWindowLongPtr(hwnd, 0, (LONG_PTR)NULL);
-			
-			// return the stored return code
-			return res;
-		}
-		break;
-	
-	default:
-		assert(NULL != trackView);
-		return trackView->windowProc(hwnd, msg, wParam, lParam);
+
+	default: ;
 	}
 }
-
-ATOM registerTrackViewWindowClass(HINSTANCE hInstance)
-{
-	WNDCLASSEX wc;
-	
-	wc.cbSize        = sizeof(WNDCLASSEX);
-	wc.style         = 0;
-	wc.lpfnWndProc   = trackViewWindowProc;
-	wc.cbClsExtra    = 0;
-	wc.cbWndExtra    = sizeof(TrackView*);
-	wc.hInstance     = hInstance;
-	wc.hIcon         = 0;
-	wc.hCursor       = LoadCursor(NULL, IDC_IBEAM);
-	wc.hbrBackground = (HBRUSH)0;
-	wc.lpszMenuName  = NULL;
-	wc.lpszClassName = trackViewWindowClassName;
-	wc.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
-	
-	return RegisterClassEx(&wc);
-}
-
-HWND TrackView::create(HINSTANCE hInstance, HWND hwndParent)
-{
-	HWND hwnd = CreateWindowEx(
-		WS_EX_CLIENTEDGE,
-		trackViewWindowClassName, "",
-		WS_VSCROLL | WS_HSCROLL | WS_CHILD | WS_VISIBLE,
-		CW_USEDEFAULT, CW_USEDEFAULT, // x, y
-		CW_USEDEFAULT, CW_USEDEFAULT, // width, height
-		hwndParent, NULL, hInstance, (void*)this
-	);
-	return hwnd;
-}
-

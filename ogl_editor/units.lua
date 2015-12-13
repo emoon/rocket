@@ -65,7 +65,7 @@ StaticLibrary {
 
 	Sources = { 
 		Glob {
-			Dir = "../sync",
+			Dir = "../lib",
 			Extensions = { ".c" },
 		},
 	},

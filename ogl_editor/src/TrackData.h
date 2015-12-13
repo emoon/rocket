@@ -1,7 +1,7 @@
 #pragma once
 
 #include <emgui/Types.h>
-#include "../../sync/data.h"
+#include "../../lib/track.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -64,7 +64,8 @@ typedef struct Group
 
 typedef struct TrackData
 {
-	struct sync_data syncData;
+	struct sync_track **syncTracks;
+	size_t num_syncTracks;
 	Track tracks[EDITOR_MAX_TRACKS];
 	Group groups[EDITOR_MAX_TRACKS];
 	int* loopmarks;

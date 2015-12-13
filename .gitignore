@@ -1,0 +1,38 @@
+*.o
+*.a
+*.lib
+*.ncb
+*.pdb
+*.suo
+*.idb
+*.user
+*.sdf
+*.opensdf
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+.*.swp
+.DS_Store
+*~
+/editor/Makefile*
+/editor/editor.vcproj
+/editor/editor.sln
+/editor/debug/
+/editor/release/
+/editor/editor/
+/editor/editor.app/
+/example_bass/example_bass
+/example_bass/Debug Client/
+/example_bass/Debug/
+/example_bass/Release Client/
+/example_bass/Release/
+/example_bass/x64/
+/example_bass/include/
+/example_bass/lib/
+/lib/Debug Client/
+/lib/Debug/
+/lib/Release Client/
+/lib/Release/
+/lib/x64/
+/packages/
+build-*
