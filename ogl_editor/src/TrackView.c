@@ -743,7 +743,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 		}
 		else
 		{
-			int temp;
+			int temp = 0;
 			x_pos += renderGroup(group, x_pos, &temp, info, trackData);
 		}
 	}
