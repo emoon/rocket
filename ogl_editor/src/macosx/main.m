@@ -1,7 +1,6 @@
-#import <OpenGL/OpenGL.h>
 #import <Cocoa/Cocoa.h>
 
-int main(int argc, char *argv[])
+int main(int argc, const char * argv[])
 {
-	return NSApplicationMain(argc,  (const char **) argv);
+	return NSApplicationMain(argc, argv);
 }

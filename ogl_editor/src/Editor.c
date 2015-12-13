@@ -182,7 +182,7 @@ static inline int getActiveTrack()
 
 static inline int getTrackCount()
 {
-	return s_editorData.trackData.num_syncTracks;
+	return (int)s_editorData.trackData.num_syncTracks;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1631,7 +1631,7 @@ static void onPrevNextKey(bool prevKey, enum Selection selection)
 
 		if (idx < 0)
 			row = track->keys[0].row;
-		else if (idx > (int)track->num_keys - 2)
+		else if (idx > track->num_keys - 2)
 			row = track->keys[track->num_keys - 1].row;
 		else
 			row = track->keys[idx + 1].row;

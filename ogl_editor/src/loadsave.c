@@ -338,7 +338,7 @@ static void saveTrackData(mxml_node_t* track, struct track_key* keys, int count)
 	for (i = 0; i < count; ++i) 
 	{
 		mxml_node_t* key = mxmlNewElement(track, "key");
-		setElementInt(key, "row", "%d", (int)keys[i].row);
+		setElementInt(key, "row", "%d", keys[i].row);
 		setElementFloat(key, "value", keys[i].value);
 		setElementInt(key, "interpolation", "%d", (int)keys[i].type);
 	}
@@ -428,7 +428,7 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 		}
 		else
 		{
-			saveTrackData(track, t->keys, (int)t->num_keys);
+			saveTrackData(track, t->keys, t->num_keys);
 		}
 	}
 
