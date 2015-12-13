@@ -577,21 +577,24 @@ static void copySelection(int row, int track, int selectLeft, int selectRight, i
 	}
 
 	free(s_copyData.entries);
-	entry = s_copyData.entries = malloc(sizeof(CopyEntry) * copy_count);
-
-	for (track = selectLeft; track <= selectRight; ++track) 
+	if (copy_count != 0)
 	{
-		struct sync_track* t = tracks[track];
-		for (row = selectTop; row <= selectBottom; ++row) 
-		{
-			int idx = sync_find_key(t, row);
-			if (idx < 0) 
-				continue;
+		entry = s_copyData.entries = malloc(sizeof(CopyEntry) * copy_count);
 
-			entry->track = track - selectLeft;
-			entry->keyFrame = t->keys[idx];
-			entry->keyFrame.row -= selectTop; 
-			entry++;
+		for (track = selectLeft; track <= selectRight; ++track)
+		{
+			struct sync_track* t = tracks[track];
+			for (row = selectTop; row <= selectBottom; ++row)
+			{
+				int idx = sync_find_key(t, row);
+				if (idx < 0)
+					continue;
+
+				entry->track = track - selectLeft;
+				entry->keyFrame = t->keys[idx];
+				entry->keyFrame.row -= selectTop;
+				entry++;
+			}
 		}
 	}
 
