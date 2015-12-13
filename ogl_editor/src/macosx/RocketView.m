@@ -7,8 +7,8 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <Carbon/Carbon.h>
 
-NSOpenGLContext* g_context = 0;
-NSWindow* g_window = 0;
+NSOpenGLContext* g_context = nil;
+NSWindow* g_window = nil;
 
 void Window_setTitle(const char* title);
 
@@ -52,13 +52,14 @@ void Window_setTitle(const char* title);
 	if (self == nil)
 		return nil;
 
-	NSOpenGLPixelFormatAttribute attributes[4];
-
-	attributes[0] = NSOpenGLPFADoubleBuffer;
-	attributes[1] = 0;
+	NSOpenGLPixelFormatAttribute attributes[] = {
+			NSOpenGLPFADoubleBuffer,
+			0
+	};
 
 	NSOpenGLPixelFormat* format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 	oglContext = [[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];
+	[format release];
 	[oglContext makeCurrentContext];
 
 	g_context = oglContext;
@@ -185,6 +186,7 @@ static int getModifierFlags(int flags)
 	                                                              owner:self
 	                                                           userInfo:nil];
 	[self addTrackingArea:trackingArea];
+	[trackingArea release];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -296,7 +298,7 @@ CFStringRef createStringForKey(CGKeyCode keyCode)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int s_characterToKeyCode[] =
+static CGKeyCode s_characterToKeyCode[] =
 {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0x27, // '''
@@ -383,11 +385,11 @@ NSString* convertKeyCodeToString(int key)
 			case EMGUI_KEY_BACKSPACE : return [NSString stringWithFormat:@"%C",(uint16_t)0x232b];
 			case EMGUI_KEY_TAB : return [NSString stringWithFormat:@"%C",(uint16_t)0x21e4]; 
 			case EMGUI_KEY_PAGE_UP : return [NSString stringWithFormat:@"%C",(uint16_t)0x21de]; 
-			case EMGUI_KEY_PAGE_DOWN : return [NSString stringWithFormat:@"%C",(uint16_t)0x21df]; 
+			case EMGUI_KEY_PAGE_DOWN : return [NSString stringWithFormat:@"%C",(uint16_t)0x21df];
 		}
 	}
 
-	return 0;
+	return nil;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -407,8 +409,8 @@ void buildSubMenu(NSMenu* menu, MenuDescriptor menuDesc[])
 		}
 		else if (desc->id == EDITOR_MENU_SUB_MENU)
 		{
-			MyMenuItem* newItem = [[MyMenuItem allocWithZone:[NSMenu menuZone]] initWithTitle:name action:NULL keyEquivalent:@""];
-			NSMenu* newMenu = [[NSMenu allocWithZone:[NSMenu menuZone]] initWithTitle:name];
+			MyMenuItem* newItem = [[MyMenuItem alloc] initWithTitle:name action:NULL keyEquivalent:@""];
+			NSMenu* newMenu = [[NSMenu alloc] initWithTitle:name];
 			[newItem setSubmenu:newMenu];
 			[newMenu release];
 			[menu addItem:newItem];
@@ -416,7 +418,7 @@ void buildSubMenu(NSMenu* menu, MenuDescriptor menuDesc[])
 		}
 		else
 		{
-			int mask = 0;
+			NSUInteger mask = 0;
 			MyMenuItem* newItem = [[MyMenuItem alloc] initWithTitle:name action:@selector(onMenuPress:) keyEquivalent:@""];
 			[newItem setTag:desc->id];
 

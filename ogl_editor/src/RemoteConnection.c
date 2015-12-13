@@ -493,7 +493,7 @@ void RemoteConnection_sendKeyFrames(const char* name, struct sync_track* track)
 	if (!RemoteConnection_connected() || track_id == -1)
 		return;
 
-	for (i = 0; i < (int)track->num_keys; ++i)
+	for (i = 0; i < track->num_keys; ++i)
 		sendSetKeyCommandIndex((uint32_t)track_id, &track->keys[i]);
 }
 

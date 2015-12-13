@@ -10,9 +10,9 @@ int Dialog_open(char* dest)
 	NSOpenPanel* open = [NSOpenPanel openPanel];
 	[open setAllowsMultipleSelection:NO];
 
-	int result = [open runModal];
+	NSInteger result = [open runModal];
 
-	if (result != NSOKButton)
+	if (result != NSModalResponseOK)
 		return false;
 
 	// Grab the first file
@@ -35,9 +35,9 @@ int Dialog_save(char* dest)
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	NSSavePanel* open = [NSSavePanel savePanel];
 
-	int result = [open runModal];
+	NSInteger result = [open runModal];
 
-	if (result != NSOKButton)
+	if (result != NSModalResponseOK)
 		return false;
 
 	// Grab the first file
@@ -149,7 +149,12 @@ void Dialog_showError(const text_t* text)
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSString* message = [[[NSString alloc] initWithUTF8String:text] autorelease];// convert
 
-	NSRunAlertPanel(@"Error", message, @"Ok", @"", @"");
+	NSAlert *alert = [[NSAlert alloc] init];
+	[alert addButtonWithTitle:@"OK"];
+	[alert setMessageText:message];
+	[alert setAlertStyle:NSCriticalAlertStyle];
+	[alert runModal];
+	[alert release];
 
 	[pool drain];
 }

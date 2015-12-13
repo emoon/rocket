@@ -1,4 +1,4 @@
-#import "delegate.h"
+#import "RocketAppDelegate.h"
 #include "../Editor.h"
 #include "../RemoteConnection.h"
 #include "rlog.h"
@@ -15,23 +15,33 @@ void Window_buildMenu();
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
+	NSUInteger exitcode = NSTerminateNow;
+	
 	if (!Editor_needsSave())
-		return NSTerminateNow;
+		return exitcode;
 
-	int ret = NSRunAlertPanel(@"Save before exit?", @"Do you want save the work?", @"Yes", @"Cancel", @"No");
+	NSAlert *alert = [[NSAlert alloc] init];
+	[alert addButtonWithTitle:@"Yes"];
+	[alert addButtonWithTitle:@"No"];
+	[alert addButtonWithTitle:@"Cancel"];
+	[alert setMessageText:@"Save before exit?"];
+	[alert setInformativeText:@"Do you want save the work?"];
+	[alert setAlertStyle:NSWarningAlertStyle];
 
-	if (ret == NSAlertDefaultReturn)
+	NSModalResponse ret = [alert runModal];
+
+	if (ret == NSAlertFirstButtonReturn)
 	{
 		if (!Editor_saveBeforeExit())
-			return NSTerminateCancel;
-
-		return NSTerminateNow;
+			exitcode = NSTerminateCancel;
 	}
 
-	if (ret == NSAlertAlternateReturn)
-		return NSTerminateCancel;
+	if (ret == NSAlertThirdButtonReturn)
+		exitcode = NSTerminateCancel;
 
-	return NSTerminateNow;
+	[alert release];
+
+	return exitcode;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +97,7 @@ void Window_buildMenu();
 
 	Editor_destroy();
 	RemoteConnection_close();
+	[stringArray release];
 }
 
 @end
