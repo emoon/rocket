@@ -1396,19 +1396,19 @@ static void enterCurrentValue(struct sync_track* track, int activeTrack, int row
 	if (idx < 0)
 		idx = -idx - 1;
 
-    key.row = rowPos;
-   
-    if (track->num_keys > 0)
-    {
-        key.value = (float)sync_get_val(track, rowPos);
-        key.type = track->keys[emaxi(idx - 1, 0)].type;
-    }
-    else
-    {
-        key.value = 0.0f;
-        key.type = 0;
-    }
-	
+	key.row = rowPos;
+
+	if (track->num_keys > 0)
+	{
+		key.value = (float)sync_get_val(track, rowPos);
+		key.type = track->keys[emaxi(idx - 1, 0)].type;
+	}
+	else
+	{
+		key.value = 0.0f;
+		key.type = 0;
+	}
+
 	Commands_addOrUpdateKey(activeTrack, &key);
 	updateNeedsSaving();
 }
@@ -1989,4 +1989,3 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 	return true;
 }
-

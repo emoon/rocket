@@ -858,4 +858,3 @@ int TrackView_getTracksOffset(TrackViewInfo* viewInfo, TrackData* trackData, int
 
 	return nextOffset - prevOffset; 
 }
-

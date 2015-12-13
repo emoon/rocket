@@ -21,4 +21,3 @@ static EMGUI_INLINE int mini(int a, int b)
 
 	return b;
 }
-

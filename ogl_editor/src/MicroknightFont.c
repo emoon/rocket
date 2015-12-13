@@ -365,4 +365,3 @@ struct MicroknightLayout s_microknightLayout[] =
 	{ 72, 117 },
 	{ 81, 117 },
 };
-

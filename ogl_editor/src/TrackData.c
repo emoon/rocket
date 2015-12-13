@@ -382,6 +382,3 @@ int TrackData_getPrevLoopmark(TrackData* trackData, int row)
 {
 	return getPrevMark(trackData->loopmarks, trackData->loopmarkCount, row, -1);
 }
-
-
-

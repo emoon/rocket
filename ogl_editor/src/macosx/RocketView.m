@@ -148,23 +148,23 @@ static int getModifierFlags(int flags)
 			case NSDownArrowFunctionKey: keyCode = EMGUI_KEY_ARROW_DOWN; break;
 		}
 	}
-    else
-    {
-        switch ([theEvent keyCode])
-        {
-            case KEY_TAB : keyCode = EMGUI_KEY_TAB; break;
-            case KEY_DELETE : keyCode = EMGUI_KEY_BACKSPACE; break;
-            case KEY_RETURN : keyCode = EMGUI_KEY_ENTER; break;
-            case KEY_ESCAPE : keyCode = EMGUI_KEY_ESC; break;
+	else
+	{
+		switch ([theEvent keyCode])
+		{
+			case KEY_TAB : keyCode = EMGUI_KEY_TAB; break;
+			case KEY_DELETE : keyCode = EMGUI_KEY_BACKSPACE; break;
+			case KEY_RETURN : keyCode = EMGUI_KEY_ENTER; break;
+			case KEY_ESCAPE : keyCode = EMGUI_KEY_ESC; break;
 			case NSPageDownFunctionKey: keyCode = EMGUI_KEY_PAGE_DOWN; break;
 			case NSPageUpFunctionKey: keyCode = EMGUI_KEY_PAGE_UP; break;
-        }
-    }
+		}
+	}
 
 	Emgui_sendKeyinput(keyCode, specialKeys);
 
 	if (!Editor_keyDown(keyCode, [theEvent keyCode], specialKeys))
-    	[super keyDown:theEvent];
+		[super keyDown:theEvent];
 
 	Editor_update();
 }
@@ -173,16 +173,18 @@ static int getModifierFlags(int flags)
 
 - (BOOL)acceptsFirstResponder 
 {
-    return YES;
+	return YES;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
--(void) viewWillMoveToWindow:(NSWindow *)newWindow 
+-(void) viewWillMoveToWindow:(NSWindow *)newWindow
 {
-    NSTrackingArea* trackingArea = [[NSTrackingArea alloc] initWithRect:[self frame] 
-    	options: (NSTrackingMouseMoved | NSTrackingActiveAlways) owner:self userInfo:nil];
-    [self addTrackingArea:trackingArea];
+	NSTrackingArea* trackingArea = [[NSTrackingArea alloc] initWithRect:[self frame]
+	                                                            options: (NSTrackingMouseMoved | NSTrackingActiveAlways)
+	                                                              owner:self
+	                                                           userInfo:nil];
+	[self addTrackingArea:trackingArea];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -248,43 +250,40 @@ static int getModifierFlags(int flags)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
--(BOOL) isOpaque 
+-(BOOL) isOpaque
 {
-    return YES;
+	return YES;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CFStringRef createStringForKey(CGKeyCode keyCode)
 {
-    TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
-    CFDataRef layoutData =
-        TISGetInputSourceProperty(currentKeyboard,
-                                  kTISPropertyUnicodeKeyLayoutData);
+	TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
+	CFDataRef layoutData = TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData);
 
 	if (!layoutData)
 		return 0;
 
-    const UCKeyboardLayout *keyboardLayout =
-        (const UCKeyboardLayout *)CFDataGetBytePtr(layoutData);
+	const UCKeyboardLayout *keyboardLayout = (const UCKeyboardLayout *)CFDataGetBytePtr(layoutData);
 
-    UInt32 keysDown = 0;
-    UniChar chars[4];
-    UniCharCount realLength;
+	UInt32 keysDown = 0;
+	UniChar chars[4];
+	UniCharCount realLength;
 
-    UCKeyTranslate(keyboardLayout,
-                   keyCode,
-                   kUCKeyActionDisplay,
-                   0,
-                   LMGetKbdType(),
-                   kUCKeyTranslateNoDeadKeysBit,
-                   &keysDown,
-                   sizeof(chars) / sizeof(chars[0]),
-                   &realLength,
-                   chars);
-    CFRelease(currentKeyboard);    
+	UCKeyTranslate( keyboardLayout,
+					keyCode,
+					kUCKeyActionDisplay,
+					0,
+					LMGetKbdType(),
+					kUCKeyTranslateNoDeadKeysBit,
+					&keysDown,
+					sizeof(chars) / sizeof(chars[0]),
+					&realLength,
+					chars );
+	CFRelease(currentKeyboard);
 
-    return CFStringCreateWithCharacters(kCFAllocatorDefault, chars, 1);
+	return CFStringCreateWithCharacters(kCFAllocatorDefault, chars, 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -511,5 +510,3 @@ void Window_setTitle(const char* title)
 {
 	[g_window setTitle:[NSString stringWithUTF8String:title]];
 }
-
-

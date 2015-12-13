@@ -7,4 +7,3 @@
 void Window_setTitle(const text_t* title);
 void Window_populateRecentList(const text_t** files);
 void Window_buildMenu();
-
