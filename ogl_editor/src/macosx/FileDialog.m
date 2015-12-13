@@ -69,10 +69,12 @@ int Dialog_save(char* dest)
 
 - (id)init
 {
-	[super init];
-	m_bIsClosed = false;
-
-	return self;
+	if ( self = [super init] ) {
+		m_bIsClosed = false;
+		return self;
+	}
+	else
+		return nil;
 }
 
 - (BOOL)windowShouldClose:(id)sender
@@ -145,7 +147,7 @@ void Dialog_showColorPicker(uint32_t* color)
 void Dialog_showError(const text_t* text)
 {
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	NSString* message = [[[NSString alloc] initWithUTF8String:text] autorelease];// convert 
+	NSString* message = [[[NSString alloc] initWithUTF8String:text] autorelease];// convert
 
 	NSRunAlertPanel(@"Error", message, @"Ok", @"", @"");
 
