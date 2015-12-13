@@ -23,14 +23,14 @@ void Window_buildMenu();
 	if (ret == NSAlertDefaultReturn)
 	{
 		if (!Editor_saveBeforeExit())
-        	return NSTerminateCancel;
-	
+			return NSTerminateCancel;
+
 		return NSTerminateNow;
 	}
 
-    if (ret == NSAlertAlternateReturn)
-        return NSTerminateCancel;
-    
+	if (ret == NSAlertAlternateReturn)
+		return NSTerminateCancel;
+
 	return NSTerminateNow;
 }
 

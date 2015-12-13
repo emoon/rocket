@@ -97,4 +97,3 @@ MenuDescriptor g_viewMenu[] =
 	{ _T("Jump row,start/end & edit"), 	EDITOR_MENU_TAB,				EMGUI_KEY_TAB, 			0, 0 },	
 	{ 0 },
 };
-

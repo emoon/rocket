@@ -40,4 +40,3 @@ int TrackView_getScrolledTrack(struct TrackViewInfo* viewInfo, struct TrackData*
 int TrackView_getStartOffset();
 int TrackView_getTracksOffset(struct TrackViewInfo* viewInfo, struct TrackData* trackData, int prevTrack, int nextTrack);
 bool TrackView_isSelectedTrackVisible(struct TrackViewInfo* viewInfo, struct TrackData* trackData, int track);
-

@@ -12,4 +12,3 @@ typedef struct MicroknightLayout
 
 extern unsigned char s_microkinghtFontData[];
 extern struct MicroknightLayout s_microknightLayout[];
-

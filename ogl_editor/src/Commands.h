@@ -35,4 +35,3 @@ void Commands_endMulti();
 int Commands_undoCount();
 
 #endif
-

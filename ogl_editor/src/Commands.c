@@ -210,10 +210,10 @@ void Commands_deleteKey(int track, int row)
 	struct DeleteKeyData* data;
 	Command* command;
 	struct sync_track* t = s_syncTracks[track];
-	
+
 	if (!is_key_frame(t, row))
 		return;
-	
+
 	command = malloc(sizeof(Command));
 	memset(command, 0, sizeof(Command));
 
@@ -327,7 +327,7 @@ void Commands_setSelection(struct TrackViewInfo* viewInfo, int startTrack, int e
 {
 	struct ChangeSelectionData* data;
 	Command* command;
-	
+
 	command = malloc(sizeof(Command));
 	memset(command, 0, sizeof(Command));
 
@@ -700,35 +700,35 @@ static void CommandList_unlinkEntry(CommandList* list, Command* command)
 	Command* prev;
 	Command* next;
 
-    prev = command->prev;
-    next = command->next;
+	prev = command->prev;
+	next = command->next;
 
-    if (prev) 
-    {
-        if (next) 
-        {
-            prev->next = next;
-            next->prev = prev;
-        }
-        else 
-        {
-            prev->next = 0;
-            list->last = prev;
-        }
-    }
-    else 
-    {
-        if (next) 
-        {
-            next->prev = 0;
-            list->first = next;
-        }
-        else 
-        {
-            list->first = 0;
-            list->last = 0;
-        }
-    }
+	if (prev)
+	{
+		if (next)
+		{
+			prev->next = next;
+			next->prev = prev;
+		}
+		else
+		{
+			prev->next = 0;
+			list->last = prev;
+		}
+	}
+	else
+	{
+		if (next)
+		{
+			next->prev = 0;
+			list->first = next;
+		}
+		else
+		{
+			list->first = 0;
+			list->last = 0;
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -738,7 +738,7 @@ static void CommandList_delEntry(CommandList* list, Command* command)
 	CommandList_unlinkEntry(list, command);
 
 	free(command->userData);
-    free(command);
+	free(command);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -764,5 +764,3 @@ static bool CommandList_isEmpty(CommandList* list)
 {
 	return (!list->first && !list->last);
 }
-
-

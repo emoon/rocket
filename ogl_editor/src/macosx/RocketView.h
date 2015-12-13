@@ -1,9 +1,8 @@
 #import <AppKit/AppKit.h>
 
-@interface RocketView : NSView 
+@interface RocketView : NSView
 {
-    NSOpenGLContext* oglContext;
+	NSOpenGLContext* oglContext;
 }
 
 @end
-

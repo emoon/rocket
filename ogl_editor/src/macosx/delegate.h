@@ -1,8 +1,7 @@
-
 #import <Cocoa/Cocoa.h>
 
 @interface RocketAppDelegate : NSObject <NSApplicationDelegate> {
-    NSWindow *window;
+	NSWindow *window;
 	NSButton *button;
 }
 

@@ -577,21 +577,24 @@ static void copySelection(int row, int track, int selectLeft, int selectRight, i
 	}
 
 	free(s_copyData.entries);
-	entry = s_copyData.entries = malloc(sizeof(CopyEntry) * copy_count);
-
-	for (track = selectLeft; track <= selectRight; ++track) 
+	if (copy_count != 0)
 	{
-		struct sync_track* t = tracks[track];
-		for (row = selectTop; row <= selectBottom; ++row) 
-		{
-			int idx = sync_find_key(t, row);
-			if (idx < 0) 
-				continue;
+		entry = s_copyData.entries = malloc(sizeof(CopyEntry) * copy_count);
 
-			entry->track = track - selectLeft;
-			entry->keyFrame = t->keys[idx];
-			entry->keyFrame.row -= selectTop; 
-			entry++;
+		for (track = selectLeft; track <= selectRight; ++track)
+		{
+			struct sync_track* t = tracks[track];
+			for (row = selectTop; row <= selectBottom; ++row)
+			{
+				int idx = sync_find_key(t, row);
+				if (idx < 0)
+					continue;
+
+				entry->track = track - selectLeft;
+				entry->keyFrame = t->keys[idx];
+				entry->keyFrame.row -= selectTop;
+				entry++;
+			}
 		}
 	}
 
@@ -1396,19 +1399,19 @@ static void enterCurrentValue(struct sync_track* track, int activeTrack, int row
 	if (idx < 0)
 		idx = -idx - 1;
 
-    key.row = rowPos;
-   
-    if (track->num_keys > 0)
-    {
-        key.value = (float)sync_get_val(track, rowPos);
-        key.type = track->keys[emaxi(idx - 1, 0)].type;
-    }
-    else
-    {
-        key.value = 0.0f;
-        key.type = 0;
-    }
-	
+	key.row = rowPos;
+
+	if (track->num_keys > 0)
+	{
+		key.value = (float)sync_get_val(track, rowPos);
+		key.type = track->keys[emaxi(idx - 1, 0)].type;
+	}
+	else
+	{
+		key.value = 0.0f;
+		key.type = 0;
+	}
+
 	Commands_addOrUpdateKey(activeTrack, &key);
 	updateNeedsSaving();
 }
@@ -1989,4 +1992,3 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 
 	return true;
 }
-

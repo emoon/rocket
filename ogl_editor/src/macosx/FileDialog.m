@@ -56,7 +56,7 @@ int Dialog_save(char* dest)
 
 @interface ColorDelegate : NSObject<NSWindowDelegate>
 {
-    bool m_bIsClosed;
+	bool m_bIsClosed;
 }
 
 // Delegate methods
@@ -69,26 +69,28 @@ int Dialog_save(char* dest)
 
 - (id)init
 {
-    [super init];
-    m_bIsClosed = false;
-
-    return self;
+	if ( self = [super init] ) {
+		m_bIsClosed = false;
+		return self;
+	}
+	else
+		return nil;
 }
 
 - (BOOL)windowShouldClose:(id)sender
 {
-    (void)sender;
+	(void)sender;
 
-    m_bIsClosed = true;
+	m_bIsClosed = true;
 
-    [NSApp abortModal];
-    [NSApp stopModal];
-    return YES;
+	[NSApp abortModal];
+	[NSApp stopModal];
+	return YES;
 }
 
 - (BOOL)isClosed
 {
-    return m_bIsClosed;
+	return m_bIsClosed;
 }
 
 @end
@@ -100,14 +102,14 @@ void Dialog_showColorPicker(uint32_t* color)
 	uint32_t c = *color;
 
 	NSAutoreleasePool *thePool;
-    thePool = [[NSAutoreleasePool alloc] init];
+	thePool = [[NSAutoreleasePool alloc] init];
 
 	//Get the shared color and font panel
 	[[NSColorPanel sharedColorPanel] setColor:
-            [NSColor colorWithCalibratedRed:(CGFloat) (Emgui_color32_getR(c) / 255.0)
-                                        green:(CGFloat) (Emgui_color32_getG(c) / 255.0)
-                                        blue:(CGFloat) (Emgui_color32_getB(c) / 255.0)
-                                        alpha:(CGFloat) 1.0]]; 
+			[NSColor colorWithCalibratedRed:(CGFloat) (Emgui_color32_getR(c) / 255.0)
+									  green:(CGFloat) (Emgui_color32_getG(c) / 255.0)
+									   blue:(CGFloat) (Emgui_color32_getB(c) / 255.0)
+									  alpha:(CGFloat) 1.0]];
 
 	NSColorPanel* theColorPanel = [NSColorPanel sharedColorPanel];
 
@@ -115,16 +117,16 @@ void Dialog_showColorPicker(uint32_t* color)
 	//we can tell if a window has closed/open or not
 	ColorDelegate* colorDelegate = [[ColorDelegate alloc] init];
 	[theColorPanel setDelegate:colorDelegate];
-		NSModalSession session = [NSApp beginModalSessionForWindow:theColorPanel];
-		for (;;)
-		{
-			[NSApp runModalSession:session];
+	NSModalSession session = [NSApp beginModalSessionForWindow:theColorPanel];
+	for (;;)
+	{
+		[NSApp runModalSession:session];
 
-			//If the color panel is closed, return the font panel modal loop
-			if ([colorDelegate isClosed])
-				break;
-		}
-		[NSApp endModalSession:session];
+		//If the color panel is closed, return the font panel modal loop
+		if ([colorDelegate isClosed])
+			break;
+	}
+	[NSApp endModalSession:session];
 
 	[theColorPanel setDelegate:nil];
 	[colorDelegate release];
@@ -132,10 +134,10 @@ void Dialog_showColorPicker(uint32_t* color)
 	//Get the shared color panel along with the chosen color and set the chosen color
 	NSColor* theColor = [[theColorPanel color] colorUsingColorSpaceName:NSCalibratedRGBColorSpace];
 
-	*color = Emgui_color32((unsigned char) ([theColor redComponent] * 255.0),
-						   (unsigned char) ([theColor greenComponent] * 255.0),
-						   (unsigned char) ([theColor blueComponent] * 255.0),
-						   255);
+	*color = Emgui_color32( (unsigned char) ([theColor redComponent] * 255.0),
+							(unsigned char) ([theColor greenComponent] * 255.0),
+							(unsigned char) ([theColor blueComponent] * 255.0),
+							255 );
 
 	[thePool release];
 }
@@ -145,10 +147,9 @@ void Dialog_showColorPicker(uint32_t* color)
 void Dialog_showError(const text_t* text)
 {
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	NSString* message = [[[NSString alloc] initWithUTF8String:text] autorelease];// convert 
+	NSString* message = [[[NSString alloc] initWithUTF8String:text] autorelease];// convert
 
 	NSRunAlertPanel(@"Error", message, @"Ok", @"", @"");
 
 	[pool drain];
 }
-

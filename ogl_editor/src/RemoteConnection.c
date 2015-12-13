@@ -73,31 +73,31 @@
 #define SERVER_GREET "hello, demo!"
 
 enum {
-    SET_KEY = 0,
-    DELETE_KEY = 1,
-    GET_TRACK = 2,
-    SET_ROW = 3,
-    PAUSE = 4,
-    SAVE_TRACKS = 5
+	SET_KEY = 0,
+	DELETE_KEY = 1,
+	GET_TRACK = 2,
+	SET_ROW = 3,
+	PAUSE = 4,
+	SAVE_TRACKS = 5
 };
 
 static inline int socket_poll(SOCKET socket)
 {
-    struct timeval to = { 0, 0 };
-    fd_set fds;
-    
-    FD_ZERO(&fds);
-    
+	struct timeval to = { 0, 0 };
+	fd_set fds;
+
+	FD_ZERO(&fds);
+
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable: 4127)
 #endif
-    FD_SET(socket, &fds);
+	FD_SET(socket, &fds);
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-    
-    return select((int)socket + 1, &fds, NULL, NULL, &to) > 0;
+
+	return select((int)socket + 1, &fds, NULL, NULL, &to) > 0;
 }
 
 static int s_clientIndex;
@@ -513,4 +513,3 @@ void RemoteConnection_close()
 	closesocket(s_serverSocket);
 	s_serverSocket = INVALID_SOCKET;
 }
-
