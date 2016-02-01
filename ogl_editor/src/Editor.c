@@ -17,6 +17,9 @@
 #include "../../lib/sync.h"
 #include "../../lib/base.h"
 #include <emgui/Emgui.h>
+#if defined(_WIN32)
+#include <winsock2.h>
+#endif
 
 enum {
 	SET_KEY = 0,
