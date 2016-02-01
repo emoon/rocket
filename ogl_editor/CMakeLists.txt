@@ -9,61 +9,117 @@ set(VERSION_MAJOR "1")
 set(VERSION_MINOR "1")
 set(VERSION_PATCH "0")
 
-if(APPLE)
-	add_definitions(-DMACOSX)
-	add_definitions(-DEMGUI_MACOSX)
-	add_compile_options(-Wall)
-	add_compile_options(-Wno-format-security)
-	add_compile_options(-Wno-deprecated-declarations)
-endif()
+set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
+
+if (APPLE)
+	add_definitions(-DMACOSX -DEMGUI_MACOSX)
+	add_compile_options(-Wall -Wno-format-security -Wno-deprecated-declarations)
+elseif (UNIX)
+	add_definitions(-DEMGUI_UNIX)
+	add_compile_options(-Wall -Wno-format-security -Wno-deprecated-declarations)
+elseif (MSVC)
+	add_definitions(-DEMGUI_WINDOWS -DUNICODE -D_UNICODE -DWIN32)
+    add_compile_options(/W4 /FS /wd4996 /wd4389)
+endif ()
+
+##############################################################################
+# SDL (linux only)
+if (UNIX AND NOT APPLE)
+
+endif ()
 
 ##############################################################################
 # MXML
-file(GLOB MXML_SRCS
-	external/mxml/*.c
+file(GLOB RKT_MXML_SRCS
+	${CMAKE_CURRENT_SOURCE_DIR}/external/mxml/*.c
 )
-add_library(mxml ${MXML_SRCS})
-target_include_directories(mxml PUBLIC external/mxml)
-target_compile_definitions(mxml PUBLIC _THREAD_SAFE _REENTRANT)
+add_library(rkt_mxml ${RKT_MXML_SRCS})
+target_include_directories(rkt_mxml PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/mxml)
+if (APPLE)
+	target_compile_definitions(rkt_mxml PUBLIC -D_THREAD_SAFE -D_REENTRANT)
+	target_compile_options(rkt_mxml PUBLIC -Wall)
+elseif (UNIX)
+	target_compile_definitions(rkt_mxml PUBLIC -D_THREAD_SAFE -D_REENTRANT)
+	target_compile_options(rkt_mxml PUBLIC -Wall)
+elseif (MSVC)
+	set_target_properties(rkt_mxml PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
+endif ()
+set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/external/mxml)
+set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} rkt_mxml)
 
 ##############################################################################
 # SYNC
-file(GLOB SYNC_SRCS
-	../lib/*.c
+file(GLOB RKT_SYNC_SRCS
+	${CMAKE_CURRENT_SOURCE_DIR}/../lib/*.c
 )
-add_library(sync ${SYNC_SRCS})
-target_include_directories(sync PUBLIC ../lib)
+add_library(rkt_sync ${RKT_SYNC_SRCS})
+target_include_directories(rkt_sync PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../lib)
+set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/../lib)
+set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} rkt_sync)
 
 ##############################################################################
 # EMGUI
-file(GLOB_RECURSE EMGUI_SRCS
-	emgui/src/*.c
-	emgui/src/*.h
+file(GLOB_RECURSE RKT_EMGUI_SRCS
+	${CMAKE_CURRENT_SOURCE_DIR}/emgui/src/*.c
+	${CMAKE_CURRENT_SOURCE_DIR}/emgui/src/*.h
 )
-add_library(emgui ${EMGUI_SRCS})
-target_include_directories(emgui PUBLIC emgui/src emgui/include)
-target_compile_definitions(emgui PUBLIC _THREAD_SAFE _REENTRANT)
-target_compile_options(emgui PUBLIC -Werror -pedantic-errors)
+add_library(rkt_emgui ${RKT_EMGUI_SRCS})
+target_include_directories(rkt_emgui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/emgui/src ${CMAKE_CURRENT_SOURCE_DIR}/emgui/include)
+if (APPLE)
+	target_compile_definitions(rkt_emgui PUBLIC -DEMGUI_MACOSX)
+	target_compile_options(rkt_emgui PUBLIC -Werror -pedantic-errors -Wall -Wno-format-security)
+elseif (UNIX)
+	target_compile_definitions(rkt_emgui PUBLIC -DEMGUI_UNIX)
+	target_compile_options(rkt_emgui PUBLIC -Werror -pedantic-errors -Wall -Wno-format-security)
+elseif (MSVC)
+	target_compile_definitions(rkt_emgui PUBLIC -DEMGUI_WINDOWS)
+	set_target_properties(rkt_emgui PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
+endif ()
+set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/emgui/include)
+set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} rkt_emgui)
 
 ##############################################################################
-# EDITOR
-file(GLOB PROJECT_SRCS
-	src/*.c
-	src/*.m
-	src/*.h
+# ROCKET EDITOR
+file(GLOB RKT_PROJECT_SRCS
+	${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
+	${CMAKE_CURRENT_SOURCE_DIR}/src/*.m
+	${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
 )
 if (APPLE)
-	file(GLOB PROJECT_PLATFORM_SRCS
-		src/macosx/*.c
-		src/macosx/*.m
-		src/macosx/*.h
+	file(GLOB RKT_PLATFORM_SRCS
+		${CMAKE_CURRENT_SOURCE_DIR}/src/macosx/*.c
+		${CMAKE_CURRENT_SOURCE_DIR}/src/macosx/*.m
+		${CMAKE_CURRENT_SOURCE_DIR}/src/macosx/*.h
 	)
-endif()
-file(GLOB RESOURCES_DATA
-    data/macosx/icon.icns
-)
-source_group("Data" FILES ${RESOURCES_DATA})
 
+	file(GLOB RKT_RESOURCES_DATA
+	    ${CMAKE_CURRENT_SOURCE_DIR}/data/macosx/icon.icns
+	)
+	source_group("Data" FILES ${RKT_RESOURCES_DATA})
+elseif (UNIX)
+	file(GLOB RKT_PLATFORM_SRCS
+		${CMAKE_CURRENT_SOURCE_DIR}/src/linux/*.c
+		${CMAKE_CURRENT_SOURCE_DIR}/src/linux/*.h
+	)
+elseif (MSVC)
+	file(GLOB RKT_PLATFORM_SRCS
+		${CMAKE_CURRENT_SOURCE_DIR}/src/windows/*.c
+		${CMAKE_CURRENT_SOURCE_DIR}/src/windows/*.h
+	)
+
+	file(GLOB RKT_RESOURCES_DATA
+	    ${CMAKE_CURRENT_SOURCE_DIR}/data/windows/appicon.ico
+	    ${CMAKE_CURRENT_SOURCE_DIR}/data/windows/editor.rc
+	)
+	source_group("Data" FILES ${RKT_RESOURCES_DATA})
+endif ()
+
+set(RKT_PROJECT_SRCS ${RKT_PROJECT_SRCS} ${RKT_PLATFORM_SRCS} ${RKT_RESOURCES_DATA})
+
+set(RKT_PROJECT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/src ${RKT_PROJECT_INCLUDES})
+
+##############################################################################
+#### APPLE BUNDLE, RESSOURCES AND DYNAMIC LIBS
 if (APPLE)
 	set(GUI_TYPE MACOSX_BUNDLE)
 
@@ -85,25 +141,47 @@ if (APPLE)
 	set(MACOSX_BUNDLE_BUNDLE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 	set(MACOSX_BUNDLE_COPYRIGHT "Copyright © 2012-2016 GNU Rocket Contributors. All rights reserved.")
 
-	set_source_files_properties(${RESOURCES_DATA} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+	set_source_files_properties(${RKT_RESOURCES_DATA} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 
-	set(PROJECT_SRCS ${GUI_TYPE} ${PROJECT_SRCS} ${RESOURCES_DATA})
+	set(RKT_PROJECT_SRCS ${GUI_TYPE} ${RKT_PROJECT_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/data/macosx/appnib.xib)
+elseif (UNIX)
+	find_package(SDL REQUIRED)
+	if (NOT SDL_FOUND)
+		message(FATAL_ERROR "SDL not found!")
+	endif ()
 
-endif (APPLE)
-add_executable(${RKT_EXE_NAME} ${PROJECT_SRCS} ${PROJECT_PLATFORM_SRCS} data/macosx/appnib.xib)
+	set(PLATFORM_LIBS ${SDL_LIBRARY} SDLmain GL m)
+	set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${SDL_INCLUDE_DIR})
+elseif (MSVC)
+	set(PLATFORM_LIBS wsock32 opengl32 glu32 kernel32 user32 gdi32 Comdlg32 Advapi32)
+endif ()
+set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${PLATFORM_LIBS})
+##############################################################################
+
+add_executable(${RKT_EXE_NAME} ${RKT_PROJECT_SRCS})
+target_include_directories(${RKT_EXE_NAME} PUBLIC ${RKT_PROJECT_INCLUDES})
 if (APPLE)
 	set_target_properties(${RKT_EXE_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/data/macosx/MacOSXBundleInfo.plist.in)
+elseif (MSVC)
+	set_target_properties(${RKT_EXE_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
 endif ()
-target_include_directories(${RKT_EXE_NAME} PUBLIC . src emgui/include external/mxml)
-target_compile_options(${RKT_EXE_NAME} PUBLIC -Werror -pedantic-errors)
-target_link_libraries(${RKT_EXE_NAME} sync mxml emgui ${PLATFORM_LIBS})
+if (APPLE)
+	target_compile_definitions(${RKT_EXE_NAME} PUBLIC -DEMGUI_MACOSX)
+	target_compile_options(${RKT_EXE_NAME} PUBLIC -Werror -pedantic-errors -Wall -Wno-format-security)
+elseif (UNIX)
+	target_compile_definitions(${RKT_EXE_NAME} PUBLIC -DEMGUI_UNIX)
+	target_compile_options(${RKT_EXE_NAME} PUBLIC -Werror -pedantic-errors -Wall -Wno-format-security)
+elseif (MSVC)
+	target_compile_definitions(${RKT_EXE_NAME} PUBLIC -DEMGUI_WIN32)
+endif ()
+target_link_libraries(${RKT_EXE_NAME} ${RKT_PROJECT_LIBS})
 
 # compile the nibs
 if (APPLE)
 	find_program(IBTOOL ibtool HINTS "/usr/bin" "${OSX_DEVELOPER_ROOT}/usr/bin")
 	if (${IBTOOL} STREQUAL "IBTOOL-NOTFOUND")
 		message(SEND_ERROR "ibtool can not be found and is needed to compile the .xib files. It should have been installed with the Apple developer tools. The default system paths were searched in addition to ${OSX_DEVELOPER_ROOT}/usr/bin")
-	endif()
+	endif ()
 
 	# Make sure the 'Resources' Directory is correctly created before we build
 	#add_custom_command (TARGET ${RKT_EXE_NAME} PRE_BUILD COMMAND echo ${CMAKE_BINARY_DIR}/\${CONFIGURATION}/${RKT_EXE_NAME}.app/Contents/Resources/appnib.nib)
@@ -111,7 +189,7 @@ if (APPLE)
 	# Compile the .xib files using the 'ibtool' program with the destination being the app package
 	add_custom_command (TARGET ${RKT_EXE_NAME} POST_BUILD
 						  COMMAND ${IBTOOL} --errors --warnings --notices --output-format human-readable-text
-								--compile ${CMAKE_BINARY_DIR}/\${CONFIGURATION}/${RKT_EXE_NAME}.app/Contents/Resources/appnib.nib
+								--compile ${CMAKE_CURRENT_BINARY_DIR}/\${CONFIGURATION}/${RKT_EXE_NAME}.app/Contents/Resources/appnib.nib
 								${CMAKE_CURRENT_SOURCE_DIR}/data/macosx/appnib.xib
 						  COMMENT "Compiling appnib.xib")
-endif (APPLE)
+endif ()
