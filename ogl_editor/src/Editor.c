@@ -957,9 +957,9 @@ static void setWindowTitle(const text_t* path, bool needsSave)
 	text_t windowTitle[4096];
 #if defined(_WIN32)
 	if (needsSave)
-		swprintf_s(windowTitle, 4096, L"RocketEditor" EDITOR_VERSION L"- (%s) *", path);
+		swprintf_s(windowTitle, sizeof_array(windowTitle), L"RocketEditor" EDITOR_VERSION L"- (%s) *", path);
 	else
-		swprintf_s(windowTitle, 4096, L"RocketEditor" EDITOR_VERSION L" - (%s)", path);
+		swprintf_s(windowTitle, sizeof_array(windowTitle), L"RocketEditor" EDITOR_VERSION L" - (%s)", path);
 #else
 	if (needsSave)
 		sprintf(windowTitle, "RocketEditor" EDITOR_VERSION "- (%s) *", path);
