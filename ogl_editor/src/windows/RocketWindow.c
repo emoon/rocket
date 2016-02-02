@@ -210,17 +210,17 @@ static void formatName(wchar_t* outName, int keyMod, int key, const wchar_t* nam
 	{
 		switch (key)
 		{
-			case EMGUI_KEY_ARROW_DOWN : wcscpy_s(keyName, sizeof(keyName), L"Down"); break;
-			case EMGUI_KEY_ARROW_UP: wcscpy_s(keyName, sizeof(keyName), L"Up"); break;
-			case EMGUI_KEY_ARROW_RIGHT: wcscpy_s(keyName, sizeof(keyName), L"Right"); break;
-			case EMGUI_KEY_ARROW_LEFT: wcscpy_s(keyName, sizeof(keyName), L"Left"); break;
-			case EMGUI_KEY_ESC: wcscpy_s(keyName, sizeof(keyName), L"ESC"); break;
-			case EMGUI_KEY_TAB: wcscpy_s(keyName, sizeof(keyName), L"TAB"); break;
-			case EMGUI_KEY_BACKSPACE: wcscpy_s(keyName, sizeof(keyName), L"Delete"); break;
-			case EMGUI_KEY_ENTER: wcscpy_s(keyName, sizeof(keyName), L"Enter"); break;
-			case EMGUI_KEY_SPACE: wcscpy_s(keyName, sizeof(keyName), L"Space"); break;
-			case EMGUI_KEY_PAGE_UP: wcscpy_s(keyName, sizeof(keyName), L"Page Up"); break;
-			case EMGUI_KEY_PAGE_DOWN: wcscpy_s(keyName, sizeof(keyName), L"Page Down"); break;
+			case EMGUI_KEY_ARROW_DOWN : wcscpy_s(keyName, sizeof_array(keyName), L"Down"); break;
+			case EMGUI_KEY_ARROW_UP: wcscpy_s(keyName, sizeof_array(keyName), L"Up"); break;
+			case EMGUI_KEY_ARROW_RIGHT: wcscpy_s(keyName, sizeof_array(keyName), L"Right"); break;
+			case EMGUI_KEY_ARROW_LEFT: wcscpy_s(keyName, sizeof_array(keyName), L"Left"); break;
+			case EMGUI_KEY_ESC: wcscpy_s(keyName, sizeof_array(keyName), L"ESC"); break;
+			case EMGUI_KEY_TAB: wcscpy_s(keyName, sizeof_array(keyName), L"TAB"); break;
+			case EMGUI_KEY_BACKSPACE: wcscpy_s(keyName, sizeof_array(keyName), L"Delete"); break;
+			case EMGUI_KEY_ENTER: wcscpy_s(keyName, sizeof_array(keyName), L"Enter"); break;
+			case EMGUI_KEY_SPACE: wcscpy_s(keyName, sizeof_array(keyName), L"Space"); break;
+			case EMGUI_KEY_PAGE_UP: wcscpy_s(keyName, sizeof_array(keyName), L"Page Up"); break;
+			case EMGUI_KEY_PAGE_DOWN: wcscpy_s(keyName, sizeof_array(keyName), L"Page Down"); break;
 		}
 	}
 
