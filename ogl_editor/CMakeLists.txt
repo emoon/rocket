@@ -23,12 +23,6 @@ elseif (MSVC)
 endif ()
 
 ##############################################################################
-# SDL (linux only)
-if (UNIX AND NOT APPLE)
-
-endif ()
-
-##############################################################################
 # MXML
 file(GLOB RKT_MXML_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/external/mxml/*.c
