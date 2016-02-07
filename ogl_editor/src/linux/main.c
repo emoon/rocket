@@ -1,6 +1,7 @@
 #include "SDL.h"
 #include <stdio.h>
 #include <emgui/Emgui.h>
+#include <emgui/GFXBackend.h> 
 #include "Editor.h"
 #include "Menu.h"
 
