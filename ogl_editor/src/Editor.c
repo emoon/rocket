@@ -293,7 +293,7 @@ void Editor_create()
 {
 	int id;
 	Emgui_create();
-	id = Emgui_loadFontBitmap(g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_LOCATION_MEMORY, 32, 128, g_minecraftiaFontLayout);
+	id = Emgui_loadFontBitmap((char*)g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_LOCATION_MEMORY, 32, 128, g_minecraftiaFontLayout);
 
 	if (!RemoteConnection_createListner())
 	{
