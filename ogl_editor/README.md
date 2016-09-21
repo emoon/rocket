@@ -4,7 +4,7 @@ GNU Rocket OpenGL editor
 Beta Disclaimer
 ---------------
 
-First a screenshot of how it looks: 
+First a screenshot of how it looks:
 ![Rocket Opengl editor screenshot](https://dl.dropbox.com/u/5205843/RocketEditor.png)
 
 Regular disclaimer: Backup your stuff before using software :)
@@ -15,8 +15,8 @@ Also the documentation hasn't been completed yet.
 
 Here are the links to the current version of the editor:
 
-* Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.1Beta1.zip
-* Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.1Beta-win32.zip
+* Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.0.zip
+* Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.0-win32.zip
 
 About
 -----
