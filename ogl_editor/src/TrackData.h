@@ -13,6 +13,15 @@ enum
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+typedef struct MusicData
+{
+    text_t* filename;
+    short* waveData;
+    float* fftData;
+} MusicData;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 enum GroupType
 {
 	GROUP_TYPE_TRACK,
@@ -64,6 +73,7 @@ typedef struct Group
 
 typedef struct TrackData
 {
+    MusicData musicData;
 	struct sync_track **syncTracks;
 	size_t num_syncTracks;
 	Track tracks[EDITOR_MAX_TRACKS];

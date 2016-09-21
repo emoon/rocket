@@ -19,7 +19,7 @@ StaticLibrary {
 		},
 	},
 
-	Sources = { 
+	Sources = {
 		Glob {
 			Dir = "external/mxml",
 			Extensions = { ".c" },
@@ -46,7 +46,7 @@ StaticLibrary {
 		},
 	},
 
-	Sources = { 
+	Sources = {
 		FGlob {
 			Dir = "emgui/src",
 			Extensions = { ".c", ".h" },
@@ -63,7 +63,7 @@ StaticLibrary {
 StaticLibrary {
 	Name = "sync",
 
-	Sources = { 
+	Sources = {
 		Glob {
 			Dir = "../lib",
 			Extensions = { ".c" },
@@ -76,8 +76,15 @@ Program {
 	Name = "editor",
 
 	Env = {
-		CPPPATH = { ".", "src", 
-						 "emgui/include", 
+	    LIBPATH = {
+	        { "External/bass/win32"; Config = "win32-*-*" },
+	        { "External/bass/mac"; Config = "macosx-*-*" },
+	        { "External/bass/linux"; Config = "linux-*-*" },
+	    },
+
+		CPPPATH = { ".", "src",
+						 "emgui/include",
+						 "External/bass",
 					     "External/mxml" },
 		PROGOPTS = {
 			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
@@ -93,7 +100,7 @@ Program {
 		},
 	},
 
-	Sources = { 
+	Sources = {
 		FGlob {
 			Dir = "src",
 			Extensions = { ".c", ".m", ".h" },
@@ -110,11 +117,13 @@ Program {
 	Depends = { "sync", "mxml", "emgui" },
 
 	Libs = {
-		{ "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib", "user32.lib", "gdi32.lib", "Comdlg32.lib", "Advapi32.lib" ; Config = "win32-*-*" },
-		{ "GL", "SDL", "m"; Config = "linux-*-*" }
+		{ "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib",
+		   "user32.lib", "gdi32.lib", "Comdlg32.lib", "Advapi32.lib", "bass.lib" ; Config = "win32-*-*" },
+		{ "GL", "SDL", "m", "bass"; Config = "linux-*-*" },
+		{ "bass"; Config = "macosx-*-*" },
 	},
 
-	Frameworks = { "Cocoa", "OpenGL", "Carbon"  },
+	Frameworks = { "Cocoa", "OpenGL", "Carbon", "CoreAudio"  },
 }
 
 Program {
@@ -126,7 +135,7 @@ Program {
 	},
 }
 
-local rocketBundle = OsxBundle 
+local rocketBundle = OsxBundle
 {
 	Depends = { "editor" },
 	Target = "$(OBJECTDIR)/RocketEditor.app",
