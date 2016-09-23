@@ -4,7 +4,7 @@ GNU Rocket
 [![Build status](https://ci.appveyor.com/api/projects/status/dfq8qaedc6mtsefg/branch/master?svg=true)](https://ci.appveyor.com/project/kusma/rocket/branch/master)
 [![Build Status](https://travis-ci.org/kusma/rocket.svg?branch=master)](https://travis-ci.org/kusma/rocket)
 
-Notice this is a fork of the original repo. You can find the README for this project [here](ogl_editor/README.MD)
+Notice this is a fork of the original repo. You can find the README for this project [here](ogl_editor/README.md)
 
 ================
 
