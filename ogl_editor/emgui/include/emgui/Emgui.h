@@ -115,7 +115,7 @@ void Emgui_setDefaultFont();
 bool Emgui_setFontByName(const char* ttfFontname);
 
 int Emgui_loadFontTTF(const char* ttfFontname, float fontHeight);
-int Emgui_loadFontBitmap(const char* buffer, int len, enum EmguiMemoryLocation location, 
+int Emgui_loadFontBitmap(const char* buffer, int len, enum EmguiMemoryLocation location,
 						 int rangeStart, int rangeEnd, struct EmguiFontLayout* layout);
 uint32_t Emgui_getTextSize(const char* text);
 
@@ -153,8 +153,10 @@ bool Emgui_buttonImage(const char* filename);
 void Emgui_setFirstControlFocus();
 bool Emgui_hasKeyboardFocus();
 
-void Emgui_radioButtonImage(void* image0, int size0, void* image1, int size1, enum EmguiMemoryLocation location, 
+void Emgui_radioButtonImage(void* image0, int size0, void* image1, int size1, enum EmguiMemoryLocation location,
 							uint32_t color, int x, int y, bool* stateIn);
+
+void Emgui_drawTexture(uint64_t imageId, uint32_t color, int x, int y, int w, int h);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper functions

@@ -32,8 +32,8 @@ static void setColor(uint32_t color)
 	// TODO: Figure out why glColor4b doesn't work here :/
 
 	glColor4f(((color >> 0) & 0xff) * 1.0f / 255.0f,
-			  ((color >> 8) & 0xff) * 1.0f / 255.0f, 
-			  ((color >> 16) & 0xff) * 1.0f / 255.0f, 
+			  ((color >> 8) & 0xff) * 1.0f / 255.0f,
+			  ((color >> 16) & 0xff) * 1.0f / 255.0f,
 			  ((color >> 24) & 0xff) * 1.0f / 255.0f);
 }
 
@@ -66,7 +66,7 @@ void EMGFXBackend_updateViewPort(int width, int height)
     glLoadIdentity();
     glOrtho(0, width, height, 0, 0, 1);
 }
-	
+
 static GLuint texId;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +79,7 @@ uint64_t EMGFXBackend_createFontTexture(void* fontBuffer, int width, int height)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, fontBuffer);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
+
 	return (uint64_t)texId;
 }
 
@@ -99,46 +99,60 @@ uint64_t EMGFXBackend_createTexture(void* imageBuffer, int w, int h, int comp)
 		case 4 : format = GL_RGBA; break;
 	}
 
-	GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, format, GL_UNSIGNED_BYTE, imageBuffer));
+    if (imageBuffer) {
+	    GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, format, GL_UNSIGNED_BYTE, imageBuffer));
+	}
 
 	GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 	GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
 	GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP));
 	GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP));
-	
+
 	return (uint64_t)texId;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
-static EMGUI_INLINE LoadedFont* getLoadedFont()
+void EMGFXBackend_updateTexture(uint64_t texId, int w, int h, void* data)
 {
-	return &g_loadedFonts[g_currentFont];
+	GL_CHECK(glBindTexture(GL_TEXTURE_2D, texId));
+    //GL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data));
+
+    GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data));
+
+    /*
+    uint8_t* t = (uint8_t*)data;
+
+    for (int i = 0; i < ((128/8)*2048); ++i) {
+        printf("%d %d %d %d %d %d %d %d\n", t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7]);
+        t += 8;
+    }
+    */
+
+    printf("updating with %p\n", data);
 }
-*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void drawText(struct DrawTextCommand* commands, int fontId)
 {
-	const LoadedFont* font = &g_loadedFonts[fontId]; 
+	const LoadedFont* font = &g_loadedFonts[fontId];
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
+
 	glEnable(GL_TEXTURE_2D);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBindTexture(GL_TEXTURE_2D, (GLuint)font->handle);
 
 	//glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-	
+
 	glBegin(GL_QUADS);
 
 	while (commands)
 	{
-		const char* text = commands->text; 
+		const char* text = commands->text;
 		float x = (float)commands->x;
 		float y = (float)commands->y;
 		const bool flipped = commands->flipped;
@@ -150,7 +164,7 @@ static void drawText(struct DrawTextCommand* commands, int fontId)
 
 			while (c != 0)
 			{
-				int offset = c - 32; 
+				int offset = c - 32;
 				float s0 = (float)font->altLookup[(offset * 2) + 0];
 				float t0 = (float)font->altLookup[(offset * 2) + 1];
 				float s1 = s0 + 8.0f;
@@ -164,7 +178,7 @@ static void drawText(struct DrawTextCommand* commands, int fontId)
 				t0 *= 1.0f / 128.0f;
 				s1 *= 1.0f / 128.0f;
 				t1 *= 1.0f / 128.0f;
-				
+
 				glTexCoord2f(s0, t0); glVertex2f(x0, y0);
 				glTexCoord2f(s1, t0); glVertex2f(x1, y0);
 				glTexCoord2f(s1, t1); glVertex2f(x1, y1);
@@ -190,9 +204,9 @@ static void drawText(struct DrawTextCommand* commands, int fontId)
 					EmguiFontLayout* info = &font->layout[offset];
 
 					float s0 = info->x;
-					float t0 = info->y; 
-					float s1 = (float)(info->x + info->width);  
-					float t1 = (float)(info->y + info->height); 
+					float t0 = info->y;
+					float s1 = (float)(info->x + info->width);
+					float t1 = (float)(info->y + info->height);
 
 					if (flipped)
 					{
@@ -205,7 +219,7 @@ static void drawText(struct DrawTextCommand* commands, int fontId)
 						s1 *= s_scale;
 						t0 *= t_scale;
 						t1 *= t_scale;
-						
+
 						glTexCoord2f(s1, t0); glVertex2f(x0, y0);
 						glTexCoord2f(s1, t1); glVertex2f(x1, y0);
 						glTexCoord2f(s0, t1); glVertex2f(x1, y1);
@@ -217,7 +231,7 @@ static void drawText(struct DrawTextCommand* commands, int fontId)
 					{
 						float x0 = x + (float)info->xoffset;
 						float y0 = y + (float)info->yoffset;
-						float x1 = x0 + (float)info->width; 
+						float x1 = x0 + (float)info->width;
 						float y1 = y0 + (float)info->height;
 
 						s0 *= s_scale;
@@ -244,7 +258,7 @@ static void drawText(struct DrawTextCommand* commands, int fontId)
 			{
 				int c = (unsigned char)*text;
 				if (c >= 32 && c < 128)
-				{                       
+				{
 					stbtt_aligned_quad q;
 					stbtt_GetBakedQuad((stbtt_bakedchar*)font->cData, 512,512, c-32, &x, &y, &q, 1);
 
@@ -252,7 +266,7 @@ static void drawText(struct DrawTextCommand* commands, int fontId)
 					glTexCoord2f(q.s1,q.t0); glVertex2f(q.x1,q.y0);
 					glTexCoord2f(q.s1,q.t1); glVertex2f(q.x1,q.y1);
 					glTexCoord2f(q.s0,q.t1); glVertex2f(q.x0,q.y1);
-			
+
 				}
 				++text;
 			}
@@ -261,7 +275,7 @@ static void drawText(struct DrawTextCommand* commands, int fontId)
 		commands = commands->next;
 	}
 
-	glEnd();        
+	glEnd();
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 }
@@ -343,10 +357,10 @@ static void drawFillStipple(struct DrawFillCommand* command)
 
 static void drawImage(struct DrawImageCommand* command)
 {
-	uint64_t lastTexture = command->imageId; 
+	uint64_t lastTexture = command->imageId;
 
 	glDisable(GL_BLEND);
-	
+
 	glEnable(GL_TEXTURE_2D);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBindTexture(GL_TEXTURE_2D, (GLuint)lastTexture);

@@ -14,9 +14,11 @@
 #include "Commands.h"
 #include "MinecraftiaFont.h"
 #include "Window.h"
+#include "Music.h"
 #include "../../lib/sync.h"
 #include "../../lib/base.h"
 #include <emgui/Emgui.h>
+#include <emgui/GFXBackend.h>
 #include <Bass.h>
 #if defined(_WIN32)
 	#include <winsock2.h>
@@ -33,6 +35,13 @@ enum {
 	PAUSE = 4,
 	SAVE_TRACKS = 5
 };
+
+#ifdef _WIN32
+#define TEXT(text) L##text
+#else
+#define TEXT(text) text
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void updateNeedsSaving();
@@ -59,11 +68,13 @@ typedef struct CopyData
 
 typedef struct EditorData
 {
+    uint64_t waveTexture;
 	TrackViewInfo trackViewInfo;
 	TrackData trackData;
 	CopyEntry* copyEntries;
 	int copyCount;
 	int canDecodeMusic;
+	int waveViewSize;
 } EditorData;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -297,31 +308,25 @@ void Editor_create()
 	Emgui_create();
 	id = Emgui_loadFontBitmap((char*)g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_LOCATION_MEMORY, 32, 128, g_minecraftiaFontLayout);
 
+	s_editorData.canDecodeMusic = 1;
+
 	if (!RemoteConnection_createListner())
 	{
-	#if defined(_WIN32)
-		Dialog_showError(L"Unable to create listener. Make sure no other program is using port 1338");
-	#else
-		Dialog_showError("Unable to create listener. Make sure no other program is using port 1338");
-	#endif
+		Dialog_showError(TEXT("Unable to create listener. Make sure no other program is using port 1338"));
 	}
-
-	s_editorData.canDecodeMusic = 1;
 
     if (!BASS_Init(0, 44100, 0, 0, NULL))
     {
-	#if defined(_WIN32)
-		Dialog_showError(L"Unable to create init BASS. No music loading will be usable.");
-	#else
-		Dialog_showError("Unable to create init BASS. No music loading will be usable.");
-	#endif
+		Dialog_showError(TEXT("Unable to create init BASS. No music loading will be usable."));
 	    s_editorData.canDecodeMusic = 0;
     }
 
+    s_editorData.waveTexture = EMGFXBackend_createTexture(0, 128, 2048, 4);
 	s_editorData.trackViewInfo.smallFontId = id;
 	s_editorData.trackData.startRow = 0;
 	s_editorData.trackData.endRow = 10000;
-	s_editorData.trackData.highlightRowStep = 8;
+	s_editorData.trackData.bpm = 125;
+	s_editorData.trackData.rowsPerBeat = 8;
 	s_editorData.trackData.isPlaying = false;
 	s_editorData.trackData.isLooping = false;
 
@@ -332,7 +337,7 @@ void Editor_create()
 
 void Editor_setWindowSize(int x, int y)
 {
-	s_editorData.trackViewInfo.windowSizeX = x;
+	s_editorData.trackViewInfo.windowSizeX = x - s_editorData.waveViewSize;
 	s_editorData.trackViewInfo.windowSizeY = y;
 	Editor_updateTrackScroll();
 }
@@ -348,6 +353,8 @@ void Editor_init()
 static char s_currentRow[64] = "0";
 static char s_startRow[64] = "0";
 static char s_endRow[64] = "10000";
+static char s_bpm[64] = "125";
+static char s_rowsPerBeat[64] = "8";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -444,7 +451,7 @@ static void drawStatus()
 {
 	int size = 0;
 	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
-	const int sizeX = s_editorData.trackViewInfo.windowSizeX;
+	const int sizeX = s_editorData.trackViewInfo.windowSizeX + s_editorData.waveViewSize;
 	const int prevRow = getRowPos();
 
 	Emgui_setFont(s_editorData.trackViewInfo.smallFontId);
@@ -457,6 +464,8 @@ static void drawStatus()
 	size += drawNameValue("Row", size, sizeY, &s_editorData.trackViewInfo.rowPos, 0, 20000 - 1, s_currentRow);
 	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackData.startRow, 0, 10000000, s_startRow);
 	size += drawNameValue("End Row", size, sizeY, &s_editorData.trackData.endRow, 0, 10000000, s_endRow);
+	size += drawNameValue("BPM", size, sizeY, &s_editorData.trackData.bpm, 0, 10000, s_bpm);
+	size += drawNameValue("Rows/Beat", size, sizeY, &s_editorData.trackData.rowsPerBeat, 0, 256, s_rowsPerBeat);
 
 	if (getRowPos() != prevRow)
 		RemoteConnection_sendSetRowCommand(getRowPos());
@@ -523,7 +532,7 @@ static void drawVerticalSlider()
 	width = end_row - start_row;
 	large_val = emaxi(width / 10, 1);
 
-	Emgui_slider(info->windowSizeX - 26, 0, 20, info->windowSizeY, 0, width, large_val,
+	Emgui_slider((info->windowSizeX + s_editorData.waveViewSize) - 26, 0, 20, info->windowSizeY, 0, width, large_val,
 				EMGUI_SLIDERDIR_VERTICAL, 1, &s_editorData.trackViewInfo.rowPos);
 
 	if (rowPos != getRowPos())
@@ -538,10 +547,19 @@ static bool internalUpdate()
 {
 	int refresh;
 
+	TrackViewInfo* info = getTrackViewInfo();
+
 	Emgui_begin();
 	drawStatus();
 	drawHorizonalSlider();
 	drawVerticalSlider();
+
+	unsigned int* fftData = getTrackData()->musicData.fftData;
+
+    if (s_editorData.waveViewSize > 0 && fftData)
+    {
+        Emgui_drawTexture(s_editorData.waveTexture, Emgui_color32(255, 255, 255, 255), info->windowSizeX - 18, 0, 128, info->windowSizeY - 17);
+    }
 
 	refresh = TrackView_render(getTrackViewInfo(), getTrackData());
 	Emgui_end();
@@ -1044,13 +1062,34 @@ static void onOpen()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void decodeMusic(text_t* path)
+{
+    Music_decode(path, &getTrackData()->musicData);
+
+    s_editorData.waveViewSize = 128 + 20;
+	s_editorData.trackViewInfo.windowSizeX -= (s_editorData.waveViewSize);
+
+    Editor_updateTrackScroll();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void onLoadMusic()
 {
 	text_t path[2048];
 
+    if (!s_editorData.canDecodeMusic)
+    {
+		Dialog_showError(TEXT("Unable to load music as BASS failed to init."));
+		return;
+    }
+
 	if (!Dialog_open(path))
 		return;
 
+    decodeMusic(path);
+
+    EMGFXBackend_updateTexture(s_editorData.waveTexture, 128, 2048, getTrackData()->musicData.fftData);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1762,7 +1801,7 @@ static void onTab()
 
 void Editor_menuEvent(int menuItem)
 {
-	int highlightRowStep = getTrackData()->highlightRowStep;
+	int rowsPerBeat = getTrackData()->rowsPerBeat;
 
 	if (menuItem == EDITOR_MENU_DELETE_KEY && is_editing)
 	{
@@ -1867,10 +1906,10 @@ void Editor_menuEvent(int menuItem)
 
 		case EDITOR_MENU_PLAY : onPlay(); break;
 		case EDITOR_MENU_PLAY_LOOP : onPlayLoop(); break;
-		case EDITOR_MENU_ROWS_UP : onRowStep(-highlightRowStep , NO_SELECTION); break;
-		case EDITOR_MENU_ROWS_DOWN : onRowStep(highlightRowStep , NO_SELECTION); break;
-		case EDITOR_MENU_ROWS_2X_UP : onRowStep(-highlightRowStep * 2 , NO_SELECTION); break;
-		case EDITOR_MENU_ROWS_2X_DOWN : onRowStep(highlightRowStep * 2 , NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_UP : onRowStep(-rowsPerBeat , NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_DOWN : onRowStep(rowsPerBeat , NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_2X_UP : onRowStep(-rowsPerBeat * 2 , NO_SELECTION); break;
+		case EDITOR_MENU_ROWS_2X_DOWN : onRowStep(rowsPerBeat * 2 , NO_SELECTION); break;
 		case EDITOR_MENU_PREV_BOOKMARK : onBookmarkDir(ARROW_UP, NO_SELECTION); break;
 		case EDITOR_MENU_NEXT_BOOKMARK : onBookmarkDir(ARROW_DOWN, NO_SELECTION); break;
 		case EDITOR_MENU_SCROLL_LEFT : onScrollView(ARROW_LEFT); break;
@@ -1944,7 +1983,7 @@ static bool doEditing(int key)
 bool Editor_keyDown(int key, int keyCode, int modifiers)
 {
 	enum Selection selection = modifiers & EMGUI_KEY_SHIFT ? DO_SELECTION : NO_SELECTION;
-	int highlightRowStep = getTrackData()->highlightRowStep;
+	int rowsPerBeat = getTrackData()->rowsPerBeat;
 
 	if (Emgui_hasKeyboardFocus())
 	{
@@ -1996,7 +2035,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			else if (modifiers & EMGUI_KEY_COMMAND)
 				onBookmarkDir(ARROW_UP, selection);
 			else if (modifiers & EMGUI_KEY_ALT)
-				onRowStep(-highlightRowStep , selection);
+				onRowStep(-rowsPerBeat , selection);
 			else
 				onRowStep(-1, selection);
 
@@ -2010,7 +2049,7 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 			else if (modifiers & EMGUI_KEY_COMMAND)
 				onBookmarkDir(ARROW_DOWN, selection);
 			else if (modifiers & EMGUI_KEY_ALT)
-				onRowStep(highlightRowStep, selection);
+				onRowStep(rowsPerBeat, selection);
 			else
 				onRowStep(1, selection);
 			break;

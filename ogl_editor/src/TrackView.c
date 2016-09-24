@@ -53,7 +53,7 @@ struct TrackInfo
 	int selectBottom;
 	int startY;
 	int startPos;
-	int endPos; 
+	int endPos;
 	int endSizeY;
 	int midPos;
 };
@@ -62,10 +62,10 @@ struct TrackInfo
 
 struct DrawSelectedTrack
 {
-	int drawTrack; 
+	int drawTrack;
 	int width;
-	int startX; 
-	int startY; 
+	int startX;
+	int startY;
 	int endY;
 };
 
@@ -164,7 +164,7 @@ static void drawBookmarks(TrackData* trackData, int x, int y, int rowCount, int 
 		if (rowOffset != 0)
 		{
 			if (TrackData_hasBookmark(trackData, rowOffset))
-				Emgui_fill(bookmark_color, x, y, width, 8); 
+				Emgui_fill(bookmark_color, x, y, width, 8);
 		}
 
 		y += 8; rowOffset++;
@@ -180,7 +180,7 @@ static void drawBookmarks(TrackData* trackData, int x, int y, int rowCount, int 
 static bool drawColorButton(uint32_t color, int x, int y, int size)
 {
 	const uint32_t colorFade = Emgui_color32(32, 32, 32, 255);
-	Emgui_fill(color, x, y, size - 8, 8); 
+	Emgui_fill(color, x, y, size - 8, 8);
 
 	return Emgui_buttonCoords("", colorFade, x, y, size - 8, 8);
 }
@@ -212,10 +212,10 @@ static int renderName(const char* name, int x, int y, int minSize, bool folded, 
 	text_size_full = Emgui_getTextSize(name);
 	text_size = (text_size_full & 0xffff) + spacing;
 
-	if (text_size < minSize) 
+	if (text_size < minSize)
 		x_adjust = (minSize - text_size) / 2;
 	else
-		size = text_size + 1; 
+		size = text_size + 1;
 
 	if (folded)
 	{
@@ -247,7 +247,7 @@ static int renderGroupHeader(Group* group, int x, int y, int groupSize, int wind
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void renderInterpolation(const struct TrackInfo* info, struct sync_track* track, int size, int idx, int x, int y, bool folded) 
+static void renderInterpolation(const struct TrackInfo* info, struct sync_track* track, int size, int idx, int x, int y, bool folded)
 {
 	int fidx;
 	enum key_type interpolationType;
@@ -258,7 +258,7 @@ static void renderInterpolation(const struct TrackInfo* info, struct sync_track*
 	fidx = idx >= 0 ? idx : -idx - 2;
 	interpolationType = (fidx >= 0) ? track->keys[fidx].type : KEY_STEP;
 
-	switch (interpolationType) 
+	switch (interpolationType)
 	{
 		case KEY_STEP   : color = Emgui_color32(0, 0, 0,   255);; break;
 		case KEY_LINEAR : color = Emgui_color32(255, 0, 0, 255); break;
@@ -275,14 +275,14 @@ static void renderInterpolation(const struct TrackInfo* info, struct sync_track*
 
 static void renderText(const struct TrackInfo* info, struct sync_track* track, int row, int idx, int x, int y, bool folded)
 {
-	uint32_t color = (row & 7) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff); 
+	uint32_t color = (row & 7) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff);
 
 	if (folded)
 	{
 		if (idx >= 0)
 			Emgui_fill(color, x, y - font_size_half, 8, 8);
 		else
-			Emgui_drawText("-", x, y - font_size_half, color); 
+			Emgui_drawText("-", x, y - font_size_half, color);
 	}
 	else
 	{
@@ -296,7 +296,7 @@ static void renderText(const struct TrackInfo* info, struct sync_track* track, i
 		}
 		else
 		{
-			Emgui_drawText("---", x, y - font_size_half, color); 
+			Emgui_drawText("---", x, y - font_size_half, color);
 		}
 	}
 }
@@ -306,12 +306,12 @@ static void renderText(const struct TrackInfo* info, struct sync_track* track, i
 static int getTrackSize(TrackViewInfo* viewInfo, Track* track)
 {
 	if (track->folded)
-		return track_size_folded; 
+		return track_size_folded;
 
 	if (track->width == 0)
 	{
 		Emgui_setFont(viewInfo->smallFontId);
-		track->width = (Emgui_getTextSize(track->displayName) & 0xffff) + 31; 
+		track->width = (Emgui_getTextSize(track->displayName) & 0xffff) + 31;
 		track->width = emaxi(track->width, min_track_size);
 	}
 
@@ -340,7 +340,7 @@ int getGroupSize(TrackViewInfo* viewInfo, Group* group, int startTrack)
 	}
 
 	if (group->folded)
-		return track_size_folded; 
+		return track_size_folded;
 
 	if (!group->name)
 		return getTrackSize(viewInfo, group->tracks[0]);
@@ -356,18 +356,18 @@ int getGroupSize(TrackViewInfo* viewInfo, Group* group, int startTrack)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void drawSelectedTrackOutline(int width, int startX, int startY, int endY)
-{	
+{
 	int drawWidth = width / 4;
-	
+
 	// Draw top selection
-	
+
 	Emgui_fill(track_selection_color, startX, startY, drawWidth, 2);
 	Emgui_fill(track_selection_color, (startX + width) - drawWidth, startY, drawWidth, 2);
 	Emgui_fill(track_selection_color, startX, startY, 2, drawWidth);
 	Emgui_fill(track_selection_color, startX + width, startY, 2, drawWidth);
-	
+
 	// Draw bottom selection
-	
+
 	Emgui_fill(track_selection_color, startX, endY, drawWidth, 2);
 	Emgui_fill(track_selection_color, (startX + width) - drawWidth + 2, endY, drawWidth, 2);
 	Emgui_fill(track_selection_color, startX, endY - drawWidth, 2, drawWidth);
@@ -395,7 +395,7 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 		drawFoldButton(startX + 6, info->startY - (font_size + 5), &trackData->folded, trackData->active);
 
 		folded = trackData->folded;
-		
+
 		if (info->trackData->syncTracks)
 			track = info->trackData->syncTracks[trackData->index];
 
@@ -487,14 +487,14 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 		}
 		else
 		{
-			Emgui_fill(border_color , startX, y_offset - font_size_half, size, font_size);  
+			Emgui_fill(border_color , startX, y_offset - font_size_half, size, font_size);
 		}
 
-		selected = (trackIndex >= info->selectLeft && trackIndex <= info->selectRight) && 
+		selected = (trackIndex >= info->selectLeft && trackIndex <= info->selectRight) &&
 			       (y >= info->selectTop && y <= info->selectBottom);
 
 		if (selected)
-			Emgui_fill(selection_color, startX, y_offset - font_size_half, size, font_size);  
+			Emgui_fill(selection_color, startX, y_offset - font_size_half, size, font_size);
 
 		if (y != 0)
 		{
@@ -503,18 +503,18 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 			if (TrackData_hasBookmark(info->trackData, y))
 			{
 				overlapping = true;
-				Emgui_fill(bookmark_color, startX, y_offset - font_size_half, size, 8); 
+				Emgui_fill(bookmark_color, startX, y_offset - font_size_half, size, 8);
 			}
 
 			if (TrackData_hasLoopmark(info->trackData, y))
 			{
 				if (!overlapping)
-					Emgui_fill(loopmark_color , startX, y_offset - font_size_half, size, 8); 
+					Emgui_fill(loopmark_color , startX, y_offset - font_size_half, size, 8);
 				else
-					Emgui_fillStipple(loopmark_color , startX, y_offset - font_size_half, size, 8); 
+					Emgui_fillStipple(loopmark_color , startX, y_offset - font_size_half, size, 8);
 			}
 		}
-		
+
 		y_offset += font_size;
 
 		if (y_offset > (info->endSizeY + font_size_half))
@@ -527,7 +527,7 @@ static int renderChannel(struct TrackInfo* info, int startX, Track* trackData, b
 		{
 			if (!trackData->group->folded)
 			{
-				s_drawSelectedTrack.drawTrack = 1; 
+				s_drawSelectedTrack.drawTrack = 1;
 				s_drawSelectedTrack.width = size;
 				s_drawSelectedTrack.startX = startX;
 				s_drawSelectedTrack.startY = info->startY - font_size * 4;
@@ -595,7 +595,7 @@ static int renderGroup(Group* group, int posX, int* trackOffset, struct TrackInf
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // This function will figure out what the next track to be selected is when the trackView is scrolled.
-// 
+//
 // The way it does that is by looking at all the groups (which a linear, while tracks are not) and figure out the start
 // visible track and the end visible track. It also check if the current track is the activeTrack and if it's hidden on
 // the left or right side.
@@ -613,7 +613,7 @@ int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, in
 
 	for (i = 0; i < group_count; ++i)
 	{
-		Group* group = &trackData->groups[i]; 
+		Group* group = &trackData->groups[i];
 		int track_count = group->trackCount;
 		const bool folded = group->folded;
 		int t_pos;
@@ -626,12 +626,12 @@ int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, in
 		for (j = 0; j < track_count; ++j)
 		{
 			Track* currentTrack = group->tracks[j];
-			const int track_size = folded ? track_size_folded : getTrackSize(viewInfo, currentTrack); 
+			const int track_size = folded ? track_size_folded : getTrackSize(viewInfo, currentTrack);
 
 			// if we are on the current track we check where the current position is located
 			// so if we are above the window limit wi
 
-			if (currentTrack == activeTrackPtr) 
+			if (currentTrack == activeTrackPtr)
 			{
 				if (t_pos < 0 && currentTrack == activeTrackPtr)
 					foundState = -1;
@@ -642,18 +642,18 @@ int TrackView_getScrolledTrack(TrackViewInfo* viewInfo, TrackData* trackData, in
 					return activeTrack;
 			}
 
-			// if we just crossed over to positive side and the activeTrack was found negative then the current track 
+			// if we just crossed over to positive side and the activeTrack was found negative then the current track
 			// should be the next active one
 
-			if (t_pos >= 0 && foundState == -1) 
+			if (t_pos >= 0 && foundState == -1)
 				return currentTrack->index;
 
-			// if we have crossed the page boundry and not yet has returned the track the last visible one 
+			// if we have crossed the page boundry and not yet has returned the track the last visible one
 			// will be seleceted as the active one
 
 			if (t_pos + track_size > window_size)
 				return currentTrack->index;
-            
+
             t_pos += track_size;
 		}
 
@@ -679,10 +679,13 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	const int endLoop = TrackData_getNextLoopmark(trackData, viewInfo->rowPos);
 	const int startLoop = TrackData_getPrevLoopmark(trackData, viewInfo->rowPos);
 
+    if (trackData->rowsPerBeat == 0)
+        trackData->rowsPerBeat = 1;
+
 	s_needsUpdate = false;
 	s_drawSelectedTrack.drawTrack = 0;
 
-	// Calc to position the selection in the ~middle of the screen 
+	// Calc to position the selection in the ~middle of the screen
 
 	adjust_top_size = 5 * font_size;
 	mid_screen_y = (viewInfo->windowSizeY / 2) & ~(font_size - 1);
@@ -704,7 +707,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	info.trackData = trackData;
 	info.startY = adjust_top_size;
 	info.startPos = y_pos_row;
-	info.endPos = y_pos_row + end_row; 
+	info.endPos = y_pos_row + end_row;
 	info.endSizeY = y_end_border;
 	info.midPos = mid_screen_y + adjust_top_size;
 
@@ -713,7 +716,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 
 	x_pos = TrackView_getStartOffset() + -viewInfo->startPixel;
 
-	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, trackData->highlightRowStep, y_end_border);
+	printRowNumbers(2, adjust_top_size, end_row, y_pos_row, font_size, trackData->rowsPerBeat, y_end_border);
 
 	Emgui_drawBorder(border_color, border_color, 48, info.startY - font_size * 4, viewInfo->windowSizeX - 80, (info.endSizeY - info.startY) + 40);
 
@@ -730,7 +733,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 		{
 			Track* track = group->tracks[0];
 			int track_size = getTrackSize(viewInfo, track);
-		
+
 			if ((x_pos + track_size > 0) && (x_pos < viewInfo->windowSizeX))
 			{
 				// if selected track is less than the first rendered track then we need to reset it to this one
@@ -751,23 +754,23 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	if (s_drawSelectedTrack.drawTrack)
 	{
 		drawSelectedTrackOutline(
-				s_drawSelectedTrack.width, 
-				s_drawSelectedTrack.startX, 
-				s_drawSelectedTrack.startY, 
+				s_drawSelectedTrack.width,
+				s_drawSelectedTrack.startX,
+				s_drawSelectedTrack.startY,
 				s_drawSelectedTrack.endY);
 	}
 
-	printLoopmarks(2, adjust_top_size, end_row, y_pos_row, font_size, trackData->highlightRowStep, y_end_border, startLoop, endLoop);
+	printLoopmarks(2, adjust_top_size, end_row, y_pos_row, font_size, trackData->rowsPerBeat, y_end_border, startLoop, endLoop);
 
 	// draw loop outline if we are with in the range
-	
+
 	/*
 	if (startLoop != -1 && endLoop != -1)
 	{
 		int x = TrackView_getStartOffset() + -viewInfo->startPixel;
 		int y = y_pos_row + (startLoop * font_size);
 		int end_y = endLoop * font_size;
-	
+
 		Emgui_fill(loopmark_color, x + 2, y, 2, end_y);
 	}
 	*/
@@ -818,13 +821,13 @@ bool TrackView_isSelectedTrackVisible(TrackViewInfo* viewInfo, TrackData* trackD
 
 static int getTrackOffset(TrackViewInfo* viewInfo, TrackData* trackData, int track)
 {
-	int i = 0, j = 0; 
+	int i = 0, j = 0;
 	int size = 0;
 
 	for (i = 0; i < trackData->groupCount; ++i)
 	{
 		Group* g = &trackData->groups[i];
-		const int trackCount = g->trackCount; 
+		const int trackCount = g->trackCount;
 
 		if (g->folded)
 			size += track_size_folded;
@@ -834,7 +837,7 @@ static int getTrackOffset(TrackViewInfo* viewInfo, TrackData* trackData, int tra
 			Track* t = g->tracks[j];
 
 			if (!g->folded)
-				size += getTrackSize(viewInfo, t); 
+				size += getTrackSize(viewInfo, t);
 
 			if (t->index == track)
 				return size;
@@ -856,5 +859,5 @@ int TrackView_getTracksOffset(TrackViewInfo* viewInfo, TrackData* trackData, int
 	prevOffset = getTrackOffset(viewInfo, trackData, prevTrack);
 	nextOffset = getTrackOffset(viewInfo, trackData, nextTrack);
 
-	return nextOffset - prevOffset; 
+	return nextOffset - prevOffset;
 }

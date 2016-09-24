@@ -17,7 +17,8 @@ typedef struct MusicData
 {
     text_t* filename;
     short* waveData;
-    float* fftData;
+    unsigned int* fftData;
+    int sampleCount;
 } MusicData;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,7 +89,8 @@ typedef struct TrackData
 	int trackCount;
 	int startRow;
 	int endRow;
-	int highlightRowStep;
+	int bpm;
+	int rowsPerBeat;
 	char* editText;
 	bool isPlaying;
 	bool isLooping;
