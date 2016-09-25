@@ -7,6 +7,7 @@
 #include "rlog.h"
 #include "minmax.h"
 #include "ImageData.h"
+#include "RenderAudio.h"
 #include "../../lib/sync.h"
 #include "../../lib/track.h"
 
@@ -774,6 +775,8 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 		Emgui_fill(loopmark_color, x + 2, y, 2, end_y);
 	}
 	*/
+
+    RenderAudio_update(trackData, viewInfo->windowSizeX + 2, adjust_top_size, end_row, y_pos_row, font_size, y_end_border);
 
 	Emgui_setDefaultFont();
 

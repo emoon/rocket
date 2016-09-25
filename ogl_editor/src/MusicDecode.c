@@ -123,7 +123,7 @@ void Music_decode(text_t* path, MusicData* data)
     float fftData[1024];
     QWORD len;
     //double timeInSec = 0.0;
-    const float maxIntensity = 500;
+    const float maxIntensity = 500 * 2;
     const int COLOR_STEPS = 255;
     const int PALETTE_SIZE = 3 * COLOR_STEPS;
     const int spectrumLength = 1024;
@@ -153,6 +153,7 @@ void Music_decode(text_t* path, MusicData* data)
     QWORD sampleLength = BASS_ChannelSeconds2Bytes(chan, SAMPLING_RESOLUTION);
     int numSamples = (int)((double)BASS_ChannelGetLength(chan, BASS_POS_BYTE) / (double)sampleLength);
 
+    printf("Num samples %d\n", (int)sampleLength);
     printf("Num samples %d\n", numSamples);
 
     BASS_ChannelPlay(chan, 0);
@@ -226,23 +227,23 @@ void Music_decode(text_t* path, MusicData* data)
         BASS_ChannelSetPosition(chan, sampleIndex * sampleLength, BASS_POS_BYTE);
         BASS_ChannelGetData(chan, fftData, BASS_DATA_FFT2048);
 
-        printf("%d/%d\n", sampleIndex, numSamples);
+        //printf("%d/%d\n", sampleIndex, numSamples);
 
         for (int rowIndex = 0; rowIndex < imageHeight; ++rowIndex)
         {
-            int j_ = (int)(f * log(rowIndex + 1));
-            int pj_ = (int)(rowIndex > 0 ? f * log(rowIndex - 1 + 1) : j_);
-            int nj_ = (int)(rowIndex < imageHeight - 1 ? f * log(rowIndex + 1 + 1) : j_);
+            //int j_ = (int)(f * log(rowIndex + 1));
+            //int pj_ = (int)(rowIndex > 0 ? f * log(rowIndex - 1 + 1) : j_);
+            //int nj_ = (int)(rowIndex < imageHeight - 1 ? f * log(rowIndex + 1 + 1) : j_);
 
-            //int j_ = j_table[rowIndex];
-            //int pj_ = pj_table[rowIndex];
-            //int nj_ = nj_table[rowIndex];
+            int j_ = j_table[(imageHeight - rowIndex) - 1];
+            int pj_ = pj_table[(imageHeight - rowIndex) - 1];
+            int nj_ = nj_table[(imageHeight - rowIndex) - 1];
 
             //printf("index %d - %d %d %d\n", rowIndex, j_, pj_, nj_);
 
-            float intensity = 125.0f * fftData[spectrumLength - pj_ - 1] +
-                              750.0f * fftData[spectrumLength - j_ - 1] +
-                              125.0f * fftData[spectrumLength - nj_ - 1];
+            float intensity = 125.0f * 4.0f * fftData[spectrumLength - pj_ - 1] +
+                              750.0f * 4.0f * fftData[spectrumLength - j_ - 1] +
+                              125.0f * 4.0f * fftData[spectrumLength - nj_ - 1];
             if (intensity > maxIntensity)
                 intensity = maxIntensity;
 

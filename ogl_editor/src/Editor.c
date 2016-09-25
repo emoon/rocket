@@ -17,6 +17,7 @@
 #include "Music.h"
 #include "../../lib/sync.h"
 #include "../../lib/base.h"
+#include "RenderAudio.h"
 #include <emgui/Emgui.h>
 #include <emgui/GFXBackend.h>
 #include <Bass.h>
@@ -547,19 +548,17 @@ static bool internalUpdate()
 {
 	int refresh;
 
-	TrackViewInfo* info = getTrackViewInfo();
+	//TrackViewInfo* info = getTrackViewInfo();
 
 	Emgui_begin();
+
+    RenderAudio_render(s_editorData.trackViewInfo.windowSizeX - 20, 5 * 8);
+
 	drawStatus();
 	drawHorizonalSlider();
 	drawVerticalSlider();
 
-	unsigned int* fftData = getTrackData()->musicData.fftData;
-
-    if (s_editorData.waveViewSize > 0 && fftData)
-    {
-        Emgui_drawTexture(s_editorData.waveTexture, Emgui_color32(255, 255, 255, 255), info->windowSizeX - 18, 0, 128, info->windowSizeY - 17);
-    }
+	//unsigned int* fftData = getTrackData()->musicData.fftData;
 
 	refresh = TrackView_render(getTrackViewInfo(), getTrackData());
 	Emgui_end();
