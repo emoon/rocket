@@ -129,12 +129,17 @@ void Music_decode(text_t* path, MusicData* data)
     const int spectrumLength = 1024;
     unsigned int colors[255 * 3];
     int imageHeight = 128;
+	int flags = BASS_STREAM_DECODE | BASS_SAMPLE_MONO | BASS_POS_SCAN;
 
-	HSTREAM chan = BASS_StreamCreateFile(0, path, 0, 0, BASS_STREAM_DECODE | BASS_SAMPLE_MONO | BASS_POS_SCAN);
+#ifdef _WIN32
+	flags |= BASS_UNICODE;
+#endif
+
+	HSTREAM chan = BASS_StreamCreateFile(0, path, 0, 0, flags);
 
 	if (!chan)
 	{
-	    Dialog_showError(TEXT("Unable to open %s for decode. No music data will be availible."));
+	    Dialog_showError(TEXT("Unable to open stream for decode. No music data will be availible."));
 	    return;
 	}
 
@@ -142,7 +147,7 @@ void Music_decode(text_t* path, MusicData* data)
 
     if (len == -1)
     {
-	    Dialog_showError(TEXT("Stream %s has no length. No music data will be availible."));
+	    Dialog_showError(TEXT("Stream has no length. No music data will be availible."));
         BASS_StreamFree(chan);
         return;
     }
