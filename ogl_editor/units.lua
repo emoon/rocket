@@ -131,7 +131,7 @@ Program {
 	Sources = { "basic_example/basic_example.c" },
 	Depends = { "sync" },
 	Libs = {
-		{ "wsock32.lib"; Config = "win32-*-*" },
+		{ "wsock32.lib", "ws2_32.lib"; Config = "win32-*-*" },
 	},
 }
 

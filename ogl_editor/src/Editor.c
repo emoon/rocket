@@ -22,7 +22,8 @@
 #include <emgui/GFXBackend.h>
 #include <Bass.h>
 #if defined(_WIN32)
-	#include <winsock2.h>
+	#include <Windows.h>
+	//#include <winsock2.h>
 #else
 	#include <netinet/in.h>
 	#include <arpa/inet.h>
@@ -38,7 +39,7 @@ enum {
 };
 
 #ifdef _WIN32
-#define TEXT(text) L##text
+//#define TEXT(text) L##text
 #else
 #define TEXT(text) text
 #endif

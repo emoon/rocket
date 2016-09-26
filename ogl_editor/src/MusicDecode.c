@@ -134,7 +134,7 @@ void Music_decode(text_t* path, MusicData* data)
 
 	if (!chan)
 	{
-	    Dialog_showError("Unable to open %s for decode. No music data will be availible.");
+	    Dialog_showError(TEXT("Unable to open %s for decode. No music data will be availible."));
 	    return;
 	}
 
@@ -142,7 +142,7 @@ void Music_decode(text_t* path, MusicData* data)
 
     if (len == -1)
     {
-	    Dialog_showError("Stream %s has no length. No music data will be availible.");
+	    Dialog_showError(TEXT("Stream %s has no length. No music data will be availible."));
         BASS_StreamFree(chan);
         return;
     }
@@ -203,7 +203,7 @@ void Music_decode(text_t* path, MusicData* data)
         if (i > PALETTE_SIZE * 0.666f)
             g = i - 510;
 
-        colors[i] = Emgui_color32(r, g, b, a);
+        colors[i] = Emgui_color32((uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a);
     }
 
     float f = (float)(spectrumLength / log((float)(imageHeight + 1)));

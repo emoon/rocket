@@ -116,7 +116,7 @@ uint64_t EMGFXBackend_createTexture(void* imageBuffer, int w, int h, int comp)
 
 void EMGFXBackend_updateTexture(uint64_t texId, int w, int h, void* data)
 {
-	GL_CHECK(glBindTexture(GL_TEXTURE_2D, texId));
+	GL_CHECK(glBindTexture(GL_TEXTURE_2D, (GLuint)texId));
     //GL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data));
 
     GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data));

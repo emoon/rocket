@@ -416,7 +416,7 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 	setElementInt(tracks, "beatsPerMin", "%d", trackData->bpm);
 
 	if (trackData->musicData.filename)
-		mxmlElementSetAttr(tracks, "musicFilename", trackData->musicData.filename);
+		mxmlElementSetAttr(tracks, "musicFilename", (const char*)trackData->musicData.filename);
 
 	for (p = 0; p < trackData->num_syncTracks; ++p)
 	{
