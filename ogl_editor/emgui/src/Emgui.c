@@ -1080,7 +1080,8 @@ void Emgui_editBoxXY(int x, int y, int width, int height, int bufferLength, char
 				}
 				else
 				{
-					if (controlId + 1 >= 4)
+				    // This is a small hack to toggle between the edit boxes using tab
+					if (controlId + 1 >= 6)
 					{
 						g_emguiGuiState.kbdItem = -1;
 						g_emguiGuiState.keyCode = 0;

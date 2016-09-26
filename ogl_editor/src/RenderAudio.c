@@ -74,7 +74,7 @@ void RenderAudio_update(struct TrackData* trackData, int xPos, int yPos, int row
 
 	    uint32_t* textureDest = &s_data.textureData[textureIndex][textureOffset];
 
-	    printf("i %d - textureIndex %d - textureOffset %d (%d)\n", i, textureIndex, textureOffset, i * rowSpacing);
+	    //printf("i %d - textureIndex %d - textureOffset %d (%d)\n", i, textureIndex, textureOffset, i * rowSpacing);
 
         memcpy(textureDest, &fftData[rowOffset * rowSpacing * 128], 128 * 4 * rowSpacing);
 
@@ -92,12 +92,17 @@ void RenderAudio_update(struct TrackData* trackData, int xPos, int yPos, int row
 }
 
 
-void RenderAudio_render(int xPos, int startY)
+void RenderAudio_render(int xPos, int startY, int endY)
 {
+	Emgui_setLayer(2);
+	Emgui_setScissor(xPos, startY, 128, endY);
+
     for (int i = 0; i < s_data.textureCount; ++i)
     {
         Emgui_drawTexture(s_data.textureIds[i], Emgui_color32(255, 255, 255, 255), xPos, startY, 128, TEXTURE_HEIGHT);
         startY += TEXTURE_HEIGHT;
     }
+
+	Emgui_setLayer(0);
 }
 

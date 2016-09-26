@@ -64,13 +64,14 @@ typedef struct CopyData
 
 typedef struct EditorData
 {
-    uint64_t waveTexture;
 	TrackViewInfo trackViewInfo;
 	TrackData trackData;
 	CopyEntry* copyEntries;
 	int copyCount;
 	int canDecodeMusic;
 	int waveViewSize;
+	int originalXSize;
+	int originalYSize;
 } EditorData;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -317,7 +318,6 @@ void Editor_create()
 	    s_editorData.canDecodeMusic = 0;
     }
 
-    s_editorData.waveTexture = EMGFXBackend_createTexture(0, 128, 2048, 4);
 	s_editorData.trackViewInfo.smallFontId = id;
 	s_editorData.trackData.startRow = 0;
 	s_editorData.trackData.endRow = 10000;
@@ -333,6 +333,9 @@ void Editor_create()
 
 void Editor_setWindowSize(int x, int y)
 {
+    s_editorData.originalXSize = x;
+    s_editorData.originalYSize = y;
+
 	s_editorData.trackViewInfo.windowSizeX = x - s_editorData.waveViewSize;
 	s_editorData.trackViewInfo.windowSizeY = y;
 	Editor_updateTrackScroll();
@@ -543,11 +546,15 @@ static bool internalUpdate()
 {
 	int refresh;
 
+	printf("internuosteuh\n");
+
 	//TrackViewInfo* info = getTrackViewInfo();
 
 	Emgui_begin();
 
-    RenderAudio_render(s_editorData.trackViewInfo.windowSizeX - 20, 5 * 8);
+	if (s_editorData.waveViewSize > 0) {
+        RenderAudio_render(s_editorData.trackViewInfo.windowSizeX - 20, 5 * 8, s_editorData.trackViewInfo.windowSizeY);
+    }
 
 	drawStatus();
 	drawHorizonalSlider();
@@ -1058,10 +1065,15 @@ static void onOpen()
 
 void decodeMusic(text_t* path)
 {
-    Music_decode(path, &getTrackData()->musicData);
+    if (!Music_decode(path, &getTrackData()->musicData))
+    {
+        s_editorData.waveViewSize = 0;
+        s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize;
+        return;
+    }
 
     s_editorData.waveViewSize = 128 + 20;
-	s_editorData.trackViewInfo.windowSizeX -= (s_editorData.waveViewSize);
+    s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize - s_editorData.waveViewSize;
 
     Editor_updateTrackScroll();
 }
@@ -1071,6 +1083,8 @@ void decodeMusic(text_t* path)
 static void onLoadMusic()
 {
 	text_t path[2048];
+
+	printf("onLoadMusic\n");
 
     if (!s_editorData.canDecodeMusic)
     {
@@ -1082,8 +1096,6 @@ static void onLoadMusic()
 		return;
 
     decodeMusic(path);
-
-    EMGFXBackend_updateTexture(s_editorData.waveTexture, 128, 2048, getTrackData()->musicData.fftData);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

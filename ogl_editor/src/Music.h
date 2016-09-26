@@ -5,6 +5,6 @@
 
 struct MusicData;
 
-void Music_decode(text_t* path, MusicData* data);
+int Music_decode(text_t* path, MusicData* data);
 
 #endif

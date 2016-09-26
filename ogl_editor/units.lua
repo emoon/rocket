@@ -28,6 +28,24 @@ StaticLibrary {
 }
 
 StaticLibrary {
+	Name = "tinycthread",
+
+	Env = {
+		CPPPATH = { ".", "external/tinycthread" },
+		PROGOPTS = {
+			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
+		},
+	},
+
+	Sources = {
+		Glob {
+			Dir = "external/tinycthread",
+			Extensions = { ".c" },
+		},
+	},
+}
+
+StaticLibrary {
 	Name = "emgui",
 
 	Env = {
@@ -84,6 +102,7 @@ Program {
 
 		CPPPATH = { ".", "src",
 						 "emgui/include",
+						 "External/tinycthread",
 						 "External/bass",
 					     "External/mxml" },
 		PROGOPTS = {
@@ -114,7 +133,7 @@ Program {
 		{ "data/windows/editor.rc" ; Config = { "win32-*-*", "win64-*-*" } },
 	},
 
-	Depends = { "sync", "mxml", "emgui" },
+	Depends = { "sync", "mxml", "emgui", "tinycthread" },
 
 	Libs = {
 		{ "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib",
