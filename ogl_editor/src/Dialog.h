@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef _WIN32
+#define TEXT(text) text
+#endif
+
 #include <emgui/Types.h>
 
 int Dialog_open(text_t* dest);
