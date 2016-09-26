@@ -34,6 +34,8 @@ int decodeFunc(void* inData)
 	int flags = BASS_STREAM_DECODE | BASS_SAMPLE_MONO | BASS_POS_SCAN;
 	text_t* path = threadData->filename;
 	MusicData* data = threadData->data;
+    float percentDone = 1.0f;
+    float step = 0.0f;
 
 #ifdef _WIN32
 	flags |= BASS_UNICODE;
@@ -130,10 +132,15 @@ int decodeFunc(void* inData)
         nj_table[rowIndex] = nj_;
     }
 
+    step = (float)(99.0f / numSamples);
+    percentDone = 1.0f;
+
     for (int sampleIndex = 0; sampleIndex < numSamples; ++sampleIndex)
     {
         BASS_ChannelSetPosition(chan, sampleIndex * sampleLength, BASS_POS_BYTE);
         BASS_ChannelGetData(chan, fftData, BASS_DATA_FFT2048);
+
+        data->percentDone = (int)(percentDone);
 
         //printf("%d/%d\n", sampleIndex, numSamples);
 
@@ -162,6 +169,8 @@ int decodeFunc(void* inData)
 
             *fftOutput++ = colors[palettePos];
         }
+
+        percentDone += step;
     }
 
     BASS_StreamFree(chan);

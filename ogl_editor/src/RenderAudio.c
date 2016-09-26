@@ -3,6 +3,7 @@
 #include <emgui/Emgui.h>
 #include <emgui/GFXBackend.h>
 #include <stdio.h>
+#include <math.h>
 
 #define TEXTURE_SHIFT 10
 #define TEXTURE_HEIGHT (1 << TEXTURE_SHIFT)
@@ -91,18 +92,61 @@ void RenderAudio_update(struct TrackData* trackData, int xPos, int yPos, int row
     }
 }
 
-
-void RenderAudio_render(int xPos, int startY, int endY)
+static void drawSinText(const char* text, float offset, float step, float scale, int xPos, int yPos)
 {
-	Emgui_setLayer(2);
-	Emgui_setScissor(xPos, startY, 128, endY);
+    char c = *text++;
+    float t = offset;
 
-    for (int i = 0; i < s_data.textureCount; ++i)
+    while (c)
     {
-        Emgui_drawTexture(s_data.textureIds[i], Emgui_color32(255, 255, 255, 255), xPos, startY, 128, TEXTURE_HEIGHT);
-        startY += TEXTURE_HEIGHT;
+        t = sinf(offset);
+        Emgui_drawChar(c, xPos, yPos + (t * scale), Emgui_color32(255, 255, 255, 255));
+        offset += step;
+        xPos += 8;
+        c = *text++;
     }
+}
 
-	Emgui_setLayer(0);
+static float angle = 0;
+static int extra_update_hack = 1;
+
+void RenderAudio_render(struct TrackData* trackData, int xPos, int startY, int endY)
+{
+    int percentDone = trackData->musicData.percentDone;
+
+    if (percentDone >= 1 && percentDone < 100)
+    {
+        char temp[1024];
+        sprintf(temp, "    %02d%%", percentDone);
+
+        xPos += 20;
+
+        drawSinText("  Loading ", angle, 0.1f, 10.0f, xPos, startY);
+        drawSinText("   while  ", angle, 0.1f, 10.0f, xPos, startY + 8);
+        drawSinText("decruncing", angle, 0.1f, 10.0f, xPos, startY + 16);
+        drawSinText(temp, angle, 0.1f, 10.0f, xPos, startY + 24);
+
+        angle += 0.1f;  // we update at timed intervals so even if we *should* use delta time here it's likely fine.
+
+        extra_update_hack = 1;
+    }
+    else
+    {
+        if (!extra_update_hack)
+            trackData->musicData.percentDone = 0;
+
+        Emgui_setLayer(2);
+        Emgui_setScissor(xPos, startY, 128, endY);
+
+        for (int i = 0; i < s_data.textureCount; ++i)
+        {
+            Emgui_drawTexture(s_data.textureIds[i], Emgui_color32(255, 255, 255, 255), xPos, startY, 128, TEXTURE_HEIGHT);
+            startY += TEXTURE_HEIGHT;
+        }
+
+        Emgui_setLayer(0);
+
+        extra_update_hack = 0;
+    }
 }
 

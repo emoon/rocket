@@ -546,14 +546,12 @@ static bool internalUpdate()
 {
 	int refresh;
 
-	printf("internuosteuh\n");
-
-	//TrackViewInfo* info = getTrackViewInfo();
-
 	Emgui_begin();
 
 	if (s_editorData.waveViewSize > 0) {
-        RenderAudio_render(s_editorData.trackViewInfo.windowSizeX - 20, 5 * 8, s_editorData.trackViewInfo.windowSizeY);
+        RenderAudio_render(&s_editorData.trackData,
+                           s_editorData.trackViewInfo.windowSizeX - 20, 5 * 8,
+                           s_editorData.trackViewInfo.windowSizeY);
     }
 
 	drawStatus();
@@ -971,7 +969,7 @@ static void updateTrackStatus()
 
 void Editor_timedUpdate()
 {
-	int processed_commands = 0;
+	int processed_commands = s_editorData.trackData.musicData.percentDone != 0;
 
 	RemoteConnection_updateListner(getRowPos());
 
