@@ -28,6 +28,7 @@
 	#include <netinet/in.h>
 	#include <arpa/inet.h>
 #endif
+#include <string.h>
 
 enum {
 	SET_KEY = 0,
@@ -1072,6 +1073,9 @@ void decodeMusic(text_t* path)
 
     s_editorData.waveViewSize = 128 + 20;
     s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize - s_editorData.waveViewSize;
+    s_editorData.trackData.musicData.filename = strdup(path);
+
+	updateNeedsSaving();
 
     Editor_updateTrackScroll();
 }
