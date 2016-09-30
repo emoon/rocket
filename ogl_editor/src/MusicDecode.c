@@ -7,7 +7,7 @@
 #include <tinycthread.h>
 
 typedef struct ThreadFuncData {
-    text_t* filename;
+    HSTREAM stream;
     MusicData* data;
 } ThreadFuncData;
 
@@ -22,7 +22,6 @@ int decodeFunc(void* inData)
     unsigned int* fftPtr;
     unsigned int* fftOutput;
     float fftData[1024];
-    QWORD len;
     //double timeInSec = 0.0;
     const float maxIntensity = 500 * 2;
     const int COLOR_STEPS = 255;
@@ -31,32 +30,10 @@ int decodeFunc(void* inData)
     ThreadFuncData* threadData = (ThreadFuncData*)inData;
     unsigned int colors[255 * 3];
     int imageHeight = 128;
-	int flags = BASS_STREAM_DECODE | BASS_SAMPLE_MONO | BASS_POS_SCAN;
-	text_t* path = threadData->filename;
+    HSTREAM chan = threadData->stream;
 	MusicData* data = threadData->data;
     float percentDone = 1.0f;
     float step = 0.0f;
-
-#ifdef _WIN32
-	flags |= BASS_UNICODE;
-#endif
-
-	HSTREAM chan = BASS_StreamCreateFile(0, path, 0, 0, flags);
-
-	if (!chan)
-	{
-	    //Dialog_showError(TEXT("Unable to open stream for decode. No music data will be availible."));
-	    return 0;
-	}
-
-    len = BASS_ChannelGetLength(chan, BASS_POS_BYTE);
-
-    if (len == -1)
-    {
-	    //Dialog_showError(TEXT("Stream has no length. No music data will be availible."));
-        BASS_StreamFree(chan);
-        return 0;
-    }
 
     const int SAMPLING_FREQUENCY = 100; //warning: in TimelineImage this samplingfrequency is assumed to be 100
     const double SAMPLING_RESOLUTION = 1.0 / SAMPLING_FREQUENCY;
@@ -175,7 +152,6 @@ int decodeFunc(void* inData)
 
     BASS_StreamFree(chan);
 
-    free(threadData->filename);
     free(threadData);
 
     data->percentDone = 100;
@@ -188,12 +164,37 @@ int decodeFunc(void* inData)
 
 int Music_decode(text_t* path, MusicData* data)
 {
+    QWORD len;
     thrd_t id;
 
     free(data->fftData);
+    data->fftData = 0;
+
+	int flags = BASS_STREAM_DECODE | BASS_SAMPLE_MONO | BASS_POS_SCAN;
+
+#ifdef _WIN32
+	flags |= BASS_UNICODE;
+#endif
+
+	HSTREAM chan = BASS_StreamCreateFile(0, path, 0, 0, flags);
+
+	if (!chan)
+	{
+	    Dialog_showError(TEXT("Unable to open stream for decode. No music data will be availible."));
+	    return 0;
+	}
+
+    len = BASS_ChannelGetLength(chan, BASS_POS_BYTE);
+
+    if (len == -1)
+    {
+	    Dialog_showError(TEXT("Stream has no length. No music data will be availible."));
+        BASS_StreamFree(chan);
+        return 0;
+    }
 
     ThreadFuncData* threadData = malloc(sizeof(ThreadFuncData));
-    threadData->filename = strdup(path);
+    threadData->stream = chan;
     threadData->data = data;
 
     data->percentDone = 1;
@@ -201,7 +202,8 @@ int Music_decode(text_t* path, MusicData* data)
 
     if (thrd_create(&id, decodeFunc, threadData) != thrd_success)
     {
-        printf("Unable to crate decode thread. Stalling main thread and running...\n");
+        printf("Unable to create decode thread. Stalling main thread and running...\n");
+        decodeFunc(threadData);
     }
 
     return 1;
