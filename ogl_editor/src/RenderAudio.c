@@ -68,18 +68,41 @@ void RenderAudio_update(struct TrackData* trackData, int xPos, int yPos, int row
         rowOffset = 0;
 	}
 
+
+	// Notice: This code assumes FFT has 100 samples per sec
+
+    float rowsPerSec = (float)trackData->bpm * ((float)trackData->rowsPerBeat) / 60.0;
+    float fftStep = 100.0f / rowsPerSec;
+    float fftPos = rowOffset * fftStep;
+    const int fftSampes = trackData->musicData.sampleCount;
+
+	// Calculate the start pos of the fft data and interpolation
+
 	for (int i = 0; i < rowCount; ++i)
 	{
-        const int textureIndex = texturePos >> 17;
-        const int textureOffset = texturePos & 0x1ffff;
+	    for (int r = 0; r < rowSpacing; ++r)
+	    {
+            const int textureIndex = texturePos >> 17;
+            const int textureOffset = texturePos & 0x1ffff;
+	        uint32_t* textureDest = &s_data.textureData[textureIndex][textureOffset];
 
-	    uint32_t* textureDest = &s_data.textureData[textureIndex][textureOffset];
+	        int pos = (int)fftPos;
+
+	        if (pos < fftSampes)
+	        {
+                memcpy(textureDest, &fftData[pos * 128], 128 * 4);
+            }
+            else
+            {
+                fillColor(textureDest, Emgui_color32(0, 0, 0, 255), 1);
+            }
+
+            fftPos += fftStep;
+            texturePos += 128;
+	    }
 
 	    //printf("i %d - textureIndex %d - textureOffset %d (%d)\n", i, textureIndex, textureOffset, i * rowSpacing);
 
-        memcpy(textureDest, &fftData[rowOffset * rowSpacing * 128], 128 * 4 * rowSpacing);
-
-        texturePos += 128 * rowSpacing;
         yPos += rowSpacing;
         rowOffset++;
 

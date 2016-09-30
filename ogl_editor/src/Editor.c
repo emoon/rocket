@@ -1033,12 +1033,36 @@ bool Editor_needsSave()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void decodeMusic(text_t* path, int fromLoad)
+{
+    if (!Music_decode(path, &getTrackData()->musicData))
+    {
+        s_editorData.waveViewSize = 0;
+        s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize;
+        return;
+    }
+
+    if (!fromLoad)
+	    updateNeedsSaving();
+
+    s_editorData.waveViewSize = 128 + 20;
+    s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize - s_editorData.waveViewSize;
+    s_editorData.trackData.musicData.filename = strdup(path);
+
+    Editor_updateTrackScroll();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void onFinishedLoad(const text_t* path)
 {
 	Editor_update();
 	setWindowTitle(path, false);
 	setMostRecentFile(path);
 	s_undoLevel = Commands_undoCount();
+
+	if (s_editorData.trackData.musicData.filename)
+        decodeMusic(s_editorData.trackData.musicData.filename, 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1064,26 +1088,6 @@ static void onOpen()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void decodeMusic(text_t* path)
-{
-    if (!Music_decode(path, &getTrackData()->musicData))
-    {
-        s_editorData.waveViewSize = 0;
-        s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize;
-        return;
-    }
-
-    s_editorData.waveViewSize = 128 + 20;
-    s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize - s_editorData.waveViewSize;
-    s_editorData.trackData.musicData.filename = strdup(path);
-
-	updateNeedsSaving();
-
-    Editor_updateTrackScroll();
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void onLoadMusic()
 {
 	text_t path[2048];
@@ -1099,7 +1103,7 @@ static void onLoadMusic()
 	if (!Dialog_open(path))
 		return;
 
-    decodeMusic(path);
+    decodeMusic(path, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

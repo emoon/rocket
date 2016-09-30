@@ -30,6 +30,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 	trackData->loopmarkCount = 0;
 
 	trackData->rowsPerBeat = 8;
+	trackData->bpm = 125;
 
 	// Traverse the tracks node data
 
@@ -74,6 +75,8 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					// same value but kept for compatability
 					const char* rows_per_beat = mxmlElementGetAttr(node, "rowsPerBeat");
 					const char* hlrow_step = mxmlElementGetAttr(node, "highlightRowStep");
+					const char* beats_per_min = mxmlElementGetAttr(node, "beatsPerMin");
+					const char* music_filename = mxmlElementGetAttr(node, "musicFilename");
 
 					if (start_row)
 						trackData->startRow = atoi(start_row);
@@ -86,6 +89,12 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 
 					if (rows_per_beat)
 						trackData->rowsPerBeat = atoi(rows_per_beat);
+
+					if (beats_per_min)
+						trackData->bpm = atoi(beats_per_min);
+
+					if (music_filename)
+                        trackData->musicData.filename = strdup(music_filename);
 				}
 
 				if (!strcmp("track", element_name))
