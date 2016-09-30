@@ -6,6 +6,8 @@
 #include "TrackData.h"
 #include <tinycthread.h>
 
+static mtx_t s_mutex;
+
 typedef struct ThreadFuncData {
     HSTREAM stream;
     MusicData* data;
@@ -34,6 +36,8 @@ int decodeFunc(void* inData)
 	MusicData* data = threadData->data;
     float percentDone = 1.0f;
     float step = 0.0f;
+
+    mtx_lock(&s_mutex);
 
     const int SAMPLING_FREQUENCY = 100; //warning: in TimelineImage this samplingfrequency is assumed to be 100
     const double SAMPLING_RESOLUTION = 1.0 / SAMPLING_FREQUENCY;
@@ -157,15 +161,27 @@ int decodeFunc(void* inData)
     data->percentDone = 100;
     data->fftData = fftPtr;
 
+    mtx_unlock(&s_mutex);
+
     printf("thread done\n");
 
     return 1;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int Music_decode(text_t* path, MusicData* data)
 {
     QWORD len;
     thrd_t id;
+
+    if (thrd_busy == mtx_trylock(&s_mutex))
+    {
+	    Dialog_showError(TEXT("Decoding of stream already in-progress. Re-open after it's been completed."));
+	    return 1;
+    }
+
+    // now this will break if we already have a thread running.
 
     free(data->fftData);
     data->fftData = 0;
@@ -200,6 +216,10 @@ int Music_decode(text_t* path, MusicData* data)
     data->percentDone = 1;
     data->fftData = 0;
 
+    // So there is a race-condition here as the mutex is unclocked while the thread is crated but in practice
+    // this won't be a problem
+    mtx_unlock(&s_mutex);
+
     if (thrd_create(&id, decodeFunc, threadData) != thrd_success)
     {
         printf("Unable to create decode thread. Stalling main thread and running...\n");
@@ -209,4 +229,10 @@ int Music_decode(text_t* path, MusicData* data)
     return 1;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Music_init()
+{
+    mtx_init(&s_mutex, mtx_plain);
+}
 

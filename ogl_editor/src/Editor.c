@@ -327,6 +327,8 @@ void Editor_create()
 	s_editorData.trackData.isPlaying = false;
 	s_editorData.trackData.isLooping = false;
 
+    Music_init();
+
 	Emgui_setDefaultFont();
 }
 
