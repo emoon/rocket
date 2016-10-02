@@ -3,12 +3,17 @@ local macosx = {
 		CPPDEFS = { "EMGUI_MACOSX" },
 		CCOPTS = {
 			"-Wall",
+			"-mmacosx-version-min=10.7",
 			"-Wno-format-security",
 			"-Wno-deprecated-declarations", -- TickCount issue no Mountain Lion (needs to be fixed)
 			"-I.", "-DMACOSX", "-Wall",
 			{ "-O0", "-g"; Config = "*-*-debug" },
 			{ "-O3"; Config = "*-*-release" },
 		},
+
+		PROGOPTS = {
+			"-mmacosx-version-min=10.7",
+		}
 	},
 
 	Frameworks = { "Cocoa" },
