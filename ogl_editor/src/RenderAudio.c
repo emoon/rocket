@@ -72,14 +72,23 @@ void RenderAudio_update(struct TrackData* trackData, int xPos, int yPos, int row
 	// Notice: This code assumes FFT has 100 samples per sec
 
     float rowsPerSec = (float)trackData->bpm * ((float)trackData->rowsPerBeat) / 60.0;
-    float fftStep = 100.0f / rowsPerSec;
-    float fftPos = rowOffset * fftStep;
     const int fftSampes = trackData->musicData.sampleCount;
+
+    //printf("rowsPerSec %f, fftStep %f\n", rowsPerSec, fftStep);
 
 	// Calculate the start pos of the fft data and interpolation
 
 	for (int i = 0; i < rowCount; ++i)
 	{
+	    // TODO: Optimize
+        float rowSec0 = (float)rowOffset / rowsPerSec;
+        float rowSec1 = ((float)(rowOffset + 1)) / rowsPerSec;
+        float step = ((rowSec1 * 100.f) - (rowSec0 * 100.0f)) / rowSpacing;
+
+        printf("rowOffset %d time %f - %f\n", rowOffset, rowSec0, step);
+
+        float fftPos = rowSec0 * 100.f;
+
 	    for (int r = 0; r < rowSpacing; ++r)
 	    {
             const int textureIndex = texturePos >> 17;
@@ -97,7 +106,7 @@ void RenderAudio_update(struct TrackData* trackData, int xPos, int yPos, int row
                 fillColor(textureDest, Emgui_color32(0, 0, 0, 255), 1);
             }
 
-            fftPos += fftStep;
+            fftPos += step;
             texturePos += 128;
 	    }
 
