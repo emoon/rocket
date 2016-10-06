@@ -85,7 +85,7 @@ void RenderAudio_update(struct TrackData* trackData, int xPos, int yPos, int row
         float rowSec1 = ((float)(rowOffset + 1)) / rowsPerSec;
         float step = ((rowSec1 * 100.f) - (rowSec0 * 100.0f)) / rowSpacing;
 
-        printf("rowOffset %d time %f - %f\n", rowOffset, rowSec0, step);
+        //printf("rowOffset %d time %f - %f\n", rowOffset, rowSec0, step);
 
         float fftPos = rowSec0 * 100.f;
 
