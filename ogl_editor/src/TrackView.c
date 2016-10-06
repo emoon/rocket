@@ -57,6 +57,7 @@ struct TrackInfo
 	int endPos;
 	int endSizeY;
 	int midPos;
+	int rowsPerBeat;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -276,7 +277,7 @@ static void renderInterpolation(const struct TrackInfo* info, struct sync_track*
 
 static void renderText(const struct TrackInfo* info, struct sync_track* track, int row, int idx, int x, int y, bool folded)
 {
-	uint32_t color = (row & 7) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff);
+	uint32_t color = (row % info->rowsPerBeat) ? Emgui_color32(0x4f, 0x4f, 0x4f, 0xff) : Emgui_color32(0x7f, 0x7f, 0x7f, 0xff);
 
 	if (folded)
 	{
@@ -711,6 +712,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	info.endPos = y_pos_row + end_row;
 	info.endSizeY = y_end_border;
 	info.midPos = mid_screen_y + adjust_top_size;
+	info.rowsPerBeat = trackData->rowsPerBeat;
 
 	if (trackData->groupCount == 0)
 		return false;
