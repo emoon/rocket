@@ -19,9 +19,27 @@ StaticLibrary {
 		},
 	},
 
-	Sources = { 
+	Sources = {
 		Glob {
 			Dir = "external/mxml",
+			Extensions = { ".c" },
+		},
+	},
+}
+
+StaticLibrary {
+	Name = "tinycthread",
+
+	Env = {
+		CPPPATH = { ".", "external/tinycthread" },
+		PROGOPTS = {
+			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
+		},
+	},
+
+	Sources = {
+		Glob {
+			Dir = "external/tinycthread",
 			Extensions = { ".c" },
 		},
 	},
@@ -46,7 +64,7 @@ StaticLibrary {
 		},
 	},
 
-	Sources = { 
+	Sources = {
 		FGlob {
 			Dir = "emgui/src",
 			Extensions = { ".c", ".h" },
@@ -63,7 +81,7 @@ StaticLibrary {
 StaticLibrary {
 	Name = "sync",
 
-	Sources = { 
+	Sources = {
 		Glob {
 			Dir = "../lib",
 			Extensions = { ".c" },
@@ -76,8 +94,16 @@ Program {
 	Name = "editor",
 
 	Env = {
-		CPPPATH = { ".", "src", 
-						 "emgui/include", 
+	    LIBPATH = {
+	        { "External/bass/win32"; Config = "win32-*-*" },
+	        { "External/bass/mac"; Config = "macosx-*-*" },
+	        { "External/bass/linux"; Config = "linux-*-*" },
+	    },
+
+		CPPPATH = { ".", "src",
+						 "emgui/include",
+						 "External/tinycthread",
+						 "External/bass",
 					     "External/mxml" },
 		PROGOPTS = {
 			{ "/SUBSYSTEM:WINDOWS", "/DEBUG"; Config = { "win32-*-*", "win64-*-*" } },
@@ -93,7 +119,7 @@ Program {
 		},
 	},
 
-	Sources = { 
+	Sources = {
 		FGlob {
 			Dir = "src",
 			Extensions = { ".c", ".m", ".h" },
@@ -107,14 +133,16 @@ Program {
 		{ "data/windows/editor.rc" ; Config = { "win32-*-*", "win64-*-*" } },
 	},
 
-	Depends = { "sync", "mxml", "emgui" },
+	Depends = { "sync", "mxml", "emgui", "tinycthread" },
 
 	Libs = {
-		{ "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib", "user32.lib", "gdi32.lib", "Comdlg32.lib", "Advapi32.lib" ; Config = "win32-*-*" },
-		{ "GL", "SDL", "m"; Config = "linux-*-*" }
+		{ "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib",
+		   "user32.lib", "gdi32.lib", "Comdlg32.lib", "Advapi32.lib", "bass.lib" ; Config = "win32-*-*" },
+		{ "GL", "SDL", "m", "bass"; Config = "linux-*-*" },
+		{ "bass"; Config = "macosx-*-*" },
 	},
 
-	Frameworks = { "Cocoa", "OpenGL", "Carbon"  },
+	Frameworks = { "Cocoa", "OpenGL", "Carbon", "CoreAudio"  },
 }
 
 Program {
@@ -122,11 +150,11 @@ Program {
 	Sources = { "basic_example/basic_example.c" },
 	Depends = { "sync" },
 	Libs = {
-		{ "wsock32.lib"; Config = "win32-*-*" },
+		{ "wsock32.lib", "ws2_32.lib"; Config = "win32-*-*" },
 	},
 }
 
-local rocketBundle = OsxBundle 
+local rocketBundle = OsxBundle
 {
 	Depends = { "editor" },
 	Target = "$(OBJECTDIR)/RocketEditor.app",

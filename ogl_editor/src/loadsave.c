@@ -29,7 +29,8 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 	trackData->loopmarks = NULL;
 	trackData->loopmarkCount = 0;
 
-	trackData->highlightRowStep = 8;
+	trackData->rowsPerBeat = 8;
+	trackData->bpm = 125;
 
 	// Traverse the tracks node data
 
@@ -71,7 +72,11 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 				{
 					const char* start_row = mxmlElementGetAttr(node, "startRow");
 					const char* end_row = mxmlElementGetAttr(node, "endRow");
+					// same value but kept for compatability
+					const char* rows_per_beat = mxmlElementGetAttr(node, "rowsPerBeat");
 					const char* hlrow_step = mxmlElementGetAttr(node, "highlightRowStep");
+					const char* beats_per_min = mxmlElementGetAttr(node, "beatsPerMin");
+					const char* music_filename = mxmlElementGetAttr(node, "musicFilename");
 
 					if (start_row)
 						trackData->startRow = atoi(start_row);
@@ -80,7 +85,16 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 						trackData->endRow = atoi(end_row);
 
 					if (hlrow_step)
-						trackData->highlightRowStep = atoi(hlrow_step);
+						trackData->rowsPerBeat = atoi(hlrow_step);
+
+					if (rows_per_beat)
+						trackData->rowsPerBeat = atoi(rows_per_beat);
+
+					if (beats_per_min)
+						trackData->bpm = atoi(beats_per_min);
+
+					if (music_filename)
+                        trackData->musicData.filename = strdup(music_filename);
 				}
 
 				if (!strcmp("track", element_name))
@@ -152,8 +166,8 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					if (t->disabled)
 					{
 						k.row = 0;
-						k.value = muteValue; 
-						k.type = 0; 
+						k.value = muteValue;
+						k.type = 0;
 
 						sync_set_key(track, &k);
 
@@ -165,9 +179,9 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					struct sync_track* track = trackData->syncTracks[track_index];
 					Track* t = &trackData->tracks[track_index];
 
-					const char* row = mxmlElementGetAttr(node, "row"); 
-					const char* value = mxmlElementGetAttr(node, "value"); 
-					const char* interpolation = mxmlElementGetAttr(node, "interpolation"); 
+					const char* row = mxmlElementGetAttr(node, "row");
+					const char* value = mxmlElementGetAttr(node, "value");
+					const char* interpolation = mxmlElementGetAttr(node, "interpolation");
 
 					k.row = atoi(row);
 					k.value = (float)(atof(value));
@@ -271,15 +285,15 @@ static const char* whitespaceCallback(mxml_node_t* node, int where)
 {
 	const char* name = mxmlGetElement(node);
 
-	if (where == MXML_WS_BEFORE_CLOSE) 
+	if (where == MXML_WS_BEFORE_CLOSE)
 	{
 		if (!strcmp("tracks", name))
-			return NULL; 
+			return NULL;
 
 		return "\t";
 	}
 
-	if (where == MXML_WS_AFTER_CLOSE) 
+	if (where == MXML_WS_AFTER_CLOSE)
 		return "\n";
 
 	if (where == MXML_WS_BEFORE_OPEN)
@@ -288,7 +302,7 @@ static const char* whitespaceCallback(mxml_node_t* node, int where)
 			return "\t\t";
 
 		if (!strcmp("tracks", name))
-			return NULL; 
+			return NULL;
 
 		if (!strcmp("track", name))
 			return "\t";
@@ -303,7 +317,7 @@ static const char* whitespaceCallback(mxml_node_t* node, int where)
 			return "\t";
 	}
 
-	if (where == MXML_WS_AFTER_OPEN) 
+	if (where == MXML_WS_AFTER_OPEN)
 		return "\n";
 
 	return NULL;
@@ -315,8 +329,8 @@ static void setElementInt(mxml_node_t* node, const char* attr, const char* forma
 {
 	char temp[256];
 	memset(temp, 0, sizeof(temp));
-	sprintf(temp, format, v); 
-	mxmlElementSetAttr(node, attr, temp); 
+	sprintf(temp, format, v);
+	mxmlElementSetAttr(node, attr, temp);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -325,8 +339,8 @@ static void setElementFloat(mxml_node_t* node, char* attr, float v)
 {
 	char temp[256];
 	memset(temp, 0, sizeof(temp));
-	sprintf(temp, "%f", v); 
-	mxmlElementSetAttr(node, attr, temp); 
+	sprintf(temp, "%f", v);
+	mxmlElementSetAttr(node, attr, temp);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -335,7 +349,7 @@ static void saveTrackData(mxml_node_t* track, struct track_key* keys, int count)
 {
 	int i;
 
-	for (i = 0; i < count; ++i) 
+	for (i = 0; i < count; ++i)
 	{
 		mxml_node_t* key = mxmlNewElement(track, "key");
 		setElementInt(key, "row", "%d", keys[i].row);
@@ -357,7 +371,7 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 	int* bookmarks = trackData->bookmarks;
 	int* loopmarks = trackData->loopmarks;
 
-	xml = mxmlNewXML("1.0");	
+	xml = mxmlNewXML("1.0");
 	rootElement = mxmlNewElement(xml, "rootElement");
 
 	// save all bookmarks
@@ -371,7 +385,7 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 			continue;
 
 		node = mxmlNewElement(rootElement, "bookmark");
-		setElementInt(node, "row", "%d", bookmark); 
+		setElementInt(node, "row", "%d", bookmark);
 	}
 
 	// save all loopmarks
@@ -385,7 +399,7 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 			continue;
 
 		node = mxmlNewElement(rootElement, "loopmark");
-		setElementInt(node, "row", "%d", loopmark); 
+		setElementInt(node, "row", "%d", loopmark);
 	}
 
 	// save groups that are folded
@@ -399,25 +413,29 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 			continue;
 
 		node = mxmlNewElement(rootElement, "group");
-		mxmlElementSetAttr(node, "name", group->name); 
+		mxmlElementSetAttr(node, "name", group->name);
 	}
 
 	tracks = mxmlNewElement(rootElement, "tracks");
 
 	mxmlElementSetAttr(tracks, "rows", "10000");
-	setElementInt(tracks, "startRow", "%d", trackData->startRow); 
-	setElementInt(tracks, "endRow", "%d", trackData->endRow); 
-	setElementInt(tracks, "highlightRowStep", "%d", trackData->highlightRowStep); 
+	setElementInt(tracks, "startRow", "%d", trackData->startRow);
+	setElementInt(tracks, "endRow", "%d", trackData->endRow);
+	setElementInt(tracks, "rowsPerBeat", "%d", trackData->rowsPerBeat);
+	setElementInt(tracks, "beatsPerMin", "%d", trackData->bpm);
+
+	if (trackData->musicData.filename)
+		mxmlElementSetAttr(tracks, "musicFilename", (const char*)trackData->musicData.filename);
 
 	for (p = 0; p < trackData->num_syncTracks; ++p)
 	{
 		const struct sync_track* t = trackData->syncTracks[p];
 		mxml_node_t* track = mxmlNewElement(tracks, "track");
 
-		bool isMuted = trackData->tracks[p].muteBackup ? true : false; 
+		bool isMuted = trackData->tracks[p].muteBackup ? true : false;
 
-		mxmlElementSetAttr(track, "name", t->name); 
-		mxmlElementSetAttr(track, "folded", trackData->tracks[p].folded ? "1" : "0"); 
+		mxmlElementSetAttr(track, "name", t->name);
+		mxmlElementSetAttr(track, "folded", trackData->tracks[p].folded ? "1" : "0");
 		setElementInt(track, "muteKeyCount", "%d", trackData->tracks[p].muteKeyCount);
 		setElementInt(track, "color", "%08x", trackData->tracks[p].color);
 

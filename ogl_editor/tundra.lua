@@ -3,12 +3,17 @@ local macosx = {
 		CPPDEFS = { "EMGUI_MACOSX" },
 		CCOPTS = {
 			"-Wall",
+			"-mmacosx-version-min=10.7",
 			"-Wno-format-security",
 			"-Wno-deprecated-declarations", -- TickCount issue no Mountain Lion (needs to be fixed)
 			"-I.", "-DMACOSX", "-Wall",
 			{ "-O0", "-g"; Config = "*-*-debug" },
 			{ "-O3"; Config = "*-*-release" },
 		},
+
+		PROGOPTS = {
+			"-mmacosx-version-min=10.7",
+		}
 	},
 
 	Frameworks = { "Cocoa" },
@@ -18,7 +23,7 @@ local win32 = {
 	Env = {
  		GENERATE_PDB = "1",
 		CCOPTS = {
-			"/W4", "/I.", "/WX", "/DUNICODE", "/FS", "/D_UNICODE", "/DWIN32", "/D_CRT_SECURE_NO_WARNINGS", "/wd4996", "/wd4389",
+			"/W4", "/I.", "/WX", "/DUNICODE", "/FS", "/D_UNICODE", "/DWIN32", "/D_CRT_SECURE_NO_WARNINGS", "/wd4996", "/wd4389", "/Wv:18",
 			{ "/Od"; Config = "*-*-debug" },
 			{ "/O2"; Config = "*-*-release" },
 		},

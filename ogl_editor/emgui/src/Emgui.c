@@ -210,7 +210,7 @@ void createDefaultFont()
 	struct LoadedFont* loadedFont = &g_loadedFonts[0];
 	uint8_t* tempColorData;
 	uint8_t* colorData = tempColorData = (uint8_t*)malloc(128 * 128);
-	const uint8_t* data = s_microkinghtFontData; 
+	const uint8_t* data = s_microkinghtFontData;
 	uint32_t i;
 
 	// Build new texture
@@ -278,7 +278,7 @@ void createStipplePattern()
 		p |= tempData[t + 5] << 5;
 		p |= tempData[t + 6] << 6;
 		p |= tempData[t + 7] << 7;
-		
+
 		pattern[x] = p;
 		t += 8;
 	}
@@ -288,7 +288,7 @@ void createStipplePattern()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Emgui_loadFontBitmap(const char* buffer, int size, enum EmguiMemoryLocation location, 
+int Emgui_loadFontBitmap(const char* buffer, int size, enum EmguiMemoryLocation location,
 						int rangeStart, int rangeEnd, EmguiFontLayout* layout)
 
 {
@@ -314,7 +314,7 @@ int Emgui_loadFontBitmap(const char* buffer, int size, enum EmguiMemoryLocation 
 	fontId = g_loadedFontsCount++;
 
 	loadedFont = &g_loadedFonts[fontId];
-	memset(loadedFont, 0, sizeof(LoadedFont)); 
+	memset(loadedFont, 0, sizeof(LoadedFont));
 
 	loadedFont->width = (uint16_t)width;
 	loadedFont->height = (uint16_t)height;
@@ -360,7 +360,7 @@ uint32_t Emgui_getTextSize(const char* text)
 		c = *text++;
 	}
 
-	return (y_size << 16) | x_size; 
+	return (y_size << 16) | x_size;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -401,10 +401,10 @@ static bool Emgui_regionHit(const EmguiControlInfo* control)
 	const int control_y = control->y + 4;
 
 	/*
-	printf("%d %d - %d %d %d %d\n", 
+	printf("%d %d - %d %d %d %d\n",
 			mouse_x, mouse_y,
-			control_x, control_y, 
-			control_x + control->width, 
+			control_x, control_y,
+			control_x + control->width,
 			control_y + control->height);
 			*/
 
@@ -424,7 +424,7 @@ static bool Emgui_regionHit(const EmguiControlInfo* control)
 void Emgui_reset()
 {
 	g_emguiGuiState.mouse.x = -1;
-	g_emguiGuiState.mouse.y = -1; 
+	g_emguiGuiState.mouse.y = -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -465,7 +465,7 @@ static void fillGrad(uint32_t color0, uint32_t color1, int x, int y, int w, int 
 
 	if (!s_renderData.layers[active_layer].fillCommands)
 	{
-		s_renderData.layers[active_layer].fillCommands = command; // first command 
+		s_renderData.layers[active_layer].fillCommands = command; // first command
 		s_renderData.layers[active_layer].fillCommandsTail = command;
 	}
 	else
@@ -539,7 +539,7 @@ bool Emgui_slider(int x, int y, int w, int h, int start, int end, int largeVal, 
 	float range;
 	int left, height;
 	int thumb_width = 0, thumb_height = 0;
-	EmguiControlInfo* control = 0; 
+	EmguiControlInfo* control = 0;
 
 	// Setup the control
 	controlId = (int)g_controlId++;
@@ -551,7 +551,7 @@ bool Emgui_slider(int x, int y, int w, int h, int start, int end, int largeVal, 
 	control->height = h;
 
 	// considering how much stuff we have have in the slider we need to calculate how much space the scolling area actually
-	// is so we can resize the thumb 
+	// is so we can resize the thumb
 
 	range = (float)(end - start);
 
@@ -574,7 +574,7 @@ bool Emgui_slider(int x, int y, int w, int h, int start, int end, int largeVal, 
 	{
 		float lw = (float)largeVal;
 		float fh = (float)h;
-		thumb_height = (int) ((lw * fh) / (range + 1.0f)); 
+		thumb_height = (int) ((lw * fh) / (range + 1.0f));
         height = y + (int)((h - thumb_height) * (value / (float)end));
 
         if (thumb_height < 0)
@@ -586,7 +586,7 @@ bool Emgui_slider(int x, int y, int w, int h, int start, int end, int largeVal, 
 		control->sliderThumbHeight = thumb_height;
 	}
 
-	Emgui_fill(Emgui_color32(255, 255, 255, 255), 
+	Emgui_fill(Emgui_color32(255, 255, 255, 255),
 			control->sliderThumbX, control->sliderThumbY,
 			control->sliderThumbWidth, control->sliderThumbHeight);
 
@@ -629,16 +629,16 @@ bool Emgui_slider(int x, int y, int w, int h, int start, int end, int largeVal, 
 void Emgui_textLabel(const char* text)
 {
 	uint32_t controlId = 0;
-	EmguiControlInfo* control = 0; 
+	EmguiControlInfo* control = 0;
 
 	// Setup the control
 	controlId = g_controlId++;
 	control = &g_controls[controlId];
 	control->type = EMGUI_DRAWTYPE_TEXT;
 	control->x = g_placementInfo.x;
-	control->y = g_placementInfo.y; 
+	control->y = g_placementInfo.y;
 	control->width = 0; //getTextSize(text);
-	control->height = 9; // fixme 
+	control->height = 9; // fixme
 	control->text = LinearAllocator_allocString(&s_allocator, text);
 	control->color = 0;
 	control->fontId = g_currentFont;
@@ -663,6 +663,7 @@ void Emgui_textLabel(const char* text)
 		}
 	}
 }
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void drawImage(uint64_t imageId, uint32_t color, int x, int y, int w, int h)
@@ -692,12 +693,19 @@ static void drawImage(uint64_t imageId, uint32_t color, int x, int y, int w, int
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void Emgui_drawTexture(uint64_t imageId, uint32_t color, int x, int y, int w, int h)
+{
+    drawImage(imageId, color, x, y, w, h);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void drawText(const char* text, bool flipped, int x, int y, uint32_t color)
 {
 	struct DrawTextCommand* temp;
 	struct DrawTextCommand* command = LinearAllocator_alloc(&s_allocator, struct DrawTextCommand);
 	command->x = x;
-	command->y = y; 
+	command->y = y;
 	command->text = LinearAllocator_allocString(&s_allocator, text);
 	command->color = color;
 	command->flipped = flipped;
@@ -725,6 +733,14 @@ void Emgui_drawText(const char* text, int x, int y, uint32_t color)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void Emgui_drawChar(char c, int x, int y, uint32_t color)
+{
+    char t[2] = { c, 0 };
+    Emgui_drawText(t, x, y, color);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void* readFileToMemory(const char* filename)
 {
 	int size;
@@ -732,19 +748,19 @@ static void* readFileToMemory(const char* filename)
 	FILE* file;
 
 	file = fopen(filename, "rb");
-	if (!file) 
+	if (!file)
 		return false;
 
 	fseek(file, 0, SEEK_END);
 	size = ftell(file);
 	fseek(file, 0, SEEK_SET);
-	
+
 	if (!(fileBuffer = malloc(size)))
 	{
 		fclose(file);
 		return false;
 	}
-	
+
 	fread(fileBuffer, 1, size, file);
 	fclose(file);
 
@@ -772,12 +788,12 @@ uint32_t Emgui_loadFont(const char* ttfFontname, float fontHeight)
 	fontId = g_loadedFontsCount++;
 
 	loadedFont = &g_loadedFonts[fontId];
-	memset(loadedFont, 0, sizeof(LoadedFont)); 
+	memset(loadedFont, 0, sizeof(LoadedFont));
 	strncpy(loadedFont->name, ttfFontname, 512);
 
 	// TODO: Support support different texturesizes and utf8/non-ascii chars?
 
-	stbtt_BakeFontBitmap(ttfFontBuffer, 0, fontHeight, fontBitmap, EM_FONTBITMAP_WIDTH, EM_FONTBITMAP_HEIGHT, 
+	stbtt_BakeFontBitmap(ttfFontBuffer, 0, fontHeight, fontBitmap, EM_FONTBITMAP_WIDTH, EM_FONTBITMAP_HEIGHT,
 						 32, 96, loadedFont->cData);
 
 	loadedFont->handle = EMGFXBackend_createFontTexture(fontBitmap, EM_FONTBITMAP_WIDTH, EM_FONTBITMAP_HEIGHT);
@@ -807,14 +823,14 @@ void Emgui_setDefaultFont()
 static uint32_t genericImageControl(const char* filename)
 {
 	uint32_t controlId = 0;
-	EmguiControlInfo* control = 0; 
+	EmguiControlInfo* control = 0;
 	struct EmguiImage* image = 0; //loadImage(filename);
 
 	if (!image)
 		return (uint32_t)~0;
 
 	// Setup the control
-	
+
 	controlId = g_controlId++;
 	control = &g_controls[controlId];
 	control->type = EMGUI_DRAWTYPE_IMAGE;
@@ -822,7 +838,7 @@ static uint32_t genericImageControl(const char* filename)
 	control->y = g_placementInfo.y;
 	//control->width = image->width;
 	//control->height = image->height;
-	//control->imageData = image; 
+	//control->imageData = image;
 
 	//updatePlacement();
 
@@ -853,7 +869,7 @@ static uint32_t genericImageControl(const char* filename)
 
 void Emgui_staticImage(const char* filename)
 {
-	genericImageControl(filename);	
+	genericImageControl(filename);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -924,8 +940,8 @@ bool Emgui_buttonCoords(const char* text, uint32_t color, int x, int y, int widt
       		g_emguiGuiState.activeItem = controlId;
 	}
 
-	if (g_emguiGuiState.mouse.down == 0 && 
-		g_emguiGuiState.hotItem == controlId && 
+	if (g_emguiGuiState.mouse.down == 0 &&
+		g_emguiGuiState.hotItem == controlId &&
 		g_emguiGuiState.activeItem == controlId)
 	{
 		return true;
@@ -936,7 +952,7 @@ bool Emgui_buttonCoords(const char* text, uint32_t color, int x, int y, int widt
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Emgui_radioButtonImage(void* image0, int size0, void* image1, int size1, enum EmguiMemoryLocation location, 
+void Emgui_radioButtonImage(void* image0, int size0, void* image1, int size1, enum EmguiMemoryLocation location,
 							uint32_t color, int x, int y, bool* stateIn)
 {
 	EmguiControlInfo* control;
@@ -953,7 +969,7 @@ void Emgui_radioButtonImage(void* image0, int size0, void* image1, int size1, en
 		printf("EMGUI: (radioButton) Unable to create due to fail of loading image(s)\n");
 		return;
 	}
-		
+
 	controlId = (int)g_controlId++;
 	control = &g_controls[controlId];
 
@@ -973,8 +989,8 @@ void Emgui_radioButtonImage(void* image0, int size0, void* image1, int size1, en
       		g_emguiGuiState.activeItem = controlId;
 	}
 
-	if (g_emguiGuiState.mouse.down == 0 && 
-		g_emguiGuiState.hotItem == controlId && 
+	if (g_emguiGuiState.mouse.down == 0 &&
+		g_emguiGuiState.hotItem == controlId &&
 		g_emguiGuiState.activeItem == controlId)
 	{
 		state = !state;
@@ -1039,7 +1055,7 @@ void Emgui_editBoxXY(int x, int y, int width, int height, int bufferLength, char
 		}
 	}
 
-	// if we have keyboard active on this control we need to modify the text 
+	// if we have keyboard active on this control we need to modify the text
 
 	if (g_emguiGuiState.kbdItem == controlId && keyCode != 0)
 	{
@@ -1058,7 +1074,7 @@ void Emgui_editBoxXY(int x, int y, int width, int height, int bufferLength, char
 			{
 				if (g_emguiGuiState.keyMod & EMGUI_KEY_SHIFT)
 				{
-					if (controlId - 1 <= 0) 
+					if (controlId - 1 <= 0)
 					{
 						g_emguiGuiState.kbdItem = -1;
 						g_emguiGuiState.keyCode = 0;
@@ -1072,7 +1088,8 @@ void Emgui_editBoxXY(int x, int y, int width, int height, int bufferLength, char
 				}
 				else
 				{
-					if (controlId + 1 >= 4) 
+				    // This is a small hack to toggle between the edit boxes using tab
+					if (controlId + 1 >= 6)
 					{
 						g_emguiGuiState.kbdItem = -1;
 						g_emguiGuiState.keyCode = 0;
@@ -1174,7 +1191,7 @@ void Emgui_resetFocus()
 {
 	g_emguiGuiState.kbdItem = -1;
 	g_emguiGuiState.keyCode = 0;
-}	
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
