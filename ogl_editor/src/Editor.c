@@ -1047,7 +1047,11 @@ static void decodeMusic(text_t* path, int fromLoad)
 
     s_editorData.waveViewSize = 128 + 20;
     s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize - s_editorData.waveViewSize;
-    s_editorData.trackData.musicData.filename = strdup(path);
+#ifdef _WIN32
+	s_editorData.trackData.musicData.filename = _wcsdup(path);
+#else
+	s_editorData.trackData.musicData.filename = strdup(path);
+#endif
 
     Editor_updateTrackScroll();
 }
