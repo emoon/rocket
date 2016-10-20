@@ -71,7 +71,7 @@ void RenderAudio_update(struct TrackData* trackData, int xPos, int yPos, int row
 
 	// Notice: This code assumes FFT has 100 samples per sec
 
-    float rowsPerSec = (float)trackData->bpm * ((float)trackData->rowsPerBeat) / 60.0;
+    float rowsPerSec = (float)trackData->bpm * ((float)trackData->rowsPerBeat) / 60.0f;
     const int fftSampes = trackData->musicData.sampleCount;
 
     //printf("rowsPerSec %f, fftStep %f\n", rowsPerSec, fftStep);
@@ -132,7 +132,7 @@ static void drawSinText(const char* text, float offset, float step, float scale,
     while (c)
     {
         t = sinf(offset);
-        Emgui_drawChar(c, xPos, yPos + (t * scale), Emgui_color32(255, 255, 255, 255));
+        Emgui_drawChar(c, xPos, yPos + (int)((t * scale)), Emgui_color32(255, 255, 255, 255));
         offset += step;
         xPos += 8;
         c = *text++;

@@ -735,7 +735,9 @@ void Emgui_drawText(const char* text, int x, int y, uint32_t color)
 
 void Emgui_drawChar(char c, int x, int y, uint32_t color)
 {
-    char t[2] = { c, 0 };
+	char t[2];
+	t[0] = c;
+	t[1] = 0;
     Emgui_drawText(t, x, y, color);
 }
 
