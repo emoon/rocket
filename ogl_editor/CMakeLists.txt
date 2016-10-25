@@ -1,7 +1,8 @@
-set(CMAKE_OSX_ARCHITECTURES x86_64)
 project(RocketEditor)
 
 cmake_minimum_required(VERSION 2.8)
+
+set(CMAKE_OSX_ARCHITECTURES x86_64)
 
 set(RKT_EXE_NAME "RocketEditor")
 
@@ -50,6 +51,34 @@ add_library(rkt_sync ${RKT_SYNC_SRCS})
 target_include_directories(rkt_sync PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../lib)
 set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/../lib)
 set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} rkt_sync)
+
+##############################################################################
+# TINYCTHREAD
+file(GLOB RKT_TINYCTHREAD_SRCS
+	${CMAKE_CURRENT_SOURCE_DIR}/external/tinycthread/*.c
+)
+add_library(rkt_tinycthread ${RKT_TINYCTHREAD_SRCS})
+target_include_directories(rkt_tinycthread PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/tinycthread)
+if (APPLE)
+	target_compile_options(rkt_tinycthread PUBLIC -Wall)
+elseif (UNIX)
+	target_compile_options(rkt_tinycthread PUBLIC -Wall)
+elseif (MSVC)
+	set_target_properties(rkt_tinycthread PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
+endif ()
+set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/external/tinycthread)
+set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} rkt_tinycthread)
+
+##############################################################################
+# BASS
+set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/bass)
+if (APPLE)
+	set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/mac/libbass.dylib)
+elseif (UNIX)
+	set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/linux/libbass.so)
+elseif (MSVC)
+	set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/win32/bass.lib)
+endif ()
 
 ##############################################################################
 # EMGUI
@@ -117,14 +146,6 @@ set(RKT_PROJECT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/src ${RKT_PROJECT_INCLUDES}
 if (APPLE)
 	set(GUI_TYPE MACOSX_BUNDLE)
 
-	find_library(COCOA_FRAMEWORK Cocoa)
-	find_library(OPENGL_FRAMEWORK OpenGL)
-	find_library(CARBON_FRAMEWORK Carbon)
-
-	mark_as_advanced(COCOA_FRAMEWORK OPENGL_FRAMEWORK CARBON_FRAMEWORK)
-
-	set(PLATFORM_LIBS ${COCOA_FRAMEWORK} ${OPENGL_FRAMEWORK} ${CARBON_FRAMEWORK})
-
 	# Define some settings for the Bundle
 	set(MACOSX_BUNDLE_BUNDLE_NAME ${RKT_EXE_NAME})
 	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.tbl.rocketeditor")
@@ -137,7 +158,18 @@ if (APPLE)
 
 	set_source_files_properties(${RKT_RESOURCES_DATA} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 
+	set(OSX_LIB_FILES ${CMAKE_SOURCE_DIR}/external/bass/mac/libbass.dylib)
+	set_source_files_properties(${OSX_LIB_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION MacOS)
+	set(RKT_PROJECT_SRCS ${RKT_PROJECT_SRCS} ${OSX_LIB_FILES})
+
 	set(RKT_PROJECT_SRCS ${GUI_TYPE} ${RKT_PROJECT_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/data/macosx/appnib.xib)
+
+	find_library(COCOA_FRAMEWORK Cocoa)
+	find_library(OPENGL_FRAMEWORK OpenGL)
+	find_library(CARBON_FRAMEWORK Carbon)
+	find_library(COREAUDIO_FRAMEWORK CoreAudio)
+	mark_as_advanced(COCOA_FRAMEWORK OPENGL_FRAMEWORK CARBON_FRAMEWORK COREAUDIO_FRAMEWORK)
+	set(PLATFORM_LIBS ${COCOA_FRAMEWORK} ${OPENGL_FRAMEWORK} ${CARBON_FRAMEWORK} ${COREAUDIO_FRAMEWORK})
 elseif (UNIX)
 	find_package(SDL REQUIRED)
 	if (NOT SDL_FOUND)
@@ -153,7 +185,6 @@ set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${PLATFORM_LIBS})
 ##############################################################################
 
 add_executable(${RKT_EXE_NAME} ${RKT_PROJECT_SRCS})
-target_include_directories(${RKT_EXE_NAME} PUBLIC ${RKT_PROJECT_INCLUDES})
 if (APPLE)
 	set_target_properties(${RKT_EXE_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/data/macosx/MacOSXBundleInfo.plist.in)
 elseif (MSVC)
@@ -168,6 +199,7 @@ elseif (UNIX)
 elseif (MSVC)
 	target_compile_definitions(${RKT_EXE_NAME} PUBLIC -DEMGUI_WIN32)
 endif ()
+target_include_directories(${RKT_EXE_NAME} PUBLIC ${RKT_PROJECT_INCLUDES})
 target_link_libraries(${RKT_EXE_NAME} ${RKT_PROJECT_LIBS})
 
 # compile the nibs
@@ -186,4 +218,9 @@ if (APPLE)
 								--compile ${CMAKE_CURRENT_BINARY_DIR}/\${CONFIGURATION}/${RKT_EXE_NAME}.app/Contents/Resources/appnib.nib
 								${CMAKE_CURRENT_SOURCE_DIR}/data/macosx/appnib.xib
 						  COMMENT "Compiling appnib.xib")
+endif ()
+
+# move the bass dll close to the executable
+if (MSVC)
+	add_custom_command(TARGET ${RKT_EXE_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/external/bass/win32/bass.dll" $<TARGET_FILE_DIR:${RKT_EXE_NAME}>)
 endif ()
