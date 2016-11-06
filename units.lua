@@ -165,6 +165,7 @@ local rocketBundle = OsxBundle
 	Target = "$(OBJECTDIR)/RocketEditor.app",
 	InfoPList = "data/macosx/Info.plist",
 	Executable = "$(OBJECTDIR)/editor",
+	MacOSFiles = { "external/bass/mac/libbass.dylib"},
 	Resources = {
 		CompileNib { Source = "data/macosx/appnib.xib", Target = "appnib.nib" },
 		"data/macosx/icon.icns",
