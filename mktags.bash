@@ -1,1 +1,0 @@
-ctags --extra=+f -R *
