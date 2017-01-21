@@ -20,7 +20,7 @@
 #include "RenderAudio.h"
 #include <emgui/Emgui.h>
 #include <emgui/GFXBackend.h>
-#include <Bass.h>
+#include <bass.h>
 #if defined(_WIN32)
 	#include <Windows.h>
 	//#include <winsock2.h>

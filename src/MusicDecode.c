@@ -1,5 +1,5 @@
 #include <emgui/Emgui.h>
-#include <Bass.h>
+#include <bass.h>
 #include "Dialog.h"
 #include <math.h>
 #include <stdio.h>
@@ -235,4 +235,3 @@ void Music_init()
 {
     mtx_init(&s_mutex, mtx_plain);
 }
-
