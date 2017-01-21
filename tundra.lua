@@ -39,6 +39,10 @@ local linux = {
 			{ "-O0", "-g"; Config = "*-*-debug" },
 			{ "-O2"; Config = "*-*-release" },
 		},
+
+        LIBS = {
+            {"pthread", "m"; Config = "linux-*-*" },
+        },
 	},
 }
 
