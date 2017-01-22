@@ -94,7 +94,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 						trackData->bpm = atoi(beats_per_min);
 
 					if (music_filename)
-                        trackData->musicData.filename = strdup(music_filename);
+                        trackData->musicData.filename = (text_t*)strdup(music_filename);
 				}
 
 				if (!strcmp("track", element_name))
