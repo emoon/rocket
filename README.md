@@ -84,7 +84,51 @@ If you want to build from command line that works just as fine as well (just set
 Linux
 -----
 
-Almost like in Mac, use the supplied linux-build.sh file. No project files are generated - Tundra builds the editor straight away.
+The following was tested on Ubuntu 16.10 (yakkety).
+
+Install SDL-dev:
+
+```
+sudo apt-get install libsdl1.2-dev
+```
+
+Install [tundra](https://github.com/deplinenoise/tundra):
+
+```
+git clone --depth=1 https://github.com/deplinenoise/tundra
+cd tundra
+make
+sudo checkinstall make install
+```
+
+Install **rocket**. No project files are generated - Tundra builds the editor straight away.
+
+```
+git clone --depth=1 https://github.com/emoon/rocket
+cd rocket
+git submodule update --init --recursive
+./linux-build.sh
+```
+
+Install `libbass.so` from the repo folder:
+
+```
+sudo cp external/bass/linux/libbass.so /usr/local/lib/ 
+sudo chmod a+rx /usr/local/lib/libbass.so
+sudo ldconfig
+```
+
+Start the basic example:
+
+```
+./t2-output/linux-gcc-release-default/basic_example
+```
+
+Start rocket:
+
+```
+./t2-output/linux-gcc-release-default/editor
+```
 
 Tips & tricks
 -------------
