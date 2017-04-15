@@ -342,6 +342,33 @@ static void drawFillStipple(struct DrawFillCommand* command)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void drawLines(struct DrawLinesCommand* command)
+{
+	if (!command) {
+		return;
+	}
+
+	glEnable(GL_BLEND);
+
+	while (command)
+	{
+		glBegin(GL_LINE_STRIP);
+		setColor(command->color);
+
+		for (int i = 0, count = command->count; i < count; ++i) {
+			glVertex2f(command->coords[i].x, command->coords[i].y);
+		}
+
+		glEnd();
+
+		command = command->next;
+	}
+
+	glDisable(GL_BLEND);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static void drawImage(struct DrawImageCommand* command)
 {
 	uint64_t lastTexture = command->imageId;
@@ -413,6 +440,7 @@ void EMGFXBackend_render()
 		}
 
 		drawFill(layer->fillCommands);
+		drawLines(layer->lineCommands);
 		drawFillStipple(layer->fillCommands);
 
 		for (i = 0; i < EMGUI_MAX_FONTS; ++i)

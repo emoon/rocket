@@ -127,9 +127,9 @@ void Emgui_editBoxXY(int x, int y, int width, int height, int bufferLength, char
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Different controlls and gui functions
 
+void Emgui_drawLines(const Vec2* coords, int count, uint32_t color);
 void Emgui_sendKeyinput(int keyCode, int modifier);
 void Emgui_textLabel(const char* text);
-void Emgui_drawLine(uint32_t color, int x0, int y0, int x1, int y1);
 void Emgui_drawChar(char c, int x, int y, uint32_t color);
 void Emgui_drawText(const char* text, int x, int y, uint32_t color);
 void Emgui_drawTextFlipped(const char* text, int x, int y, uint32_t color);

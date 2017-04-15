@@ -473,7 +473,6 @@ static void fillGrad(uint32_t color0, uint32_t color1, int x, int y, int w, int 
 		s_renderData.layers[active_layer].fillCommandsTail->next = command;
 		s_renderData.layers[active_layer].fillCommandsTail = command;
 	}
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -507,6 +506,31 @@ void Emgui_drawBorder(uint32_t color0, uint32_t color1, int x, int y, int w, int
 	Emgui_fill(color0, x, y, w, size);
 	Emgui_fill(color1, x + w, y, size, h + size);
 	Emgui_fill(color1, x, y + h, w, size);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Emgui_drawLines(const Vec2* coords, int count, uint32_t color)
+{
+	const int active_layer = s_activeLayer;
+	struct DrawLinesCommand* command = LinearAllocator_allocZero(&s_allocator, struct DrawLinesCommand);
+
+	command->coords = LinearAllocator_allocArray(&s_allocator, Vec2, count);
+	command->count = count;
+	command->color = color;
+
+	memcpy(command->coords, coords, sizeof(Vec2) * count); 
+
+	if (!s_renderData.layers[active_layer].lineCommands)
+	{
+		s_renderData.layers[active_layer].lineCommands = command; // first command
+		s_renderData.layers[active_layer].lineCommandsTail = command;
+	}
+	else
+	{
+		s_renderData.layers[active_layer].lineCommandsTail->next = command;
+		s_renderData.layers[active_layer].lineCommandsTail = command;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

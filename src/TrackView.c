@@ -718,7 +718,6 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	Emgui_setScissor(48, 0, viewInfo->windowSizeX - 80, viewInfo->windowSizeY + viewInfo->graphViewSize);
 	Emgui_setFont(viewInfo->smallFontId);
 
-
 	for (i = 0, group_count = trackData->groupCount; i < group_count; ++i)
 	{
 		Group* group = &trackData->groups[i];
@@ -780,6 +779,36 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	return s_needsUpdate;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+uint32_t TrackView_getVisibleRange(TrackViewInfo* viewInfo, struct TrackData* trackData)
+{
+	int end_row = viewInfo->windowSizeY / font_size;
+	int mid_screen_y = (viewInfo->windowSizeY / 2) & ~(font_size - 1);
+	int y_pos_row = viewInfo->rowPos - (mid_screen_y / font_size);
+	int rowOffset = y_pos_row;
+	int endY = viewInfo->windowSizeY - 48;
+	int y = 5 * font_size;
+
+	if (rowOffset < 0)
+	{
+		y += font_size * -rowOffset;
+		rowOffset = 0;
+	}
+
+	int rowStart = rowOffset;
+
+	for (int i = 0; i < end_row; ++i)
+	{
+		y += font_size;
+		rowOffset++;
+
+		if (y > endY)
+			break;
+	}
+
+	return (rowStart << 16) | rowOffset;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

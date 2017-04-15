@@ -569,16 +569,25 @@ static bool internalUpdate()
 
 		GraphView graphView;
 
-		if (!tracks || !tracks[activeTrack]) {
+		if (!tracks || !tracks[activeTrack]->keys) {
 			graphView.activeTrack = 0;
 		} else {
 			graphView.activeTrack = tracks[activeTrack];
 		}
 
+		printf("ActiveTrack %p\n", (void*)graphView.activeTrack); 
+	
 		rect.x = 2;
 		rect.y = s_editorData.trackViewInfo.windowSizeY - 12;
 		rect.width = s_editorData.trackViewInfo.windowSizeX - 32;
 		rect.height = s_editorData.trackViewInfo.graphViewSize - 10;
+
+		uint32_t range = TrackView_getVisibleRange(getTrackViewInfo(), getTrackData());
+
+		graphView.startRow = range >> 16; 
+		graphView.endRow = range & 0xffff; 
+
+		printf("range %d %d\n", graphView.startRow, graphView.endRow);
 
 		GraphView_render(&graphView, &settings, &rect);
     }

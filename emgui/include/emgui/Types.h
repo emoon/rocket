@@ -6,6 +6,7 @@
 #include <stddef.h>
 
 typedef unsigned int uint;
+typedef struct Vec2 { float x, y; } Vec2;
 
 #if defined(_WIN32)
 

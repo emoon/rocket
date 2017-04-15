@@ -11,7 +11,6 @@ typedef struct GraphSettings
 {
 	uint32_t borderColor; 
 	uint32_t curveColor;
-
 	int singleTrack;
 } GraphSettings;
 
@@ -30,7 +29,8 @@ typedef struct Rect
 typedef struct GraphView
 {
 	struct sync_track* activeTrack;
-	Rect rect;
+	int startRow;
+	int endRow;
 } GraphView;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
