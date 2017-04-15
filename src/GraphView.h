@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-struct TrackData;
+struct sync_track;
 struct TrackViewInfo;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +29,11 @@ typedef struct Rect
 
 typedef struct GraphView
 {
-	const struct TrackData* activeTrack;
+	struct sync_track* activeTrack;
 	Rect rect;
 } GraphView;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void GraphView_render(const GraphView* graphView, const GraphSettings* settings, const Rect* rect);
 

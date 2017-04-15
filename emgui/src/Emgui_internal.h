@@ -1,7 +1,7 @@
 #ifndef EMGUI_INTERNAL_H_
 #define EMGUI_INTERNAL_H_
 
-#include <emgui/Emgui.h>
+#include "../include/emgui/Emgui.h"
 #include "Emgui_internal.h"
 #include "External/stb_truetype.h"
 

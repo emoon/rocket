@@ -7,6 +7,7 @@
 #include "Dialog.h"
 #include "loadsave.h"
 #include "TrackView.h"
+#include "GraphView.h"
 #include "rlog.h"
 #include "minmax.h"
 #include "TrackData.h"
@@ -556,6 +557,30 @@ static bool internalUpdate()
         RenderAudio_render(&s_editorData.trackData,
                            s_editorData.trackViewInfo.windowSizeX - 20, 5 * 8,
                            s_editorData.trackViewInfo.windowSizeY);
+    }
+
+	if (s_editorData.trackViewInfo.graphViewSize > 0) {
+		struct sync_track** tracks = getTracks();
+		const int activeTrack = getActiveTrack();
+		Rect rect;
+
+		GraphSettings settings;
+		settings.borderColor = EMGUI_COLOR32(40, 40, 40, 255);
+
+		GraphView graphView;
+
+		if (!tracks || !tracks[activeTrack]) {
+			graphView.activeTrack = 0;
+		} else {
+			graphView.activeTrack = tracks[activeTrack];
+		}
+
+		rect.x = 2;
+		rect.y = s_editorData.trackViewInfo.windowSizeY - 12;
+		rect.width = s_editorData.trackViewInfo.windowSizeX - 32;
+		rect.height = s_editorData.trackViewInfo.graphViewSize - 10;
+
+		GraphView_render(&graphView, &settings, &rect);
     }
 
 	drawStatus();
