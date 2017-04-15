@@ -11,15 +11,6 @@
 #include "../external/rocket/lib/sync.h"
 #include "../external/rocket/lib/track.h"
 
-#if defined(__APPLE__)
-#include <OpenGL/OpenGL.h>
-#include <OpenGL/gl.h>
-#elif !defined(EMGUI_UNIX)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <gl/gl.h>
-#endif
-
 #define font_size 8
 int track_size_folded = 20;
 int min_track_size = 100;
@@ -724,7 +715,7 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	Emgui_drawBorder(border_color, border_color, 48, info.startY - font_size * 4, viewInfo->windowSizeX - 80, (info.endSizeY - info.startY) + 40);
 
 	Emgui_setLayer(1);
-	Emgui_setScissor(48, 0, viewInfo->windowSizeX - 80, viewInfo->windowSizeY);
+	Emgui_setScissor(48, 0, viewInfo->windowSizeX - 80, viewInfo->windowSizeY + viewInfo->graphViewSize);
 	Emgui_setFont(viewInfo->smallFontId);
 
 

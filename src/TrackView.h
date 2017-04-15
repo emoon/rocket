@@ -24,6 +24,7 @@ typedef struct TrackViewInfo
 	int selectStopRow;
 	int loopStart;
 	int loopEnd;
+	int graphViewSize;
 
 } TrackViewInfo;
 

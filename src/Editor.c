@@ -320,6 +320,7 @@ void Editor_create()
     }
 
 	s_editorData.trackViewInfo.smallFontId = id;
+	s_editorData.trackViewInfo.graphViewSize = 100;
 	s_editorData.trackData.startRow = 0;
 	s_editorData.trackData.endRow = 10000;
 	s_editorData.trackData.bpm = 125;
@@ -340,7 +341,7 @@ void Editor_setWindowSize(int x, int y)
     s_editorData.originalYSize = y;
 
 	s_editorData.trackViewInfo.windowSizeX = x - s_editorData.waveViewSize;
-	s_editorData.trackViewInfo.windowSizeY = y;
+	s_editorData.trackViewInfo.windowSizeY = y - s_editorData.trackViewInfo.graphViewSize;
 	Editor_updateTrackScroll();
 }
 
@@ -452,7 +453,7 @@ static int drawNameValue(char* name, int posX, int sizeY, int* value, int low, i
 static void drawStatus()
 {
 	int size = 0;
-	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
+	const int sizeY = s_editorData.trackViewInfo.windowSizeY + s_editorData.trackViewInfo.graphViewSize;
 	const int sizeX = s_editorData.trackViewInfo.windowSizeX + s_editorData.waveViewSize;
 	const int prevRow = getRowPos();
 
