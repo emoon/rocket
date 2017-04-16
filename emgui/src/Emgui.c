@@ -690,6 +690,47 @@ void Emgui_textLabel(const char* text)
 	}
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ControlState Emgui_customControl(int x, int y, int width, int height)
+{
+	uint32_t controlId = 0;
+	EmguiControlInfo* control = 0;
+
+	// Setup the control
+	controlId = g_controlId++;
+	control = &g_controls[controlId];
+	control->type = EMGUI_DRAWTYPE_NONE;
+	control->x = x;
+	control->y = y;
+	control->width = width;
+	control->height = height;
+	control->text = 0; 
+	control->color = 0;
+	control->fontId = g_currentFont;
+
+	ControlState state;
+
+	state.hover = false;
+	state.clicked = false;
+
+	if (Emgui_regionHit(control))
+	{
+		g_emguiGuiState.hotItem = controlId;
+    	if (g_emguiGuiState.activeItem == 0 && g_emguiGuiState.mouse.down)
+      		g_emguiGuiState.activeItem = controlId;
+
+		state.hover = true;
+	}
+
+	if (g_emguiGuiState.mouse.down == 0 && g_emguiGuiState.hotItem == controlId && g_emguiGuiState.activeItem == controlId) {
+		state.clicked = true;
+	}
+
+	return state;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void drawImage(uint64_t imageId, uint32_t color, int x, int y, int w, int h)

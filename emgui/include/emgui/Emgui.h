@@ -36,6 +36,13 @@ enum EmguiSpecialKey
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+typedef struct ControlState {
+	bool clicked;
+	bool hover;
+} ControlState;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 enum EmguiKeyModifier
 {
 	EMGUI_KEY_WIN = 1, // windows key on Windows
@@ -144,6 +151,9 @@ void Emgui_textLabelXY(const char* text, int x, int y);
 
 bool Emgui_slider(int x, int y, int w, int h, int start, int end, int largeVal,
 				  enum EmguiSliderDirection dir, int itemSpace, int* value);
+
+// This is a dummy control to handle tracking of areas
+ControlState Emgui_customControl(int x, int y, int w, int h);
 
 bool Emgui_buttonCoords(const char* text, uint32_t color, int x, int y, int width, int height);
 bool Emgui_buttonCoordsImage(const char* text, int x, int y);
