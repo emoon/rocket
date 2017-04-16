@@ -9,6 +9,7 @@ struct TrackViewInfo;
 
 typedef struct GraphSettings
 {
+	int fontId;
 	uint32_t borderColor; 
 	uint32_t curveColor;
 	int singleTrack;

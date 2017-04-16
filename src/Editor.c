@@ -321,7 +321,7 @@ void Editor_create()
     }
 
 	s_editorData.trackViewInfo.smallFontId = id;
-	s_editorData.trackViewInfo.graphViewSize = 100;
+	s_editorData.trackViewInfo.graphViewSize = 200;
 	s_editorData.trackData.startRow = 0;
 	s_editorData.trackData.endRow = 10000;
 	s_editorData.trackData.bpm = 125;
@@ -566,6 +566,7 @@ static bool internalUpdate()
 
 		GraphSettings settings;
 		settings.borderColor = EMGUI_COLOR32(40, 40, 40, 255);
+		settings.fontId = s_editorData.trackViewInfo.smallFontId;
 
 		GraphView graphView;
 
@@ -575,8 +576,6 @@ static bool internalUpdate()
 			graphView.activeTrack = tracks[activeTrack];
 		}
 
-		printf("ActiveTrack %p\n", (void*)graphView.activeTrack); 
-	
 		rect.x = 2;
 		rect.y = s_editorData.trackViewInfo.windowSizeY - 12;
 		rect.width = s_editorData.trackViewInfo.windowSizeX - 32;
@@ -586,8 +585,7 @@ static bool internalUpdate()
 
 		graphView.startRow = range >> 16; 
 		graphView.endRow = range & 0xffff; 
-
-		printf("range %d %d\n", graphView.startRow, graphView.endRow);
+	
 
 		GraphView_render(&graphView, &settings, &rect);
     }
