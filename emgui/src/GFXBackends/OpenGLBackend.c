@@ -350,6 +350,14 @@ static void drawLines(struct DrawLinesCommand* command)
 
 	glEnable(GL_BLEND);
 
+	if (command->aa) {
+		glEnable(GL_LINE_SMOOTH);
+	} else {
+		glDisable(GL_LINE_SMOOTH);
+	}
+
+	glLineWidth(command->width);
+
 	while (command)
 	{
 		glBegin(GL_LINE_STRIP);

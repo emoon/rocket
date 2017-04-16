@@ -127,7 +127,7 @@ void Emgui_editBoxXY(int x, int y, int width, int height, int bufferLength, char
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Different controlls and gui functions
 
-void Emgui_drawLines(const Vec2* coords, int count, uint32_t color);
+void Emgui_drawLines(const Vec2* coords, int count, uint32_t color, int antiAlias, int width);
 void Emgui_sendKeyinput(int keyCode, int modifier);
 void Emgui_textLabel(const char* text);
 void Emgui_drawChar(char c, int x, int y, uint32_t color);

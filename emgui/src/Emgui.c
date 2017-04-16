@@ -510,7 +510,7 @@ void Emgui_drawBorder(uint32_t color0, uint32_t color1, int x, int y, int w, int
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Emgui_drawLines(const Vec2* coords, int count, uint32_t color)
+void Emgui_drawLines(const Vec2* coords, int count, uint32_t color, int aa, int width)
 {
 	const int active_layer = s_activeLayer;
 	struct DrawLinesCommand* command = LinearAllocator_allocZero(&s_allocator, struct DrawLinesCommand);
@@ -518,6 +518,8 @@ void Emgui_drawLines(const Vec2* coords, int count, uint32_t color)
 	command->coords = LinearAllocator_allocArray(&s_allocator, Vec2, count);
 	command->count = count;
 	command->color = color;
+	command->aa = aa;
+	command->width = width;
 
 	memcpy(command->coords, coords, sizeof(Vec2) * count); 
 
