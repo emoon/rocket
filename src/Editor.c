@@ -1621,7 +1621,13 @@ static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection
 	TrackData* trackData = getTrackData();
 	const int trackCount = getTrackCount();
 	const int oldTrack = getActiveTrack();
+	Track* oldT = &trackData->tracks[oldTrack];
 	int track = 0;
+
+	if (!oldT->group) {
+		// no tracks yet, doesn't make sense to act on them
+		return;
+	}
 
 	if (dir == ARROW_LEFT)
 		track = startOrEnd ? 0 : getPrevTrack();
