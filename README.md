@@ -15,8 +15,8 @@ Also the documentation hasn't been completed yet.
 
 Here are the links to the current version of the editor:
 
-* Mac: https://dl.dropbox.com/u/5205843/RocketEditor1.0.zip
-* Windows: https://dl.dropbox.com/u/5205843/RocketEditor1.0-win32.zip
+* Mac: https://www.dropbox.com/s/toaiyfgzue9fm2v/RocketEditor1.2beta.zip?dl=0
+* Windows: https://www.dropbox.com/s/ounkv6bcou5pgwe/RocketEditor1.2beta-Win.zip?dl=0
 
 About
 -----
@@ -113,7 +113,7 @@ git submodule update --init --recursive
 Install `libbass.so` from the repo folder:
 
 ```
-sudo cp external/bass/linux/libbass.so /usr/local/lib/ 
+sudo cp external/bass/linux/libbass.so /usr/local/lib/
 sudo chmod a+rx /usr/local/lib/libbass.so
 sudo ldconfig
 ```
