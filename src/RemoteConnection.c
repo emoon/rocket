@@ -227,6 +227,23 @@ bool RemoteConnection_connected()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static int recv_all(SOCKET socket, char* buffer, size_t length, int flags)
+{
+	int remaining = (int)length, ret;
+
+	while (remaining)
+	{
+		ret = recv(socket, buffer, remaining, flags);
+		if (ret <= 0)
+			return ret;
+		remaining -= ret;
+		buffer += ret;
+	}
+	return length;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host)
 {
 	struct sockaddr_in hostTemp;
@@ -240,7 +257,7 @@ static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host)
 	if (INVALID_SOCKET == clientSocket) 
 		return INVALID_SOCKET;
 
-	recv(clientSocket, recievedGreeting, (int)strlen(expectedGreeting), 0);
+	recv_all(clientSocket, recievedGreeting, strlen(expectedGreeting), 0);
 
 	if (strncmp(expectedGreeting, recievedGreeting, strlen(expectedGreeting)) != 0)
 	{
@@ -324,7 +341,7 @@ int RemoteConnection_recv(char* buffer, size_t length, int flags)
 	if (!RemoteConnection_connected())
 		return false;
 
-	ret = recv(s_socket, buffer, (int)length, flags);
+	ret = recv_all(s_socket, buffer, length, flags);
 
 	if (ret != length)
 	{
