@@ -29,15 +29,15 @@ int colorbar_adjust = ((font_size * 3) + 2);
 
 // Colors
 
-const uint32_t active_track_color = EMGUI_COLOR32(0x5f, 0x6f, 0x40, 0x80);
-const uint32_t dark_active_track_color = EMGUI_COLOR32(0xaf, 0x1f, 0x10, 0x80);
-const uint32_t active_text_color = EMGUI_COLOR32(0xff, 0xff, 0xff, 0xff);
-const uint32_t inactive_text_color = EMGUI_COLOR32(0x5f, 0x5f, 0x5f, 0xff);
-const uint32_t border_color = EMGUI_COLOR32(40, 40, 40, 255);
-const uint32_t selection_color = EMGUI_COLOR32(0x5f, 0x5f, 0x5f, 0x4f);
-const uint32_t bookmark_color = EMGUI_COLOR32(0x3f, 0x2f, 0xaf, 0x7f);
-const uint32_t loopmark_color = EMGUI_COLOR32(0x9f, 0x9f, 0x2f, 0x7f);
-const uint32_t track_selection_color = EMGUI_COLOR32(0xff, 0xff, 0x00, 0xff);
+const uint32_t active_track_color = EMGUI_COLOR32(0x5fU, 0x6fU, 0x40U, 0x80U);
+const uint32_t dark_active_track_color = EMGUI_COLOR32(0xafU, 0x1fU, 0x10U, 0x80U);
+const uint32_t active_text_color = EMGUI_COLOR32(0xffU, 0xffU, 0xffU, 0xffU);
+const uint32_t inactive_text_color = EMGUI_COLOR32(0x5fU, 0x5fU, 0x5fU, 0xffU);
+const uint32_t border_color = EMGUI_COLOR32(40U, 40U, 40U, 255U);
+const uint32_t selection_color = EMGUI_COLOR32(0x5fU, 0x5fU, 0x5fU, 0x4fU);
+const uint32_t bookmark_color = EMGUI_COLOR32(0x3fU, 0x2fU, 0xafU, 0x7fU);
+const uint32_t loopmark_color = EMGUI_COLOR32(0x9fU, 0x9fU, 0x2fU, 0x7fU);
+const uint32_t track_selection_color = EMGUI_COLOR32(0xffU, 0xffU, 0x00U, 0xffU);
 
 static bool s_needsUpdate = false;
 
@@ -681,8 +681,8 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	const int endLoop = TrackData_getNextLoopmark(trackData, viewInfo->rowPos);
 	const int startLoop = TrackData_getPrevLoopmark(trackData, viewInfo->rowPos);
 
-    if (trackData->rowsPerBeat == 0)
-        trackData->rowsPerBeat = 1;
+	if (trackData->rowsPerBeat == 0)
+		trackData->rowsPerBeat = 1;
 
 	s_needsUpdate = false;
 	s_drawSelectedTrack.drawTrack = 0;

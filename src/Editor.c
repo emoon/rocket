@@ -231,14 +231,12 @@ static int getNextTrack()
 	Group* group;
 	TrackData* trackData = getTrackData();
 	int groupIndex = 0;
-	int groupTrackCount = 0;
 	int currentTrack = getActiveTrack();
 
 	// Get the group for the currentTrack
 
 	Track* track = &trackData->tracks[currentTrack];
 	group = track->group;
-	groupTrackCount = group->trackCount;
 
 	// Check If next track is within the group
 
@@ -269,14 +267,12 @@ static int getPrevTrack()
 	TrackData* trackData = getTrackData();
 	int trackIndex = 0;
 	int groupIndex = 0;
-	int groupTrackCount = 0;
 	int currentTrack = getActiveTrack();
 
 	// Get the group for the currentTrack
 
 	Track* track = &trackData->tracks[currentTrack];
 	group = track->group;
-	groupTrackCount = group->trackCount;
 
 	// Check If next track is within the group
 
@@ -649,21 +645,17 @@ static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight,
 {
 	int i, j;
 	const int track_count = getTrackCount();
-	struct sync_track** tracks = getTracks();
 
 	if (!externalMulti)
 		Commands_beginMulti("deleteArea");
 
 	for (i = 0; i < bufferWidth; ++i)
 	{
-		struct sync_track* t;
 		int trackPos = track + i;
 		int trackIndex = trackPos;
 
 		if (trackPos >= track_count)
 			continue;
-
-		t = tracks[trackIndex];
 
 		for (j = 0; j < bufferHeight; ++j)
 		{
@@ -783,7 +775,6 @@ static bool is_editing = false;
 
 static void endEditing()
 {
-	const char* track_name;
 	struct track_key key;
 	struct sync_track* track;
 	int row_pos = getRowPos();
@@ -819,8 +810,6 @@ static void endEditing()
 				key.type = track->keys[emaxi(idx - 1, 0)].type;
 			}
 		}
-
-		track_name = track->name;
 
 		Commands_addOrUpdateKey(active_track, &key);
 		updateNeedsSaving();
