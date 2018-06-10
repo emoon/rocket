@@ -681,8 +681,8 @@ bool TrackView_render(TrackViewInfo* viewInfo, TrackData* trackData)
 	const int endLoop = TrackData_getNextLoopmark(trackData, viewInfo->rowPos);
 	const int startLoop = TrackData_getPrevLoopmark(trackData, viewInfo->rowPos);
 
-    if (trackData->rowsPerBeat == 0)
-        trackData->rowsPerBeat = 1;
+	if (trackData->rowsPerBeat == 0)
+		trackData->rowsPerBeat = 1;
 
 	s_needsUpdate = false;
 	s_drawSelectedTrack.drawTrack = 0;

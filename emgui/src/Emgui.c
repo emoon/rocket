@@ -562,8 +562,8 @@ bool Emgui_slider(int x, int y, int w, int h, int start, int end, int largeVal, 
 		thumb_width = (int)((lw * fw) / (range + 1.0f));
 	    left = x + (int)((w - thumb_width) * (value / (float)end));
 
-        if (thumb_width < 0)
-        	thumb_width = 2;
+		if (thumb_width < 0)
+			thumb_width = 2;
 
 		control->sliderThumbX = left;
 		control->sliderThumbY = y + 1;
@@ -577,8 +577,8 @@ bool Emgui_slider(int x, int y, int w, int h, int start, int end, int largeVal, 
 		thumb_height = (int) ((lw * fh) / (range + 1.0f));
         height = y + (int)((h - thumb_height) * (value / (float)end));
 
-        if (thumb_height < 0)
-        	thumb_height = 2;
+		if (thumb_height < 0)
+			thumb_height = 2;
 
 		control->sliderThumbX = x + 1;
 		control->sliderThumbY = height;
