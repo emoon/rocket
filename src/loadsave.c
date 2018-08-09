@@ -94,7 +94,18 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 						trackData->bpm = atoi(beats_per_min);
 
 					if (music_filename)
-                        trackData->musicData.filename = (text_t*)strdup(music_filename);
+					{
+#if defined(_WIN32)
+						size_t bufsize = strlen(music_filename) * 2 + 1;
+						text_t* buf = malloc(bufsize * sizeof(text_t));
+						if (mbstowcs(buf, music_filename, bufsize) != (size_t)(-1))
+							trackData->musicData.filename = buf;
+						else
+							free(buf);
+#else
+						trackData->musicData.filename = strdup(music_filename);
+#endif
+                                        }
 				}
 
 				if (!strcmp("track", element_name))
@@ -424,8 +435,17 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData)
 	setElementInt(tracks, "rowsPerBeat", "%d", trackData->rowsPerBeat);
 	setElementInt(tracks, "beatsPerMin", "%d", trackData->bpm);
 
-	if (trackData->musicData.filename)
-		mxmlElementSetAttr(tracks, "musicFilename", (const char*)trackData->musicData.filename);
+	if (trackData->musicData.filename) {
+#if defined(_WIN32)
+                size_t bufsize = wcslen(trackData->musicData.filename) * 4 + 1;
+                char* buf = malloc(bufsize);
+                if (wcstombs(buf, trackData->musicData.filename, bufsize) != (size_t)(-1))
+			mxmlElementSetAttr(tracks, "musicFilename", buf);
+                free(buf);
+#else
+		mxmlElementSetAttr(tracks, "musicFilename", trackData->musicData.filename);
+#endif
+	}
 
 	for (p = 0; p < trackData->num_syncTracks; ++p)
 	{
