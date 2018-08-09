@@ -55,7 +55,31 @@ int Dialog_save(text_t *path)
 
 void Dialog_showColorPicker(unsigned int* color)
 {
-	printf("dialog_showColorPicker() not implemented\n");
+	char buf[16], *start, *end;
+	unsigned int raw;
+	int len;
+	printf("Enter color as HTML hex code: ");
+	fgets(buf, 16, stdin);
+	start = &buf[(*buf == '#') ? 1 : 0];
+	raw = strtoul(start, &end, 16);
+	len = (*end < 32) ? (int)((intptr_t)end - (intptr_t)start) : 0;
+	switch (len) {
+		case 3:
+			*color = 0xFF000000u
+			       | (( raw       & 0xF) * 0x110000u)
+			       | (((raw >> 4) & 0xF) * 0x001100u)
+			       | (((raw >> 8) & 0xF) * 0x000011u);
+			break;
+		case 6:
+			*color = 0xFF000000u
+			       | ( raw        & 0x00FF00u)
+			       | ((raw >> 16) & 0x0000FFu)
+			       | ((raw << 16) & 0xFF0000u);
+			break;
+		default:
+			printf("Invalid color value, ignoring.\n");
+			break;
+	}
 }
 
 void Dialog_showError(const text_t* text)
