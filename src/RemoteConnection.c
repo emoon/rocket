@@ -213,7 +213,7 @@ bool RemoteConnection_createListner()
 	while (listen(s_serverSocket, SOMAXCONN) == -1)
 		;
 
-	rlog(R_INFO, "Created listner\n");
+	//rlog(R_INFO, "Created listner\n");
 
 	return true;
 }
@@ -300,7 +300,7 @@ void RemoteConnection_updateListner(int currentRow)
 		if (INVALID_SOCKET != clientSocket)
 		{
 			snprintf(s_connectionName, sizeof(s_connectionName), "Connected to %s", inet_ntoa(client.sin_addr));
-			rlog(R_INFO, "%s\n", s_connectionName); 
+			//rlog(R_INFO, "%s\n", s_connectionName); 
 			s_socket = clientSocket; 
 			s_clientIndex = 0;
 			RemoteConnection_sendPauseCommand(true);
@@ -447,7 +447,7 @@ void RemoteConnection_sendSetRowCommand(int row)
 	if (!RemoteConnection_connected())
 		return;
 
-	printf("rom %d\n", row);
+	//printf("rom %d\n", row);
 
 	row = htonl(row);
 	RemoteConnection_send((char *)&cmd, 1, 0);
@@ -520,12 +520,12 @@ void RemoteConnection_close()
 {
 	if (RemoteConnection_connected())
 	{
-		rlog(R_INFO, "closing client socket %d\n", s_socket);
+		//rlog(R_INFO, "closing client socket %d\n", s_socket);
 		closesocket(s_socket);
 		s_socket = INVALID_SOCKET;
 	}
 
-	rlog(R_INFO, "closing socket %d\n", s_serverSocket);
+	//rlog(R_INFO, "closing socket %d\n", s_serverSocket);
 
 	closesocket(s_serverSocket);
 	s_serverSocket = INVALID_SOCKET;

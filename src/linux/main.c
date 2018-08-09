@@ -17,7 +17,7 @@ void Window_populateRecentList(text_t** files)
 	int i;
 	for (i = 0; i < 4; i++)
 		if (files[i][0] != 0)
-			printf("recent %d: %s\n", i, files[i]);
+			printf("recent %d: %s\n", i + 1, files[i]);
 }
 
 void Window_setTitle(const text_t *title)
@@ -123,7 +123,7 @@ int checkMenu(int key, int mod, const MenuDescriptor *item)
 	{
 		if (key == item->key && mod == item->winMod)
 		{
-			printf("Menuevent %d %s\n", item->id, item->name);
+			//printf("Menuevent %d %s\n", item->id, item->name);
 			if (key== EMGUI_KEY_TAB ||
 					key== EMGUI_KEY_ENTER ||
 					key== EDITOR_MENU_DELETE_KEY)
@@ -140,7 +140,7 @@ int checkMenu(int key, int mod, const MenuDescriptor *item)
 int checkRecent(int key, int mod)
 {
 	if (mod == EMGUI_KEY_CTRL && key >= '1' && key <= '4') {
-		printf("Load recent %d\n", key - '1');
+		//printf("Load recent %d\n", key - '1');
 		Editor_menuEvent(EDITOR_MENU_RECENT_FILE_0 + key - '1');
 		return 0;
 	}
@@ -175,8 +175,9 @@ void updateKey(SDL_keysym *sym)
 
 	if (!keycode)
 	{
-		if (updateModifierPress(sym->sym, 1))
-			printf("bad key\n");
+		if (updateModifierPress(sym->sym, 1)) {
+			//printf("bad key\n");
+		}
 	}
 	else
 	{
@@ -260,7 +261,8 @@ int handleEvent(SDL_Event *ev)
 			resize(ev->resize.w, ev->resize.h);
 			break;
 		default:
-			printf("Unknown SDL event %d\n", ev->type);
+			//printf("Unknown SDL event %d\n", ev->type);
+			break;
 	}
 	return 0;
 
@@ -315,7 +317,7 @@ void loadRecents()
 	if (!fh)
 		return;
 
-	printf("Recent files:\n");
+	//printf("Recent files:\n");
 	for (i = 0; i < 4; i++) {
 		fgets(recents[i], 2048, fh); // size looked up in Editor.c
 
@@ -326,11 +328,10 @@ void loadRecents()
 		}
 
 		recents[i][strlen(recents[i]) - 1] = 0; // strip newline
-		printf("%d: %s\n", i, recents[i]);
-		fprintf(fh, "%s\n", recents[i]);
+		//printf("%d: %s\n", i, recents[i]);
 	}
 
-	printf("total %d\n", i);
+	//printf("total %d\n", i);
 	for (; i < 4; i++) // clear the rest if less than 4 recents
 		recents[i][0] = 0;
 	fclose(fh);

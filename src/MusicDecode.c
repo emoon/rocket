@@ -45,8 +45,8 @@ int decodeFunc(void* inData)
     QWORD sampleLength = BASS_ChannelSeconds2Bytes(chan, SAMPLING_RESOLUTION);
     int numSamples = (int)((double)BASS_ChannelGetLength(chan, BASS_POS_BYTE) / (double)sampleLength);
 
-    printf("Num samples %d\n", (int)sampleLength);
-    printf("Num samples %d\n", numSamples);
+    //printf("Num samples %d\n", (int)sampleLength);
+    //printf("Num samples %d\n", numSamples);
 
     BASS_ChannelPlay(chan, 0);
 
@@ -163,7 +163,7 @@ int decodeFunc(void* inData)
 
     mtx_unlock(&s_mutex);
 
-    printf("thread done\n");
+    //printf("thread done\n");
 
     return 1;
 }

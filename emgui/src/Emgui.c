@@ -607,7 +607,7 @@ bool Emgui_slider(int x, int y, int w, int h, int start, int end, int largeVal, 
             value = ((float)mouseRelative / (float)(w - thumb_width)) * (float)end;
 			*ivalue = (int)value;
 
-			printf("%f %d (clamp %d) %f\n", (float)mouseRelative / (float)(w), mouseRelative, (w - thumb_width - 1), value);
+			//printf("%f %d (clamp %d) %f\n", (float)mouseRelative / (float)(w), mouseRelative, (w - thumb_width - 1), value);
 		}
 		else
 		{
