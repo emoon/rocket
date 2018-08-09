@@ -182,7 +182,7 @@ elseif (UNIX)
 	set(PLATFORM_LIBS ${SDL_LIBRARY} SDLmain GL m)
 	set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${SDL_INCLUDE_DIR})
 elseif (MSVC)
-	set(PLATFORM_LIBS wsock32 opengl32 glu32 kernel32 user32 gdi32 Comdlg32 Advapi32)
+	set(PLATFORM_LIBS ws2_32 opengl32 glu32 kernel32 user32 gdi32 Comdlg32 Advapi32)
 endif ()
 set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${PLATFORM_LIBS})
 ##############################################################################
