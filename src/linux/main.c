@@ -77,8 +77,8 @@ int mapSdlEmKeycode(SDLKey key)
 		case SDLK_TAB: return EMGUI_KEY_TAB;
 		case SDLK_BACKSPACE: return EMGUI_KEY_BACKSPACE;
 		case SDLK_SPACE: return EMGUI_KEY_SPACE;
-                case SDLK_PAGEUP: return EMGUI_KEY_PAGE_UP;
-                case SDLK_PAGEDOWN: return EMGUI_KEY_PAGE_DOWN;
+		case SDLK_PAGEUP: return EMGUI_KEY_PAGE_UP;
+		case SDLK_PAGEDOWN: return EMGUI_KEY_PAGE_DOWN;
 		default: return key >= ' ' && key <= 127 ? key : 0;
 	}
 }
