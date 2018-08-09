@@ -150,7 +150,7 @@ int checkMenu(int key, int mod, const MenuDescriptor *item)
 			//printf("Menuevent %d %s\n", item->id, item->name);
 			if (key== EMGUI_KEY_TAB ||
 					key== EMGUI_KEY_ENTER ||
-					key== EDITOR_MENU_DELETE_KEY)
+					key== EMGUI_KEY_BACKSPACE)
 			{
 				Emgui_sendKeyinput(key, getModifiers());
 			}
