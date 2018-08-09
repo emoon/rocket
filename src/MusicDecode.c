@@ -196,7 +196,8 @@ int Music_decode(text_t* path, MusicData* data)
 
 	if (!chan)
 	{
-	    Dialog_showError(TEXT("Unable to open stream for decode. No music data will be availible."));
+	    Dialog_showError(TEXT("Unable to open stream for decode. No music data will be available."));
+	    mtx_unlock(&s_mutex);
 	    return 0;
 	}
 
@@ -204,8 +205,9 @@ int Music_decode(text_t* path, MusicData* data)
 
     if (len == -1)
     {
-	    Dialog_showError(TEXT("Stream has no length. No music data will be availible."));
+	    Dialog_showError(TEXT("Stream has no length. No music data will be available."));
         BASS_StreamFree(chan);
+        mtx_unlock(&s_mutex);
         return 0;
     }
 
