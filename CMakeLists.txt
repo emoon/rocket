@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 2.8)
 set(CMAKE_OSX_ARCHITECTURES x86_64)
 
 set(RKT_EXE_NAME "RocketEditor")
+set(EXAMPLE_NAME "BasicExample")
 
 set(VERSION_MAJOR "1")
 set(VERSION_MINOR "1")
@@ -181,7 +182,7 @@ elseif (UNIX)
 	set(PLATFORM_LIBS ${SDL_LIBRARY} SDLmain GL m)
 	set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${SDL_INCLUDE_DIR})
 elseif (MSVC)
-	set(PLATFORM_LIBS wsock32 opengl32 glu32 kernel32 user32 gdi32 Comdlg32 Advapi32)
+	set(PLATFORM_LIBS ws2_32 opengl32 glu32 kernel32 user32 gdi32 Comdlg32 Advapi32)
 endif ()
 set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${PLATFORM_LIBS})
 ##############################################################################
@@ -226,3 +227,13 @@ endif ()
 if (MSVC)
 	add_custom_command(TARGET ${RKT_EXE_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/external/bass/win32/bass.dll" $<TARGET_FILE_DIR:${RKT_EXE_NAME}>)
 endif ()
+
+
+##############################################################################
+# BASIC EXAMPLE
+file(GLOB EXAMPLE_SRCS
+	${CMAKE_CURRENT_SOURCE_DIR}/basic_example/*.c
+	${CMAKE_CURRENT_SOURCE_DIR}/basic_example/*.h
+)
+add_executable(${EXAMPLE_NAME} ${EXAMPLE_SRCS})
+target_link_libraries(${EXAMPLE_NAME} ${RKT_PROJECT_LIBS})

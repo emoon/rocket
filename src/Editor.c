@@ -893,7 +893,7 @@ static int processCommands()
 				if (!RemoteConnection_recv(trackName, strLen, 0))
 					return 0;
 
-				rlog(R_INFO, "Got trackname %s (%d) from demo\n", trackName, strLen);
+				//rlog(R_INFO, "Got trackname %s (%d) from demo\n", trackName, strLen);
 
 				// find track
 
@@ -1036,7 +1036,11 @@ static void decodeMusic(text_t* path, int fromLoad)
 
     s_editorData.waveViewSize = 128 + 20;
     s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize - s_editorData.waveViewSize;
-    s_editorData.trackData.musicData.filename = (text_t*)strdup((const char*)path);
+#if defined(_WIN32)
+    s_editorData.trackData.musicData.filename = wcsdup(path);
+#else
+    s_editorData.trackData.musicData.filename = strdup(path);
+#endif
 
     Editor_updateTrackScroll();
 }
@@ -1081,7 +1085,7 @@ static void onLoadMusic()
 {
 	text_t path[2048];
 
-	printf("onLoadMusic\n");
+	//printf("onLoadMusic\n");
 
     if (!s_editorData.canDecodeMusic)
     {

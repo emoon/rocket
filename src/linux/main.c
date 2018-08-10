@@ -17,7 +17,7 @@ void Window_populateRecentList(text_t** files)
 	int i;
 	for (i = 0; i < 4; i++)
 		if (files[i][0] != 0)
-			printf("recent %d: %s\n", i, files[i]);
+			printf("recent %d: %s\n", i + 1, files[i]);
 }
 
 void Window_setTitle(const text_t *title)
@@ -55,7 +55,31 @@ int Dialog_save(text_t *path)
 
 void Dialog_showColorPicker(unsigned int* color)
 {
-	printf("dialog_showColorPicker() not implemented\n");
+	char buf[16], *start, *end;
+	unsigned int raw;
+	int len;
+	printf("Enter color as HTML hex code: ");
+	fgets(buf, 16, stdin);
+	start = &buf[(*buf == '#') ? 1 : 0];
+	raw = strtoul(start, &end, 16);
+	len = (*end < 32) ? (int)((intptr_t)end - (intptr_t)start) : 0;
+	switch (len) {
+		case 3:
+			*color = 0xFF000000u
+			       | (( raw       & 0xF) * 0x110000u)
+			       | (((raw >> 4) & 0xF) * 0x001100u)
+			       | (((raw >> 8) & 0xF) * 0x000011u);
+			break;
+		case 6:
+			*color = 0xFF000000u
+			       | ( raw        & 0x00FF00u)
+			       | ((raw >> 16) & 0x0000FFu)
+			       | ((raw << 16) & 0xFF0000u);
+			break;
+		default:
+			printf("Invalid color value, ignoring.\n");
+			break;
+	}
 }
 
 void Dialog_showError(const text_t* text)
@@ -71,11 +95,14 @@ int mapSdlEmKeycode(SDLKey key)
 		case SDLK_RIGHT: return EMGUI_KEY_ARROW_RIGHT;
 		case SDLK_UP: return EMGUI_KEY_ARROW_UP;
 		case SDLK_DOWN: return EMGUI_KEY_ARROW_DOWN;
+		case SDLK_KP_ENTER: return EMGUI_KEY_ENTER;
 		case SDLK_RETURN: return EMGUI_KEY_ENTER;
 		case SDLK_ESCAPE: return EMGUI_KEY_ESC;
 		case SDLK_TAB: return EMGUI_KEY_TAB;
 		case SDLK_BACKSPACE: return EMGUI_KEY_BACKSPACE;
 		case SDLK_SPACE: return EMGUI_KEY_SPACE;
+		case SDLK_PAGEUP: return EMGUI_KEY_PAGE_UP;
+		case SDLK_PAGEDOWN: return EMGUI_KEY_PAGE_DOWN;
 		default: return key >= ' ' && key <= 127 ? key : 0;
 	}
 }
@@ -120,10 +147,10 @@ int checkMenu(int key, int mod, const MenuDescriptor *item)
 	{
 		if (key == item->key && mod == item->winMod)
 		{
-			printf("Menuevent %d %s\n", item->id, item->name);
+			//printf("Menuevent %d %s\n", item->id, item->name);
 			if (key== EMGUI_KEY_TAB ||
 					key== EMGUI_KEY_ENTER ||
-					key== EDITOR_MENU_DELETE_KEY)
+					key== EMGUI_KEY_BACKSPACE)
 			{
 				Emgui_sendKeyinput(key, getModifiers());
 			}
@@ -137,7 +164,7 @@ int checkMenu(int key, int mod, const MenuDescriptor *item)
 int checkRecent(int key, int mod)
 {
 	if (mod == EMGUI_KEY_CTRL && key >= '1' && key <= '4') {
-		printf("Load recent %d\n", key - '1');
+		//printf("Load recent %d\n", key - '1');
 		Editor_menuEvent(EDITOR_MENU_RECENT_FILE_0 + key - '1');
 		return 0;
 	}
@@ -172,8 +199,9 @@ void updateKey(SDL_keysym *sym)
 
 	if (!keycode)
 	{
-		if (updateModifierPress(sym->sym, 1))
-			printf("bad key\n");
+		if (updateModifierPress(sym->sym, 1)) {
+			//printf("bad key\n");
+		}
 	}
 	else
 	{
@@ -257,7 +285,8 @@ int handleEvent(SDL_Event *ev)
 			resize(ev->resize.w, ev->resize.h);
 			break;
 		default:
-			printf("Unknown SDL event %d\n", ev->type);
+			//printf("Unknown SDL event %d\n", ev->type);
+			break;
 	}
 	return 0;
 
@@ -312,7 +341,7 @@ void loadRecents()
 	if (!fh)
 		return;
 
-	printf("Recent files:\n");
+	//printf("Recent files:\n");
 	for (i = 0; i < 4; i++) {
 		fgets(recents[i], 2048, fh); // size looked up in Editor.c
 
@@ -323,11 +352,10 @@ void loadRecents()
 		}
 
 		recents[i][strlen(recents[i]) - 1] = 0; // strip newline
-		printf("%d: %s\n", i, recents[i]);
-		fprintf(fh, "%s\n", recents[i]);
+		//printf("%d: %s\n", i, recents[i]);
 	}
 
-	printf("total %d\n", i);
+	//printf("total %d\n", i);
 	for (; i < 4; i++) // clear the rest if less than 4 recents
 		recents[i][0] = 0;
 	fclose(fh);

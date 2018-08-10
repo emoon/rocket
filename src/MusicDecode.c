@@ -45,8 +45,8 @@ int decodeFunc(void* inData)
     QWORD sampleLength = BASS_ChannelSeconds2Bytes(chan, SAMPLING_RESOLUTION);
     int numSamples = (int)((double)BASS_ChannelGetLength(chan, BASS_POS_BYTE) / (double)sampleLength);
 
-    printf("Num samples %d\n", (int)sampleLength);
-    printf("Num samples %d\n", numSamples);
+    //printf("Num samples %d\n", (int)sampleLength);
+    //printf("Num samples %d\n", numSamples);
 
     BASS_ChannelPlay(chan, 0);
 
@@ -163,7 +163,7 @@ int decodeFunc(void* inData)
 
     mtx_unlock(&s_mutex);
 
-    printf("thread done\n");
+    //printf("thread done\n");
 
     return 1;
 }
@@ -196,7 +196,8 @@ int Music_decode(text_t* path, MusicData* data)
 
 	if (!chan)
 	{
-	    Dialog_showError(TEXT("Unable to open stream for decode. No music data will be availible."));
+	    Dialog_showError(TEXT("Unable to open stream for decode. No music data will be available."));
+	    mtx_unlock(&s_mutex);
 	    return 0;
 	}
 
@@ -204,8 +205,9 @@ int Music_decode(text_t* path, MusicData* data)
 
     if (len == -1)
     {
-	    Dialog_showError(TEXT("Stream has no length. No music data will be availible."));
+	    Dialog_showError(TEXT("Stream has no length. No music data will be available."));
         BASS_StreamFree(chan);
+        mtx_unlock(&s_mutex);
         return 0;
     }
 
