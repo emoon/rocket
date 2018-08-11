@@ -123,6 +123,24 @@ if (APPLE)
 	)
 	source_group("Data" FILES ${RKT_RESOURCES_DATA})
 elseif (UNIX)
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(GTK2 gtk+-2.0 QUIET)
+	pkg_check_modules(GTK3 gtk+-3.0 QUIET)
+	# Prefer Gtk+ 3.0 over 2.0. This is a totally arbitrary choice.
+	# If you have development packages for both installed, but prefer
+	# the Gtk+ 2.0 dialogs, just comment the "pkg_check_modules(GTK3...)"
+	# line above.
+	if(GTK3_FOUND)
+		message(STATUS "GUI toolkit for dialogs: Gtk+ 3.x")
+		set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${GTK3_INCLUDE_DIRS})
+		set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${GTK3_LIBRARIES})
+	elseif(GTK2_FOUND)
+		message(STATUS "GUI toolkit for dialogs: Gtk+ 2.x")
+		set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${GTK2_INCLUDE_DIRS})
+		set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${GTK2_LIBRARIES})
+	else()
+		message(WARNING "No Gtk+ 2.x or 3.x found. File and Color dialogs will be unavailable.")
+	endif()
 	file(GLOB RKT_PLATFORM_SRCS
 		${CMAKE_CURRENT_SOURCE_DIR}/src/linux/*.c
 		${CMAKE_CURRENT_SOURCE_DIR}/src/linux/*.h
@@ -199,6 +217,9 @@ if (APPLE)
 elseif (UNIX)
 	target_compile_definitions(${RKT_EXE_NAME} PUBLIC -DEMGUI_UNIX)
 	target_compile_options(${RKT_EXE_NAME} PUBLIC -Werror -pedantic-errors -Wall -Wno-format-security)
+	if (GTK2_FOUND OR GTK3_FOUND)
+		target_compile_definitions(${RKT_EXE_NAME} PUBLIC -DHAVE_GTK)
+	endif()
 elseif (MSVC)
 	target_compile_definitions(${RKT_EXE_NAME} PUBLIC -DEMGUI_WIN32)
 endif ()
