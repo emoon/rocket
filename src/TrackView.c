@@ -292,7 +292,7 @@ static void renderText(const struct TrackInfo* info, struct sync_track* track, i
 		{
 			char temp[256];
 			float value = track->keys[idx].value;
-			snprintf(temp, 256, "% .2f", value);
+			my_ftoa(value, temp, 256, 2);
 
 			Emgui_drawText(temp, x, y - font_size_half, Emgui_color32(255, 255, 255, 255));
 		}

@@ -3,6 +3,8 @@
 #include "rlog.h"
 #include <stdio.h>
 #include <assert.h>
+#include <stdint.h>
+#include <ctype.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -381,4 +383,56 @@ int TrackData_getNextLoopmark(TrackData* trackData, int row)
 int TrackData_getPrevLoopmark(TrackData* trackData, int row)
 {
 	return getPrevMark(trackData->loopmarks, trackData->loopmarkCount, row, -1);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// (simplified) locale-independent atof() implementation
+double my_atof(const char* s)
+{
+	int64_t value = 0, radix = 0;
+	char first;
+	if (!s || !s[0])
+	{
+		return 0.0;
+	}
+	first = s[0];
+	if (first == '-')
+	{
+		++s;
+	}
+	while (*s)
+	{
+		if (isdigit(*s))
+		{
+			value = (value * 10) + (*s - '0');
+			radix *= 10;
+		}
+		else if ((*s == '.') || (*s == ','))
+		{
+			radix = 1;
+		}
+		else
+		{
+			break;
+		}
+		++s;
+	}
+	radix = radix ? radix : 1;
+	radix = (first == '-') ? -radix : radix;
+	return (double)value / (double)radix;
+}
+
+void my_ftoa(float f, char* s, int n, int digits)
+{
+	char fmt[5] = "%.0f";
+	fmt[2] = digits + '0';
+	snprintf(s, n, fmt, f);
+	for (;  *s;  ++s)
+	{
+		if (*s == ',')
+		{
+			*s = '.';
+		}
+	}
 }
