@@ -157,7 +157,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					}
 
 					if (mute_value_text)
-						muteValue = (float)atof(mute_value_text);
+						muteValue = (float)my_atof(mute_value_text);
 
 					// If we already have this track loaded we delete all the existing keys
 
@@ -195,7 +195,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData)
 					const char* interpolation = mxmlElementGetAttr(node, "interpolation");
 
 					k.row = atoi(row);
-					k.value = (float)(atof(value));
+					k.value = (float)(my_atof(value));
 					k.type = (atoi(interpolation));
 
 					// if track is muted we load the data into the muted data and not the regular keys
@@ -349,8 +349,7 @@ static void setElementInt(mxml_node_t* node, const char* attr, const char* forma
 static void setElementFloat(mxml_node_t* node, char* attr, float v)
 {
 	char temp[256];
-	memset(temp, 0, sizeof(temp));
-	sprintf(temp, "%f", v);
+	my_ftoa(v, temp, 256, 6);
 	mxmlElementSetAttr(node, attr, temp);
 }
 

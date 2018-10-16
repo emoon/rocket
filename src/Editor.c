@@ -402,7 +402,7 @@ static int drawCurrentValue(int posX, int sizeY)
 		value = (float)sync_get_val(track, current_row);
 	}
 
-	snprintf(valueText, 256, "%f", value);
+	my_ftoa(value, valueText, 256, 6);
 	Emgui_drawText(valueText, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
 	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX, sizeY - 17, 80, 15);
 	Emgui_drawText(str, posX + 85, sizeY - 15, Emgui_color32(160, 160, 160, 255));
@@ -789,7 +789,7 @@ static void endEditing()
 	{
 
 		key.row = row_pos;
-		key.value = (float)atof(s_editBuffer);
+		key.value = (float)my_atof(s_editBuffer);
 		key.type = 0;
 
 		if (track->num_keys > 0)

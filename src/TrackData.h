@@ -121,3 +121,9 @@ uint32_t TrackData_getNextColor(TrackData* trackData);
 void TrackData_linkGroups(TrackData* trackData);
 void TrackData_linkTrack(int index, const char* name, TrackData* trackData);
 void TrackData_setActiveTrack(TrackData* trackData, int track);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// utility functions
+double my_atof(const char* s);
+void my_ftoa(float f, char* s, int n, int digits);
