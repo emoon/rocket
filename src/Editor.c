@@ -2076,6 +2076,15 @@ static int processCommands()
 
 				break;
 			}
+
+			case PAUSE:
+			{
+				onPlay();
+
+				ret = 1;
+
+				break;
+			}
 		}
 	}
 
