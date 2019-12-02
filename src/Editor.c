@@ -2036,7 +2036,6 @@ static int processCommands()
 
 			case SET_ROW:
 			{
-				//int i = 0;
 				ret = RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
 
 				if (ret)
@@ -2044,6 +2043,33 @@ static int processCommands()
 					viewInfo->rowPos = htonl(newRow);
 					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
 					//rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
+				}
+
+				ret = 1;
+
+				break;
+			}
+
+			case SET_KEY:
+			{
+				unsigned char type;
+				uint32_t track;
+				union {
+					float f;
+					uint32_t i;
+				} v;
+
+				if (RemoteConnection_recv((char*)&track, sizeof(track), 0) &&
+				    RemoteConnection_recv((char*)&newRow, sizeof(newRow), 0) &&
+				    RemoteConnection_recv((char*)&v.i, sizeof(v.i), 0) &&
+				    RemoteConnection_recv((char*)&type, sizeof(type), 0)) {
+
+					v.i = ntohl(v.i);
+					newRow = htonl(newRow);
+
+					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos = newRow;
+
+					doEdit(track, newRow, v.f);
 				}
 
 				ret = 1;
