@@ -772,48 +772,47 @@ static char s_editBuffer[512];
 static bool is_editing = false;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static void doEdit(int track, int row_pos, float value)
+{
+	struct sync_track* t;
+	struct track_key key;
+
+	t = getTracks()[track];
+
+	key.row = row_pos;
+	key.value = value;
+	key.type = 0;
+
+	if (t->num_keys > 0)
+	{
+		int idx = sync_find_key(t, row_pos);
+
+		if (idx > 0)
+		{
+			// exact match, keep current type
+			key.type = t->keys[emaxi(idx, 0)].type;
+		}
+		else
+		{
+			// no match, grab type from previous key
+			if (idx < 0)
+				idx = -idx - 1;
+
+			key.type = t->keys[emaxi(idx - 1, 0)].type;
+		}
+	}
+
+	Commands_addOrUpdateKey(track, &key);
+	updateNeedsSaving();
+}
 
 static void endEditing()
 {
-	struct track_key key;
-	struct sync_track* track;
-	int row_pos = getRowPos();
-	int active_track = getActiveTrack();
-
 	if (!is_editing || !getTracks())
 		return;
 
-	track = getTracks()[active_track];
-
 	if (strcmp(s_editBuffer, ""))
-	{
-
-		key.row = row_pos;
-		key.value = (float)my_atof(s_editBuffer);
-		key.type = 0;
-
-		if (track->num_keys > 0)
-		{
-			int idx = sync_find_key(track, getRowPos());
-
-			if (idx > 0)
-			{
-				// exact match, keep current type
-				key.type = track->keys[emaxi(idx, 0)].type;
-			}
-			else
-			{
-				// no match, grab type from previous key
-				if (idx < 0)
-					idx = -idx - 1;
-
-				key.type = track->keys[emaxi(idx - 1, 0)].type;
-			}
-		}
-
-		Commands_addOrUpdateKey(active_track, &key);
-		updateNeedsSaving();
-	}
+		doEdit(getActiveTrack(), getRowPos(), (float)my_atof(s_editBuffer));
 
 	is_editing = false;
 	s_editorData.trackData.editText = 0;
