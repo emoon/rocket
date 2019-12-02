@@ -772,48 +772,47 @@ static char s_editBuffer[512];
 static bool is_editing = false;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static void doEdit(int track, int row_pos, float value)
+{
+	struct sync_track* t;
+	struct track_key key;
+
+	t = getTracks()[track];
+
+	key.row = row_pos;
+	key.value = value;
+	key.type = 0;
+
+	if (t->num_keys > 0)
+	{
+		int idx = sync_find_key(t, row_pos);
+
+		if (idx > 0)
+		{
+			// exact match, keep current type
+			key.type = t->keys[emaxi(idx, 0)].type;
+		}
+		else
+		{
+			// no match, grab type from previous key
+			if (idx < 0)
+				idx = -idx - 1;
+
+			key.type = t->keys[emaxi(idx - 1, 0)].type;
+		}
+	}
+
+	Commands_addOrUpdateKey(track, &key);
+	updateNeedsSaving();
+}
 
 static void endEditing()
 {
-	struct track_key key;
-	struct sync_track* track;
-	int row_pos = getRowPos();
-	int active_track = getActiveTrack();
-
 	if (!is_editing || !getTracks())
 		return;
 
-	track = getTracks()[active_track];
-
 	if (strcmp(s_editBuffer, ""))
-	{
-
-		key.row = row_pos;
-		key.value = (float)my_atof(s_editBuffer);
-		key.type = 0;
-
-		if (track->num_keys > 0)
-		{
-			int idx = sync_find_key(track, getRowPos());
-
-			if (idx > 0)
-			{
-				// exact match, keep current type
-				key.type = track->keys[emaxi(idx, 0)].type;
-			}
-			else
-			{
-				// no match, grab type from previous key
-				if (idx < 0)
-					idx = -idx - 1;
-
-				key.type = track->keys[emaxi(idx - 1, 0)].type;
-			}
-		}
-
-		Commands_addOrUpdateKey(active_track, &key);
-		updateNeedsSaving();
-	}
+		doEdit(getActiveTrack(), getRowPos(), (float)my_atof(s_editBuffer));
 
 	is_editing = false;
 	s_editorData.trackData.editText = 0;
@@ -865,80 +864,6 @@ void Editor_scroll(float deltaX, float deltaY, int flags)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int processCommands()
-{
-	int strLen, newRow, serverIndex;
-	unsigned char cmd = 0;
-	int ret = 0;
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-
-	if (RemoteConnection_recv((char*)&cmd, 1, 0))
-	{
-		switch (cmd)
-		{
-			case GET_TRACK:
-			{
-				char trackName[4096];
-
-				reset_tracks = true;
-
-				memset(trackName, 0, sizeof(trackName));
-
-				RemoteConnection_recv((char *)&strLen, sizeof(int), 0);
-				strLen = ntohl(strLen);
-
-				if (!RemoteConnection_connected())
-					return 0;
-
-				if (!RemoteConnection_recv(trackName, strLen, 0))
-					return 0;
-
-				//rlog(R_INFO, "Got trackname %s (%d) from demo\n", trackName, strLen);
-
-				// find track
-
-				serverIndex = TrackData_createGetTrack(&s_editorData.trackData, trackName);
-				// if it's the first one we get, select it too
-				if (serverIndex == 0)
-					setActiveTrack(0);
-
-				// setup remap and send the keyframes to the demo
-				RemoteConnection_mapTrackName(trackName);
-				RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncTracks[serverIndex]);
-				TrackData_linkTrack(serverIndex, trackName, &s_editorData.trackData);
-
-				s_editorData.trackData.tracks[serverIndex].active = true;
-
-				ret = 1;
-
-				break;
-			}
-
-			case SET_ROW:
-			{
-				//int i = 0;
-				ret = RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
-
-				if (ret)
-				{
-					viewInfo->rowPos = htonl(newRow);
-					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
-					//rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
-				}
-
-				ret = 1;
-
-				break;
-			}
-		}
-	}
-
-	return ret;
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void updateTrackStatus()
 {
 	int i, track_count = getTrackCount();
@@ -954,25 +879,6 @@ static void updateTrackStatus()
 		Editor_update();
 
 		reset_tracks = false;
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Editor_timedUpdate()
-{
-	int processed_commands = s_editorData.trackData.musicData.percentDone != 0;
-
-	RemoteConnection_updateListner(getRowPos());
-
-	updateTrackStatus();
-
-	while (RemoteConnection_pollRead())
-		processed_commands |= processCommands();
-
-	if (!RemoteConnection_isPaused() || processed_commands)
-	{
-		Editor_update();
 	}
 }
 
@@ -2075,4 +1981,131 @@ bool Editor_keyDown(int key, int keyCode, int modifiers)
 	}
 
 	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int processCommands()
+{
+	int strLen, newRow, serverIndex;
+	unsigned char cmd = 0;
+	int ret = 0;
+	TrackViewInfo* viewInfo = getTrackViewInfo();
+
+	if (RemoteConnection_recv((char*)&cmd, 1, 0))
+	{
+		switch (cmd)
+		{
+			case GET_TRACK:
+			{
+				char trackName[4096];
+
+				reset_tracks = true;
+
+				memset(trackName, 0, sizeof(trackName));
+
+				RemoteConnection_recv((char *)&strLen, sizeof(int), 0);
+				strLen = ntohl(strLen);
+
+				if (!RemoteConnection_connected())
+					return 0;
+
+				if (!RemoteConnection_recv(trackName, strLen, 0))
+					return 0;
+
+				//rlog(R_INFO, "Got trackname %s (%d) from demo\n", trackName, strLen);
+
+				// find track
+
+				serverIndex = TrackData_createGetTrack(&s_editorData.trackData, trackName);
+				// if it's the first one we get, select it too
+				if (serverIndex == 0)
+					setActiveTrack(0);
+
+				// setup remap and send the keyframes to the demo
+				RemoteConnection_mapTrackName(trackName);
+				RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncTracks[serverIndex]);
+				TrackData_linkTrack(serverIndex, trackName, &s_editorData.trackData);
+
+				s_editorData.trackData.tracks[serverIndex].active = true;
+
+				ret = 1;
+
+				break;
+			}
+
+			case SET_ROW:
+			{
+				ret = RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
+
+				if (ret)
+				{
+					viewInfo->rowPos = htonl(newRow);
+					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
+					//rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
+				}
+
+				ret = 1;
+
+				break;
+			}
+
+			case SET_KEY:
+			{
+				unsigned char type;
+				uint32_t track;
+				union {
+					float f;
+					uint32_t i;
+				} v;
+
+				if (RemoteConnection_recv((char*)&track, sizeof(track), 0) &&
+				    RemoteConnection_recv((char*)&newRow, sizeof(newRow), 0) &&
+				    RemoteConnection_recv((char*)&v.i, sizeof(v.i), 0) &&
+				    RemoteConnection_recv((char*)&type, sizeof(type), 0)) {
+
+					v.i = ntohl(v.i);
+					newRow = htonl(newRow);
+
+					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos = newRow;
+
+					doEdit(track, newRow, v.f);
+				}
+
+				ret = 1;
+
+				break;
+			}
+
+			case PAUSE:
+			{
+				onPlay();
+
+				ret = 1;
+
+				break;
+			}
+		}
+	}
+
+	return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Editor_timedUpdate()
+{
+	int processed_commands = s_editorData.trackData.musicData.percentDone != 0;
+
+	RemoteConnection_updateListner(getRowPos());
+
+	updateTrackStatus();
+
+	while (RemoteConnection_pollRead())
+		processed_commands |= processCommands();
+
+	if (!RemoteConnection_isPaused() || processed_commands)
+	{
+		Editor_update();
+	}
 }
