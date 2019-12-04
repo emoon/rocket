@@ -2066,6 +2066,7 @@ static int processCommands()
 
 					v.i = ntohl(v.i);
 					newRow = htonl(newRow);
+					track = htonl(track);
 
 					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos = newRow;
 
