@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include <SDL_syswm.h>
 #include <stdio.h>
 #include <emgui/Emgui.h>
 #include <emgui/GFXBackend.h>
@@ -8,7 +9,15 @@
 #include <gtk/gtk.h>
 #endif
 
+#define REPEAT_DELAY 250
+#define REPEAT_RATE 50
+static SDL_SysWMinfo window_info;
 static SDL_Window *window;
+static struct { // for key repeat emulation
+	SDL_Keysym keysym;
+	Uint32 time;
+	Uint32 repeattime;
+} last_keydown;
 
 void swapBuffers()
 {
@@ -41,7 +50,8 @@ int getFilename(text_t *path, int save)
 	gint res;
 	if (save) gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d), TRUE);
 	res = gtk_dialog_run(GTK_DIALOG(d));
-	if (res == GTK_RESPONSE_ACCEPT) {
+	if (res == GTK_RESPONSE_ACCEPT)
+	{
 		char* buf = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
 		strncpy(path, buf, 512);
 		path[511] = '\0';
@@ -89,7 +99,8 @@ void Dialog_showColorPicker(unsigned int* color)
 	c.blue  = ((*color >> 16) & 0xFF) * 0x101;
 	gtk_color_selection_set_current_color(sel, &c);
 	res = gtk_dialog_run(GTK_DIALOG(d));
-	if ((res == GTK_RESPONSE_ACCEPT) || (res == GTK_RESPONSE_OK)) {
+	if ((res == GTK_RESPONSE_ACCEPT) || (res == GTK_RESPONSE_OK))
+	{
 		gtk_color_selection_get_current_color(sel, &c);
 		*color = 0xFF000000u
 			|  (c.red >> 8)
@@ -107,7 +118,8 @@ void Dialog_showColorPicker(unsigned int* color)
 	start = &buf[(*buf == '#') ? 1 : 0];
 	raw = strtoul(start, &end, 16);
 	len = (*end < 32) ? (int)((intptr_t)end - (intptr_t)start) : 0;
-	switch (len) {
+	switch (len)
+	{
 		case 3:
 			*color = 0xFF000000u
 				| (( raw	   & 0xF) * 0x110000u)
@@ -218,7 +230,8 @@ int checkMenu(int key, int mod, const MenuDescriptor *item)
 
 int checkRecent(int key, int mod)
 {
-	if (mod == EMGUI_KEY_CTRL && key >= '1' && key <= '4') {
+	if (mod == EMGUI_KEY_CTRL && key >= '1' && key <= '4')
+	{
 		//printf("Load recent %d\n", key - '1');
 		Editor_menuEvent(EDITOR_MENU_RECENT_FILE_0 + key - '1');
 		return 0;
@@ -253,7 +266,8 @@ void updateKey(SDL_Keysym *sym)
 
 	if (!keycode)
 	{
-		if (updateModifierPress(sym->sym, 1)) {
+		if (updateModifierPress(sym->sym, 1))
+		{
 			//printf("bad key\n");
 		}
 	}
@@ -266,12 +280,18 @@ void updateKey(SDL_Keysym *sym)
 
 int handleKeyDown(SDL_KeyboardEvent *ev)
 {
+	last_keydown.keysym = ev->keysym;
+	last_keydown.time = last_keydown.repeattime = SDL_GetTicks();
 	updateKey(&ev->keysym);
 	return 0;
 }
 
 void handleKeyUp(SDL_KeyboardEvent *ev)
 {
+	if (ev->keysym.sym == last_keydown.keysym.sym)
+	{
+		last_keydown.keysym.sym = SDLK_UNKNOWN;
+	}
 	updateModifierPress(ev->keysym.sym, 0);
 }
 
@@ -293,7 +313,8 @@ void handleMouseButton(SDL_MouseButtonEvent *ev)
 	}
 }
 
-void handleMouseWheel(SDL_MouseWheelEvent *ev) {
+void handleMouseWheel(SDL_MouseWheelEvent *ev)
+{
 	Editor_scroll(-ev->x, -ev->y, getModifiers());
 }
 
@@ -328,7 +349,8 @@ int handleEvent(SDL_Event *ev)
 			break;
 		case SDL_WINDOWEVENT:
 			if (ev->window.windowID != SDL_GetWindowID(window)) break;
-			switch (ev->window.event) {
+			switch (ev->window.event)
+			{
 				case SDL_WINDOWEVENT_RESIZED:
 					resize(ev->window.data1, ev->window.data2);
 					break;
@@ -356,7 +378,26 @@ void run(SDL_Window *window)
 	for (;;)
 	{
 		if (doEvents())
+		{
 			break;
+		}
+
+		if (window_info.subsystem == SDL_SYSWM_WAYLAND)
+		{
+			if (last_keydown.keysym.sym != SDLK_UNKNOWN)
+			{
+				Uint32 time_now = SDL_GetTicks();
+				if (time_now > last_keydown.time + REPEAT_DELAY)
+				{
+					if (time_now > last_keydown.repeattime + REPEAT_RATE)
+					{
+						last_keydown.repeattime = time_now;
+						updateKey(&last_keydown.keysym);
+					}
+				}
+			}
+		}
+
 		Editor_timedUpdate();
 		Editor_update();
 	}
@@ -390,11 +431,13 @@ void loadRecents()
 		return;
 
 	//printf("Recent files:\n");
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < 4; i++)
+	{
 		fgets(recents[i], 2048, fh); // size looked up in Editor.c
 
 		if (strlen(recents[i]) < 2 ||
-				recents[i][strlen(recents[i]) - 1] != '\n') {
+				recents[i][strlen(recents[i]) - 1] != '\n')
+		{
 			recents[i][0] = 0;
 			break; // eof or too long line
 		}
@@ -435,8 +478,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	SDL_VERSION(&window_info.version);
+	SDL_GetWindowWMInfo(window, &window_info);
+
 	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-	if (!gl_context) {
+	if (!gl_context)
+	{
 		fprintf(stderr, "SDL_GL_CreateContext(): %s\n", SDL_GetError());
 		return 1;
 	}
