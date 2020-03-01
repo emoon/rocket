@@ -35,7 +35,7 @@ local linux = {
 		CPPDEFS = { "EMGUI_UNIX" },
 		CCOPTS = {
 			"-I.",
-			"`sdl-config --cflags`",
+			"`sdl2-config --cflags`",
 			{ "-O0", "-g"; Config = "*-*-debug" },
 			{ "-O2"; Config = "*-*-release" },
 		},

@@ -1,18 +1,18 @@
-#include "SDL.h"
+#include <SDL.h>
 #include <stdio.h>
 #include <emgui/Emgui.h>
-#include <emgui/GFXBackend.h> 
+#include <emgui/GFXBackend.h>
 #include "Editor.h"
 #include "Menu.h"
 #ifdef HAVE_GTK
-	#include <gtk/gtk.h>
+#include <gtk/gtk.h>
 #endif
 
-static SDL_Surface *screen;
+static SDL_Window *window;
 
 void swapBuffers()
 {
-	SDL_GL_SwapBuffers();
+	SDL_GL_SwapWindow(window);
 }
 
 void Window_populateRecentList(text_t** files)
@@ -25,19 +25,19 @@ void Window_populateRecentList(text_t** files)
 
 void Window_setTitle(const text_t *title)
 {
-	SDL_WM_SetCaption(title, NULL);
+	SDL_SetWindowTitle(window, title);
 }
 
 int getFilename(text_t *path, int save)
 {
 #ifdef HAVE_GTK
 	GtkWidget* d = gtk_file_chooser_dialog_new(
-		save ? "Save File" : "Open File",
-		NULL,
-		save ? GTK_FILE_CHOOSER_ACTION_SAVE : GTK_FILE_CHOOSER_ACTION_OPEN,
-		"Cancel", GTK_RESPONSE_CANCEL,
-		save ? "Save" : "Open", GTK_RESPONSE_ACCEPT,
-		NULL);
+			save ? "Save File" : "Open File",
+			NULL,
+			save ? GTK_FILE_CHOOSER_ACTION_SAVE : GTK_FILE_CHOOSER_ACTION_OPEN,
+			"Cancel", GTK_RESPONSE_CANCEL,
+			save ? "Save" : "Open", GTK_RESPONSE_ACCEPT,
+			NULL);
 	gint res;
 	if (save) gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d), TRUE);
 	res = gtk_dialog_run(GTK_DIALOG(d));
@@ -84,7 +84,7 @@ void Dialog_showColorPicker(unsigned int* color)
 	GtkColorSelection* sel = GTK_COLOR_SELECTION(gtk_color_selection_dialog_get_color_selection(GTK_COLOR_SELECTION_DIALOG(d)));
 	GdkColor c = { 0, };
 	gint res;
-	c.red   = ( *color        & 0xFF) * 0x101;
+	c.red   = ( *color		& 0xFF) * 0x101;
 	c.green = ((*color >>  8) & 0xFF) * 0x101;
 	c.blue  = ((*color >> 16) & 0xFF) * 0x101;
 	gtk_color_selection_set_current_color(sel, &c);
@@ -92,9 +92,9 @@ void Dialog_showColorPicker(unsigned int* color)
 	if ((res == GTK_RESPONSE_ACCEPT) || (res == GTK_RESPONSE_OK)) {
 		gtk_color_selection_get_current_color(sel, &c);
 		*color = 0xFF000000u
-		       |  (c.red >> 8)
-		       | ( c.green      & 0x00FF00u)
-		       | ((c.blue << 8) & 0xFF0000u);
+			|  (c.red >> 8)
+			| ( c.green	  & 0x00FF00u)
+			| ((c.blue << 8) & 0xFF0000u);
 	}
 	gtk_widget_destroy(d);
 	while (gtk_events_pending()) gtk_main_iteration();
@@ -110,15 +110,15 @@ void Dialog_showColorPicker(unsigned int* color)
 	switch (len) {
 		case 3:
 			*color = 0xFF000000u
-			       | (( raw       & 0xF) * 0x110000u)
-			       | (((raw >> 4) & 0xF) * 0x001100u)
-			       | (((raw >> 8) & 0xF) * 0x000011u);
+				| (( raw	   & 0xF) * 0x110000u)
+				| (((raw >> 4) & 0xF) * 0x001100u)
+				| (((raw >> 8) & 0xF) * 0x000011u);
 			break;
 		case 6:
 			*color = 0xFF000000u
-			       | ( raw        & 0x00FF00u)
-			       | ((raw >> 16) & 0x0000FFu)
-			       | ((raw << 16) & 0xFF0000u);
+				| ( raw		& 0x00FF00u)
+				| ((raw >> 16) & 0x0000FFu)
+				| ((raw << 16) & 0xFF0000u);
 			break;
 		default:
 			printf("Invalid color value, ignoring.\n");
@@ -131,9 +131,9 @@ void Dialog_showError(const text_t* text)
 {
 #ifdef HAVE_GTK
 	GtkWidget* d = gtk_message_dialog_new(
-		NULL, 0,
-		GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
-		"%s", text);
+			NULL, 0,
+			GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
+			"%s", text);
 	gtk_dialog_run(GTK_DIALOG(d));
 	gtk_widget_destroy(d);
 	while (gtk_events_pending()) gtk_main_iteration();
@@ -142,7 +142,7 @@ void Dialog_showError(const text_t* text)
 #endif
 }
 
-int mapSdlEmKeycode(SDLKey key)
+int mapSdlEmKeycode(SDL_Keycode key)
 {
 	switch (key)
 	{
@@ -174,7 +174,7 @@ void updateModifier(int mask, int flag)
 	modifiers = (modifiers & ~mask) | (flag ? mask : 0);
 }
 
-int updateModifiers(SDLMod mod)
+int updateModifiers(SDL_Keymod mod)
 {
 	updateModifier(EMGUI_KEY_SHIFT, !!(mod & (KMOD_LSHIFT | KMOD_RSHIFT)));
 	updateModifier(EMGUI_KEY_CTRL, !!(mod & (KMOD_LCTRL | KMOD_RCTRL)));
@@ -182,7 +182,7 @@ int updateModifiers(SDLMod mod)
 	return getModifiers();
 }
 
-int updateModifierPress(SDLKey key, int state)
+int updateModifierPress(SDL_Keycode key, int state)
 {
 	switch (key)
 	{
@@ -247,7 +247,7 @@ void sendKey(int key, int modifiers)
 }
 
 // sdl keycodes used only internally, mapped to emgui items in the very beginning
-void updateKey(SDL_keysym *sym)
+void updateKey(SDL_Keysym *sym)
 {
 	int keycode = mapSdlEmKeycode(sym->sym);
 	int modifiers = updateModifiers(sym->mod);
@@ -291,24 +291,20 @@ void handleMouseButton(SDL_MouseButtonEvent *ev)
 			Emgui_setMouseLmb(ev->state == SDL_PRESSED);
 			Editor_update();
 			break;
-		case SDL_BUTTON_WHEELUP:
-		case SDL_BUTTON_WHEELDOWN:
-			if (ev->state == SDL_PRESSED)
-			{
-				float dir = ev->button == SDL_BUTTON_WHEELDOWN ? 1.0f : -1.0f;
-				Editor_scroll(0.0f, dir, getModifiers());
-				Editor_update();
-			}
-			break;
 		default:
 			break;
 	}
 }
 
+void handleMouseWheel(SDL_MouseWheelEvent *ev) {
+	Editor_scroll(ev->x, ev->y, getModifiers());
+	Editor_update();
+}
+
 void resize(int w, int h)
 {
-	screen = SDL_SetVideoMode(w, h, 32,
-			SDL_OPENGL | SDL_GL_DOUBLEBUFFER | SDL_RESIZABLE);
+	SDL_SetWindowSize(window, w, h);
+	SDL_SetWindowFullscreen(window, 0);
 	EMGFXBackend_updateViewPort(w, h);
 	Editor_setWindowSize(w, h);
 	Editor_update();
@@ -332,19 +328,26 @@ int handleEvent(SDL_Event *ev)
 		case SDL_MOUSEBUTTONUP:
 			handleMouseButton(&ev->button);
 			break;
-		case SDL_ACTIVEEVENT:
-		case SDL_VIDEOEXPOSE:
-			Editor_update();
+		case SDL_MOUSEWHEEL:
+			handleMouseWheel(&ev->wheel);
 			break;
-		case SDL_VIDEORESIZE:
-			resize(ev->resize.w, ev->resize.h);
-			break;
+		case SDL_WINDOWEVENT:
+			if (ev->window.windowID != SDL_GetWindowID(window)) break;
+			switch (ev->window.event) {
+				case SDL_WINDOWEVENT_SHOWN:
+				case SDL_WINDOWEVENT_EXPOSED:
+					Editor_update();
+					break;
+				case SDL_WINDOWEVENT_RESIZED:
+				//case SDL_WINDOWEVENT_SIZE_CHANGED:
+					resize(ev->window.data1, ev->window.data2);
+					break;
+			}
 		default:
 			//printf("Unknown SDL event %d\n", ev->type);
 			break;
 	}
 	return 0;
-
 }
 
 int doEvents()
@@ -358,7 +361,7 @@ int doEvents()
 	return quit;
 }
 
-void run(SDL_Surface *screen)
+void run(SDL_Window *window)
 {
 	for (;;)
 	{
@@ -428,13 +431,23 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	SDL_EnableKeyRepeat(200, 20);
-	screen = SDL_SetVideoMode(800, 600, 32,
-			SDL_OPENGL | SDL_GL_DOUBLEBUFFER | SDL_RESIZABLE);
+	//SDL_EnableKeyRepeat(200, 20);
+	window = SDL_CreateWindow(
+			"Rocket",
+			SDL_WINDOWPOS_CENTERED,
+			SDL_WINDOWPOS_CENTERED,
+			800, 600,
+			SDL_WINDOW_OPENGL | SDL_GL_DOUBLEBUFFER | SDL_WINDOW_RESIZABLE);
 
-	if (!screen)
+	if (!window)
 	{
-		fprintf(stderr, "SDL_SetVideoMode(): %s\n", SDL_GetError());
+		fprintf(stderr, "SDL_CreateWindow(): %s\n", SDL_GetError());
+		return 1;
+	}
+
+	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+	if (!gl_context) {
+		fprintf(stderr, "SDL_GL_CreateContext(): %s\n", SDL_GetError());
 		return 1;
 	}
 
@@ -446,7 +459,7 @@ int main(int argc, char *argv[])
 	Editor_setWindowSize(800, 600);
 	Editor_update();
 
-	run(screen);
+	run(window);
 
 	saveRecents();
 
