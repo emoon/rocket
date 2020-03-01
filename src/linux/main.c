@@ -243,7 +243,6 @@ void sendKey(int key, int modifiers)
 {
 	Emgui_sendKeyinput(key, modifiers);
 	Editor_keyDown(key, -1, modifiers);
-	Editor_update();
 }
 
 // sdl keycodes used only internally, mapped to emgui items in the very beginning
@@ -280,7 +279,6 @@ void handleMouseMotion(SDL_MouseMotionEvent *ev)
 {
 	Emgui_setMouseLmb(!!(ev->state & SDL_BUTTON_LMASK));
 	Emgui_setMousePos(ev->x, ev->y);
-	Editor_update();
 }
 
 void handleMouseButton(SDL_MouseButtonEvent *ev)
@@ -289,7 +287,6 @@ void handleMouseButton(SDL_MouseButtonEvent *ev)
 	{
 		case SDL_BUTTON_LEFT:
 			Emgui_setMouseLmb(ev->state == SDL_PRESSED);
-			Editor_update();
 			break;
 		default:
 			break;
@@ -297,8 +294,7 @@ void handleMouseButton(SDL_MouseButtonEvent *ev)
 }
 
 void handleMouseWheel(SDL_MouseWheelEvent *ev) {
-	Editor_scroll(ev->x, ev->y, getModifiers());
-	Editor_update();
+	Editor_scroll(-ev->x, -ev->y, getModifiers());
 }
 
 void resize(int w, int h)
@@ -307,7 +303,6 @@ void resize(int w, int h)
 	SDL_SetWindowFullscreen(window, 0);
 	EMGFXBackend_updateViewPort(w, h);
 	Editor_setWindowSize(w, h);
-	Editor_update();
 }
 
 int handleEvent(SDL_Event *ev)
@@ -334,12 +329,7 @@ int handleEvent(SDL_Event *ev)
 		case SDL_WINDOWEVENT:
 			if (ev->window.windowID != SDL_GetWindowID(window)) break;
 			switch (ev->window.event) {
-				case SDL_WINDOWEVENT_SHOWN:
-				case SDL_WINDOWEVENT_EXPOSED:
-					Editor_update();
-					break;
 				case SDL_WINDOWEVENT_RESIZED:
-				//case SDL_WINDOWEVENT_SIZE_CHANGED:
 					resize(ev->window.data1, ev->window.data2);
 					break;
 			}
@@ -368,7 +358,7 @@ void run(SDL_Window *window)
 		if (doEvents())
 			break;
 		Editor_timedUpdate();
-		SDL_Delay(16);
+		Editor_update();
 	}
 }
 
@@ -457,7 +447,6 @@ int main(int argc, char *argv[])
 	Editor_create();
 	EMGFXBackend_updateViewPort(800, 600);
 	Editor_setWindowSize(800, 600);
-	Editor_update();
 
 	run(window);
 
