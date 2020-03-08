@@ -1,0 +1,4 @@
+-I/usr/include/SDL2
+-Iemgui/include
+-Isrc
+-DEMGUI_UNIX

@@ -26,7 +26,7 @@ Daniel Collin can be contacted at daniel aat collin dot com
 
 Latest version of this program should be available at https://github.com/emoon/rocket
 
-The SDL-based linux support is written by Konsta 'sooda' Hölttä at https://github.com/sooda/rocket
+The SDL-based linux support is written by Konsta 'sooda' Hölttä at https://github.com/sooda/rocket, and later updated to use SDL2 by Lauri 'gustafla' Gustafsson at https://github.com/gustafla/rocket
 
 Motivation
 ----------

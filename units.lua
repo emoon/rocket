@@ -143,7 +143,7 @@ Program {
 	Libs = {
 		{ "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib",
 		   "user32.lib", "gdi32.lib", "Comdlg32.lib", "Advapi32.lib", "bass.lib" ; Config = "win32-*-*" },
-		{ "GL", "SDL", "m", "bass"; Config = "linux-*-*" },
+		{ "GL", "SDL2", "m", "bass"; Config = "linux-*-*" },
 		{ "bass"; Config = "macosx-*-*" },
 	},
 
