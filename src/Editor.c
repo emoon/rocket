@@ -1242,6 +1242,30 @@ static void onMoveSelection(bool down)
 	Commands_endMulti();
 	updateNeedsSaving();
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void onOffsetTrack(bool down) {
+    struct sync_track** tracks = getTracks();
+    int track = getActiveTrack();
+    struct sync_track* t = tracks[track];
+
+    Commands_beginMulti("offsetTrack");
+
+    for (int i=0;i<t->num_keys;i++) {
+        struct track_key newKey;
+
+        int row = t->keys[i].row;
+        newKey = t->keys[i];
+        newKey.row = down ? newKey.row + 1 : newKey.row - 1;
+
+        Commands_deleteKey(track, row);
+        Commands_addKey(track, &newKey);
+
+    }
+    Commands_endMulti();
+    updateNeedsSaving();
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1788,6 +1812,8 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_PASTE :        onPaste(false); break;
 		case EDITOR_MENU_MOVE_UP :      onMoveSelection(true); break;
 		case EDITOR_MENU_MOVE_DOWN :    onMoveSelection(false); break;
+        case EDITOR_MENU_OFS_UP :      onOffsetTrack(true); break;
+        case EDITOR_MENU_OFS_DOWN :    onOffsetTrack(false); break;
 		case EDITOR_MENU_SELECT_TRACK : onSelectTrack(); break;
 
 		case EDITOR_MENU_BIAS_P_001 : biasSelection(0.01f); break;
