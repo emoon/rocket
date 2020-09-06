@@ -1307,10 +1307,9 @@ static void onOffsetTrack(int nCount) {
 
     int track = getActiveTrack();	
 
-	doOffsetTrack(track, nCount);
+	  doOffsetTrack(track, nCount);
 
     updateNeedsSaving();
-	
 }
 
 
@@ -1859,14 +1858,14 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_PASTE :        onPaste(false); break;
 		case EDITOR_MENU_MOVE_UP :      onMoveSelection(true); break;
 		case EDITOR_MENU_MOVE_DOWN :    onMoveSelection(false); break;
-        case EDITOR_MENU_OFS_UP_1 :      onOffsetTrack(1); break;
-        case EDITOR_MENU_OFS_UP_8 :      onOffsetTrack(8); break;
-        case EDITOR_MENU_OFS_DOWN_1 :    onOffsetTrack(-1); break;
-        case EDITOR_MENU_OFS_DOWN_8 :    onOffsetTrack(-8); break;
-        case EDITOR_MENU_OFS_GRP_UP_1 :      onOffsetGroup(1); break;
-        case EDITOR_MENU_OFS_GRP_UP_8 :      onOffsetGroup(8); break;
-        case EDITOR_MENU_OFS_GRP_DOWN_1 :    onOffsetGroup(-1); break;
-        case EDITOR_MENU_OFS_GRP_DOWN_8 :    onOffsetGroup(-8); break;
+    case EDITOR_MENU_OFS_UP_1 :      onOffsetTrack(1); break;
+    case EDITOR_MENU_OFS_UP_8 :      onOffsetTrack(8); break;
+    case EDITOR_MENU_OFS_DOWN_1 :    onOffsetTrack(-1); break;
+    case EDITOR_MENU_OFS_DOWN_8 :    onOffsetTrack(-8); break;
+    case EDITOR_MENU_OFS_GRP_UP_1 :  onOffsetGroup(1); break;
+    case EDITOR_MENU_OFS_GRP_UP_8 :  onOffsetGroup(8); break;
+    case EDITOR_MENU_OFS_GRP_DOWN_1 : onOffsetGroup(-1); break;
+    case EDITOR_MENU_OFS_GRP_DOWN_8 : onOffsetGroup(-8); break;
 		case EDITOR_MENU_SELECT_TRACK : onSelectTrack(); break;
 
 		case EDITOR_MENU_BIAS_P_001 : biasSelection(0.01f); break;
