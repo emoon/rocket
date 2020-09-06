@@ -1243,26 +1243,72 @@ static void onMoveSelection(bool down)
 	updateNeedsSaving();
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static void onOffsetTrack(bool down) {
-    struct sync_track** tracks = getTracks();
-    int track = getActiveTrack();
-    struct sync_track* t = tracks[track];
-
+//
+// This will offset all keys by nCount amount of rows.
+// Note: The function will first delete all keys and then add them back with new row values..
+//       Seems like interleaving delete/add when keys are adjencent will not work - unless operations are divided...
+//
+// Not sure if this is a good thing with respect to undo...
+//
+static void doOffsetTrack(int track, int nCount) {
     Commands_beginMulti("offsetTrack");
 
-    for (int i=0;i<t->num_keys;i++) {
-        struct track_key newKey;
+    struct sync_track** tracks = getTracks();
+    struct sync_track* t = tracks[track];
 
-        int row = t->keys[i].row;
-        newKey = t->keys[i];
-        newKey.row = down ? newKey.row + 1 : newKey.row - 1;
 
-        Commands_deleteKey(track, row);
-        Commands_addKey(track, &newKey);
+	int nKeys = t->num_keys;
+	struct track_key *newKeys = (struct track_key *)malloc(sizeof(struct track_key) * nKeys);
 
-    }
+	// Detele all keys, and create new ones in a temporary array
+	for (int i=0;i<nKeys;i++) {
+		struct track_key newKey;
+
+		int row = t->keys[i].row;
+		newKey = t->keys[i];
+		newKey.row = newKey.row + nCount;
+
+		newKeys[i] = newKey;
+
+		Commands_deleteKey(track, row);
+	}
+
+	// Add new keys back from temporary array  (they are already at the right offset)
+	for(int i=0;i<nKeys;i++) {
+		Commands_addKey(track, &newKeys[i]);
+	}
+
+	free(newKeys);
     Commands_endMulti();
+}
+
+
+// Offset group - same as for track but for all tracks in the current gourp
+// the current group is taken from the group of the currently active track!
+static void onOffsetGroup(int nCount) {
+
+	Group* group;
+	TrackData* trackData = getTrackData();
+	int currentTrack = getActiveTrack();
+
+	// Get the group for the currentTrack
+	Track* ptrTrack = &trackData->tracks[currentTrack];
+	group = ptrTrack->group;
+
+	for(int j = 0; j < group->trackCount; j++) {		
+		int trackIndex = group->tracks[j]->index;
+		doOffsetTrack(trackIndex, nCount);
+	}
+
+    updateNeedsSaving();
+}
+
+static void onOffsetTrack(int nCount) {
+
+    int track = getActiveTrack();	
+
+	  doOffsetTrack(track, nCount);
+
     updateNeedsSaving();
 }
 
@@ -1812,8 +1858,14 @@ void Editor_menuEvent(int menuItem)
 		case EDITOR_MENU_PASTE :        onPaste(false); break;
 		case EDITOR_MENU_MOVE_UP :      onMoveSelection(true); break;
 		case EDITOR_MENU_MOVE_DOWN :    onMoveSelection(false); break;
-        case EDITOR_MENU_OFS_UP :      onOffsetTrack(true); break;
-        case EDITOR_MENU_OFS_DOWN :    onOffsetTrack(false); break;
+    case EDITOR_MENU_OFS_UP_1 :      onOffsetTrack(1); break;
+    case EDITOR_MENU_OFS_UP_8 :      onOffsetTrack(8); break;
+    case EDITOR_MENU_OFS_DOWN_1 :    onOffsetTrack(-1); break;
+    case EDITOR_MENU_OFS_DOWN_8 :    onOffsetTrack(-8); break;
+    case EDITOR_MENU_OFS_GRP_UP_1 :  onOffsetGroup(1); break;
+    case EDITOR_MENU_OFS_GRP_UP_8 :  onOffsetGroup(8); break;
+    case EDITOR_MENU_OFS_GRP_DOWN_1 : onOffsetGroup(-1); break;
+    case EDITOR_MENU_OFS_GRP_DOWN_8 : onOffsetGroup(-8); break;
 		case EDITOR_MENU_SELECT_TRACK : onSelectTrack(); break;
 
 		case EDITOR_MENU_BIAS_P_001 : biasSelection(0.01f); break;
