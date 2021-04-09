@@ -75,11 +75,21 @@ To use Xcode to build (or code in) use the XCode3-GenerateProj.sh file (works wi
 Windows
 -------
 
-Easiest is to run VS2010-GenerateSln.cmd and open the generated solution (it's in the tundra-output directory) in Visual Studio.
+Easiest is to run win32_gen_vs_solution.cmd and open the generated solution (it's in the tundra-output directory) in Visual Studio.
 Note that you will need to setup your paths/variables so cl is included and can be started from command line. VS2012 Express seems to do this automatically but it may different depending on your compiler.
 In that case run the "vsvars32.bat" included with Visual Studio from a command prompt and start Visual Studio from there.
 
 If you want to build from command line that works just as fine as well (just set vsvars32 (as seen above) and run "tundra win32-msvc-debug" for the debug build.
+
+
+```
+git clone --depth=1 https://github.com/emoon/rocket
+cd rocket
+git submodule update --init --recursive
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars32.bat" x86
+"scripts/win32_gen_vs_solution.cmd"
+"scripts/win32_launch_vs.cmd"
+```
 
 Linux
 -----
