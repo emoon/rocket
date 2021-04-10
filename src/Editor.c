@@ -1143,7 +1143,7 @@ static void onPaste(bool externalMulti)
 			struct track_key key = ce->keyFrame;
 			key.row += row_pos;
 
-			Commands_addOrUpdateKey(trackIndex, &key);
+			Commands_addOrUpdateKey((int)trackIndex, &key);
 		}
 	}
 
@@ -1957,7 +1957,7 @@ static bool doEditing(int key)
 		}
 
 		if (key == EMGUI_KEY_BACKSPACE)
-			s_editBuffer[emaxi(strlen(s_editBuffer) - 1, 0)] = 0;
+			s_editBuffer[emaxi((int)strlen(s_editBuffer) - 1, 0)] = 0;
 		else
 			s_editBuffer[strlen(s_editBuffer)] = (char)key;
 

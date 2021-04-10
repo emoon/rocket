@@ -341,7 +341,7 @@ uint32_t Emgui_getTextSize(const char* text)
 	const LoadedFont* font = &g_loadedFonts[g_currentFont];
 
 	if (!font->layout)
-		return (8 << 16) | strlen(text) * 8;
+		return (8 << 16) | (int)(strlen(text) * 8);
 
 	range_start = font->rangeStart;
 	range_end = font->rangeEnd;
@@ -1061,7 +1061,7 @@ void Emgui_editBoxXY(int x, int y, int width, int height, int bufferLength, char
 
 	if (g_emguiGuiState.kbdItem == controlId && keyCode != 0)
 	{
-		int len = strlen(buffer);
+		int len = (int)strlen(buffer);
 
 		switch (keyCode)
 		{

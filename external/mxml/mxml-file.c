@@ -434,7 +434,7 @@ mxmlSaveString(mxml_node_t    *node,	/* I - Node to write */
   * Return the number of characters...
   */
 
-  return (ptr[0] - buffer);
+  return (int)(ptr[0] - buffer);
 }
 
 
@@ -1108,7 +1108,7 @@ mxml_fd_write(_mxml_fdbuf_t *buf)	/* I - File descriptor buffer */
   */
 
   for (ptr = buf->buffer; ptr < buf->current; ptr += bytes)
-    if ((bytes = write(buf->fd, ptr, buf->current - ptr)) < 0)
+    if ((bytes = write(buf->fd, ptr, (int)(buf->current - ptr))) < 0)
       return (-1);
 
  /*
@@ -2776,16 +2776,16 @@ mxml_write_node(mxml_node_t     *node,	/* I - Node to write */
 	else if (mxml_write_name(node->value.element.name, p, putc_cb) < 0)
 	  return (-1);
 
-	col += strlen(node->value.element.name) + 1;
+	col += (int)strlen(node->value.element.name) + 1;
 
 	for (i = node->value.element.num_attrs, attr = node->value.element.attrs;
 	     i > 0;
 	     i --, attr ++)
 	{
-	  width = strlen(attr->name);
+	  width = (int)strlen(attr->name);
 
 	  if (attr->value)
-	    width += strlen(attr->value) + 3;
+	    width += (int)strlen(attr->value) + 3;
 
 	  if (global->wrap > 0 && (col + width) > global->wrap)
 	  {
@@ -2860,7 +2860,7 @@ mxml_write_node(mxml_node_t     *node,	/* I - Node to write */
 	    if ((*putc_cb)('>', p) < 0)
 	      return (-1);
 
-	    col += strlen(node->value.element.name) + 3;
+	    col += (int)strlen(node->value.element.name) + 3;
 
 	    col = mxml_write_ws(node, p, cb, MXML_WS_AFTER_CLOSE, col, putc_cb);
 	  }
@@ -2914,14 +2914,14 @@ mxml_write_node(mxml_node_t     *node,	/* I - Node to write */
 	if (mxml_write_string(s, p, putc_cb) < 0)
 	  return (-1);
 
-	col += strlen(s);
+	col += (int)strlen(s);
 	break;
 
     case MXML_OPAQUE :
 	if (mxml_write_string(node->value.opaque, p, putc_cb) < 0)
 	  return (-1);
 
-	col += strlen(node->value.opaque);
+	col += (int)strlen(node->value.opaque);
 	break;
 
     case MXML_REAL :
@@ -2944,7 +2944,7 @@ mxml_write_node(mxml_node_t     *node,	/* I - Node to write */
 	if (mxml_write_string(s, p, putc_cb) < 0)
 	  return (-1);
 
-	col += strlen(s);
+	col += (int)strlen(s);
 	break;
 
     case MXML_TEXT :
@@ -2966,7 +2966,7 @@ mxml_write_node(mxml_node_t     *node,	/* I - Node to write */
 	if (mxml_write_string(node->value.text.string, p, putc_cb) < 0)
 	  return (-1);
 
-	col += strlen(node->value.text.string);
+	col += (int)strlen(node->value.text.string);
 	break;
 
     case MXML_CUSTOM :
@@ -2983,9 +2983,9 @@ mxml_write_node(mxml_node_t     *node,	/* I - Node to write */
 	    return (-1);
 
 	  if ((newline = strrchr(data, '\n')) == NULL)
-	    col += strlen(data);
+	    col += (int)strlen(data);
 	  else
-	    col = strlen(newline);
+	    col = (int)strlen(newline);
 
 	  free(data);
 	  break;

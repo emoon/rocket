@@ -386,7 +386,7 @@ static int onKeyDown(WPARAM wParam, LPARAM lParam)
 			int p, t = (int)wParam;
 			(void)t;
             wParam = MapVirtualKey((UINT)wParam, 2) & 0x0000ffff;
-			p = wParam;
+			p = (int)wParam;
 			(void)p;
 			wParam = (WPARAM) CharUpperA((LPSTR)wParam);
 
@@ -668,7 +668,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmndLine, i
 	saveRecentFileList();
 
 	closeWindow();
-	return msg.wParam;
+	return (int)msg.wParam;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -723,7 +723,7 @@ static void saveRecentFileList()
 	{
 		wchar_t entryName[64];
 		wsprintf(entryName, L"RecentFile%d", i); 
-		setRegString(s_regConfigKey, entryName, recent_list[i], wcslen(recent_list[i]));
+		setRegString(s_regConfigKey, entryName, recent_list[i], (int)wcslen(recent_list[i]));
 	}
 }
 
