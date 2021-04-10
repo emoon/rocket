@@ -2,35 +2,47 @@
 
 name: CI
 
-# Controls when the action will run. 
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches: [ master, dev ]
   pull_request:
-    branches: [ master ]
-
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+    branches: [ master, dev ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+  build_linux:
+    runs-on: ubuntu-18.04
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+    - name: Install deps
+      run: sudo apt-get install sdl2-dev
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+    - name: Install Tundra
+      run: git clone --recursive https://github.com/deplinenoise/tundra.git && cd tundra && make -j2 && sudo make install && cd ..
+
+    - name: Build Debug
+      run: |
+        tundra2 linux-gcc-release
+
+# Build macOS
+  build_macOS:
+    runs-on: macOS-latest
+    steps:
+    - name: Build Release
+      run: |
+        export QT5_BIN=$Qt5_DIR/bin
+        export QT5_INC=$Qt5_DIR/include
+        export QT5_LIB=$Qt5_DIR/lib
+        bin/macos/tundra2 macosx-clang-release
+
+# Build Windows
+  build_windows:
+    runs-on: windows-latest
+    steps:
+    - name: Build Release 
+      shell: cmd
+      run: |
+        bin\win32\tundra2.exe --unprotected win32-msvc-release
