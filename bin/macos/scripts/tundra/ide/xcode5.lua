@@ -637,7 +637,7 @@ local function write_shellscripts(p, projects, env)
       p:write('\t\t\t);\n')
       p:write('\t\t\trunOnlyForDeploymentPostprocessing = 0;\n')
       p:write('\t\t\tshellPath = /bin/sh;\n')
-      p:write('\t\t\tshellScript = "cd ..\\n', TundraExePath, ' macosx-clang-debug";\n')
+      p:write('\t\t\tshellScript = "cd ..\\n', TundraExePath, ' $(CONFIG)-$(VARIANT)-$(SUBVARIANT)";\n')
       p:write('\t\t};\n')
     end
   end

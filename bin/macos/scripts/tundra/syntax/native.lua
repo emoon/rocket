@@ -70,6 +70,19 @@ local cpp_exts = util.make_lookup_table { ".cpp", ".cc", ".cxx", ".C" }
 
 local _is_native_mt = util.make_lookup_table { _object_mt, _program_mt, _staticlib_mt, _shlib_mt, _extlib_mt, _objgroup_mt }
 
+-- sources can be a mix of raw strings like {"file1.cpp", "file2.cpp"}
+-- or files with filters like {{"file1.cpp", "file2.cpp"; Config = "..."}}
+local function is_file_in_sources(sources, fn)
+  for k,v in pairs(sources) do
+    if type(v) == 'table' then
+      return util.array_contains(v, fn)
+    elseif v == fn then
+      return true
+    end
+  end
+  return false
+end
+
 function _native_mt:customize_env(env, raw_data)
   if env:get('GENERATE_PDB', '0') ~= '0' then
     -- Figure out the final linked PDB (the one next to the dll or exe)
@@ -93,10 +106,12 @@ function _native_mt:customize_env(env, raw_data)
     if not nodegen.resolve_pass(pch.Pass) then
       croak("%s: PrecompiledHeader requires a valid Pass", raw_data.Name)
     end
-    env:set('_PCH_FILE', "$(OBJECTDIR)/" .. raw_data.Name .. ".pch")
+    local pch_dir = "$(OBJECTDIR)/__" .. raw_data.Name
+    env:set('_PCH_HEADER', pch.Header)
+    env:set('_PCH_FILE', pch_dir .. '/' .. pch.Header .. '$(_PCH_SUFFIX)')
+    env:set('_PCH_INCLUDE_PATH', path.join(pch_dir, pch.Header))
     env:set('_USE_PCH', '$(_USE_PCH_OPT)')
     env:set('_PCH_SOURCE', path.normalize(pch.Source))
-    env:set('_PCH_HEADER', pch.Header)
     env:set('_PCH_PASS', pch.Pass)
     if cpp_exts[path.get_extension(pch.Source)] then
       env:set('PCHCOMPILE', '$(PCHCOMPILE_CXX)')
@@ -104,7 +119,7 @@ function _native_mt:customize_env(env, raw_data)
       env:set('PCHCOMPILE', '$(PCHCOMPILE_CC)')
     end
     local pch_source = path.remove_prefix(raw_data.SourceDir or '', pch.Source)
-    if not util.array_contains(raw_data.Sources, pch_source) then
+    if not is_file_in_sources(raw_data.Sources, pch_source) then
       raw_data.Sources[#raw_data.Sources + 1] = pch_source
     end
   end
@@ -136,8 +151,17 @@ function _native_mt:create_dag(env, data, input_deps)
       if #node.outputs > 0 then
         my_extra_deps[#my_extra_deps + 1] = node
         local target = dep.Decl.Target or dep.Decl.Name
-        target = target .. "$(SHLIBLINKSUFFIX)"
-        env:append('LIBS', target)
+        target = env:interpolate(target)
+        local dir, fn = path.split(target)
+        local libpfx = env:interpolate("$(LIBPREFIX)")
+        if fn:sub(1, libpfx:len()) == libpfx then
+          fn = fn:sub(libpfx:len()+1)
+        end
+        local link_lib = path.drop_suffix(fn) .. '$(SHLIBLINKSUFFIX)'
+        env:append('LIBS', link_lib)
+        if dir:len() > 0 then
+          env:append('LIBPATH', dir)
+        end
       end
     elseif dep.Keyword == "StaticLibrary" then
       local node = dep:get_dag(env:get_parent())
