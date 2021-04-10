@@ -24,6 +24,9 @@ function ConfigureRaw(cmdline, name, constructor)
   end
 
   for value in data:gmatch("-framework ([^ \n\r]+)") do
+    if value:match('^-Wl,') then
+      value = string.sub(value, 5)
+    end
     frameworks[#frameworks + 1] = value
   end
 
@@ -43,9 +46,9 @@ function ConfigureRaw(cmdline, name, constructor)
 end
 
 function Configure(name, ctor)
-  return internal_cfg("pkg-config " .. name .. " --cflags --libs", name, ctor)
+  return ConfigureRaw("pkg-config " .. name .. " --cflags --libs", name, ctor)
 end
 
 function ConfigureWithTool(tool, name, ctor)
-  return internal_cfg(tool .. " --cflags --libs", name, ctor)
+  return ConfigureRaw(tool .. " --cflags --libs", name, ctor)
 end
