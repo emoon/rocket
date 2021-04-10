@@ -51,7 +51,8 @@ Build {
 
 	Configs = {
 		Config { Name = "macosx-clang", DefaultOnHost = "macosx", Inherit = macosx, Tools = { "clang-osx" } },
-		Config { Name = "win32-msvc", DefaultOnHost = { "windows" }, Inherit = win32, Tools = { "msvc" } },
+		Config { Name = "win32-msvc", DefaultOnHost = { "windows" }, Inherit = win32, Tools = { "msvc-vs2019" } },
+		Config { Name = "win32_msvc-bare", Inherit = win32, Tools = { "msvc" } },
 		Config { Name = "linux-gcc", DefaultOnHost = { "linux" }, Inherit = linux, Tools = { "gcc" } },
 	},
 

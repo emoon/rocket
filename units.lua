@@ -99,7 +99,7 @@ Program {
 
 	Env = {
 	    LIBPATH = {
-	        { "external/bass/win32"; Config = "win32-*-*" },
+	        { "external/bass/win64"; Config = "win32-*-*" },
 	        { "external/bass/mac"; Config = "macosx-*-*" },
 	        { "external/bass/linux"; Config = "linux-*-*" },
 	    },

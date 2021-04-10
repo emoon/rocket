@@ -82,7 +82,7 @@ uint32_t TrackData_getNextColor(TrackData* trackData)
 
 static int findSeparator(const char* name)
 {
-	int i, len = strlen(name);
+	int i, len = (int)strlen(name);
 
 	for (i = 0; i < len; ++i)
 	{
@@ -186,7 +186,7 @@ void TrackData_linkGroups(TrackData* trackData)
 {
 	int i, track_count;
 
-	for (i = 0, track_count = trackData->num_syncTracks; i < track_count; ++i)
+	for (i = 0, track_count = (int)trackData->num_syncTracks; i < track_count; ++i)
 		TrackData_linkTrack(i, trackData->syncTracks[i]->name, trackData);
 }
 
@@ -426,7 +426,7 @@ double my_atof(const char* s)
 void my_ftoa(float f, char* s, int n, int digits)
 {
 	char fmt[5] = "%.0f";
-	fmt[2] = digits + '0';
+	fmt[2] = (char)(digits + '0');
 	snprintf(s, n, fmt, f);
 	for (;  *s;  ++s)
 	{

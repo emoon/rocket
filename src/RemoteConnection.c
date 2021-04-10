@@ -186,9 +186,9 @@ bool RemoteConnection_createListner()
 		return false;
 #endif
 
-	s_serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+	s_serverSocket = (int)socket(AF_INET, SOCK_STREAM, 0);
 
-	if (s_serverSocket == INVALID_SOCKET)
+	if (s_serverSocket < 0) 
 		return false;
 
 	memset(&sin, 0, sizeof sin);
@@ -239,7 +239,7 @@ static int recv_all(SOCKET socket, char* buffer, size_t length, int flags)
 		remaining -= ret;
 		buffer += ret;
 	}
-	return length;
+	return (int)length;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -301,7 +301,7 @@ void RemoteConnection_updateListner(int currentRow)
 		{
 			snprintf(s_connectionName, sizeof(s_connectionName), "Connected to %s", inet_ntoa(client.sin_addr));
 			//rlog(R_INFO, "%s\n", s_connectionName); 
-			s_socket = clientSocket; 
+			s_socket = (int)clientSocket; 
 			s_clientIndex = 0;
 			RemoteConnection_sendPauseCommand(true);
 			RemoteConnection_sendSetRowCommand(currentRow);
