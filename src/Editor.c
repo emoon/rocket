@@ -1,43 +1,36 @@
 #include "Editor.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include "Menu.h"
-#include "Dialog.h"
-#include "loadsave.h"
-#include "TrackView.h"
-#include "rlog.h"
-#include "minmax.h"
-#include "TrackData.h"
-#include "RemoteConnection.h"
-#include "Commands.h"
-#include "MinecraftiaFont.h"
-#include "Window.h"
-#include "Music.h"
-#include "../external/rocket/lib/sync.h"
-#include "../external/rocket/lib/base.h"
-#include "RenderAudio.h"
+#include <bass.h>
 #include <emgui/Emgui.h>
 #include <emgui/GFXBackend.h>
-#include <bass.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "../external/rocket/lib/base.h"
+#include "../external/rocket/lib/sync.h"
+#include "Commands.h"
+#include "Dialog.h"
+#include "Menu.h"
+#include "MinecraftiaFont.h"
+#include "Music.h"
+#include "RemoteConnection.h"
+#include "RenderAudio.h"
+#include "TrackData.h"
+#include "TrackView.h"
+#include "Window.h"
+#include "loadsave.h"
+#include "minmax.h"
+#include "rlog.h"
 #if defined(_WIN32)
-	#include <Windows.h>
-	//#include <winsock2.h>
+#include <Windows.h>
+//#include <winsock2.h>
 #else
-	#include <netinet/in.h>
-	#include <arpa/inet.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #endif
 #include <string.h>
 
-enum {
-	SET_KEY = 0,
-	DELETE_KEY = 1,
-	GET_TRACK = 2,
-	SET_ROW = 3,
-	PAUSE = 4,
-	SAVE_TRACKS = 5
-};
+enum { SET_KEY = 0, DELETE_KEY = 1, GET_TRACK = 2, SET_ROW = 3, PAUSE = 4, SAVE_TRACKS = 5 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -46,33 +39,30 @@ static bool doEditing(int key);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef struct CopyEntry
-{
-	int track;
-	struct track_key keyFrame;
+typedef struct CopyEntry {
+    int track;
+    struct track_key keyFrame;
 } CopyEntry;
 
-typedef struct CopyData
-{
-	CopyEntry* entries;
-	int bufferWidth;
-	int bufferHeight;
-	int count;
+typedef struct CopyData {
+    CopyEntry* entries;
+    int bufferWidth;
+    int bufferHeight;
+    int count;
 
 } CopyData;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef struct EditorData
-{
-	TrackViewInfo trackViewInfo;
-	TrackData trackData;
-	CopyEntry* copyEntries;
-	int copyCount;
-	int canDecodeMusic;
-	int waveViewSize;
-	int originalXSize;
-	int originalYSize;
+typedef struct EditorData {
+    TrackViewInfo trackViewInfo;
+    TrackData trackData;
+    CopyEntry* copyEntries;
+    int copyCount;
+    int canDecodeMusic;
+    int waveViewSize;
+    int originalXSize;
+    int originalYSize;
 } EditorData;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,266 +74,238 @@ static bool reset_tracks = true;
 static text_t s_filenames[5][2048];
 static text_t* s_loadedFilename = 0;
 
-static text_t* s_recentFiles[] =
-{
-	s_filenames[0],
-	s_filenames[1],
-	s_filenames[2],
-	s_filenames[3],
-	s_filenames[4],
+static text_t* s_recentFiles[] = {
+    s_filenames[0], s_filenames[1], s_filenames[2], s_filenames[3], s_filenames[4],
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-text_t** Editor_getRecentFiles()
-{
-	return (text_t**)s_recentFiles;
+text_t** Editor_getRecentFiles() {
+    return (text_t**)s_recentFiles;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const text_t* getMostRecentFile()
-{
-	return s_recentFiles[0];
+const text_t* getMostRecentFile() {
+    return s_recentFiles[0];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void textCopy(text_t* dest, const text_t* src)
-{
+static void textCopy(text_t* dest, const text_t* src) {
 #if defined(_WIN32)
-	wcscpy_s(dest, 2048, src);
+    wcscpy_s(dest, 2048, src);
 #else
-	strcpy(dest, src);
+    strcpy(dest, src);
 #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int textCmp(text_t* t0, const text_t* t1)
-{
+static int textCmp(text_t* t0, const text_t* t1) {
 #if defined(_WIN32)
-	return wcscmp(t0, t1);
+    return wcscmp(t0, t1);
 #else
-	return strcmp(t0, t1);
+    return strcmp(t0, t1);
 #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void setMostRecentFile(const text_t* filename)
-{
-	int i;
+void setMostRecentFile(const text_t* filename) {
+    int i;
 
-	// move down all files
-	for (i = 3; i >= 0; --i)
-		textCopy(s_recentFiles[i+1], s_recentFiles[i]);
+    // move down all files
+    for (i = 3; i >= 0; --i)
+        textCopy(s_recentFiles[i + 1], s_recentFiles[i]);
 
-	textCopy(s_recentFiles[0], filename);
-	s_loadedFilename = s_recentFiles[0];
+    textCopy(s_recentFiles[0], filename);
+    s_loadedFilename = s_recentFiles[0];
 
-	// check if the string was already present and remove it if that is the case by compacting the array
+    // check if the string was already present and remove it if that is the case by compacting the array
 
-	for (i = 1; i < 5; ++i)
-	{
-		if (!textCmp(s_recentFiles[i], filename))
-		{
-			for (; i < 4; ++i)
-				textCopy(s_recentFiles[i], s_recentFiles[i + 1]);
+    for (i = 1; i < 5; ++i) {
+        if (!textCmp(s_recentFiles[i], filename)) {
+            for (; i < 4; ++i)
+                textCopy(s_recentFiles[i], s_recentFiles[i + 1]);
 
-			break;
-		}
-	}
+            break;
+        }
+    }
 
-	Window_populateRecentList((const text_t**)s_recentFiles);
+    Window_populateRecentList((const text_t**)s_recentFiles);
 }
 
 //
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline struct sync_track** getTracks()
-{
-	return s_editorData.trackData.syncTracks;
+static inline struct sync_track** getTracks() {
+    return s_editorData.trackData.syncTracks;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline TrackViewInfo* getTrackViewInfo()
-{
-	return &s_editorData.trackViewInfo;
+static inline TrackViewInfo* getTrackViewInfo() {
+    return &s_editorData.trackViewInfo;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline TrackData* getTrackData()
-{
-	return &s_editorData.trackData;
+static inline TrackData* getTrackData() {
+    return &s_editorData.trackData;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline void setActiveTrack(int track)
-{
-	TrackData_setActiveTrack(getTrackData(), track);
+static inline void setActiveTrack(int track) {
+    TrackData_setActiveTrack(getTrackData(), track);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline int getActiveTrack()
-{
-	return s_editorData.trackData.activeTrack;
+static inline int getActiveTrack() {
+    return s_editorData.trackData.activeTrack;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline int getTrackCount()
-{
-	return (int)s_editorData.trackData.num_syncTracks;
+static inline int getTrackCount() {
+    return (int)s_editorData.trackData.num_syncTracks;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline int getRowPos()
-{
-	return s_editorData.trackViewInfo.rowPos;
+static inline int getRowPos() {
+    return s_editorData.trackViewInfo.rowPos;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static bool canEditCurrentTrack()
-{
-	return !getTrackData()->tracks[getActiveTrack()].disabled;
+static bool canEditCurrentTrack() {
+    return !getTrackData()->tracks[getActiveTrack()].disabled;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline void setRowPos(int pos)
-{
-	s_editorData.trackViewInfo.rowPos = pos;
-	RemoteConnection_sendSetRowCommand(pos);
+static inline void setRowPos(int pos) {
+    s_editorData.trackViewInfo.rowPos = pos;
+    RemoteConnection_sendSetRowCommand(pos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int getNextTrack()
-{
-	Group* group;
-	TrackData* trackData = getTrackData();
-	int groupIndex = 0;
-	int currentTrack = getActiveTrack();
+static int getNextTrack() {
+    Group* group;
+    TrackData* trackData = getTrackData();
+    int groupIndex = 0;
+    int currentTrack = getActiveTrack();
 
-	// Get the group for the currentTrack
+    // Get the group for the currentTrack
 
-	Track* track = &trackData->tracks[currentTrack];
-	group = track->group;
+    Track* track = &trackData->tracks[currentTrack];
+    group = track->group;
 
-	// Check If next track is within the group
+    // Check If next track is within the group
 
-	if (!group->folded)
-	{
-		if (track->groupIndex + 1 < group->trackCount)
-			return group->tracks[track->groupIndex + 1]->index;
-	}
-
-	groupIndex = group->groupIndex;
-
-	// We are at the last track in the last group so just return the current one
-
-	if (groupIndex >= trackData->groupCount-1)
-		return currentTrack;
-
-	// Get the next group and select the first track in it
-
-	group = &trackData->groups[groupIndex + 1];
-	return group->tracks[0]->index;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static int getPrevTrack()
-{
-	Group* group;
-	TrackData* trackData = getTrackData();
-	int trackIndex = 0;
-	int groupIndex = 0;
-	int currentTrack = getActiveTrack();
-
-	// Get the group for the currentTrack
-
-	Track* track = &trackData->tracks[currentTrack];
-	group = track->group;
-
-	// Check If next track is within the group
-
-	if (track->groupIndex - 1 >= 0)
-		return group->tracks[track->groupIndex - 1]->index;
-
-	groupIndex = group->groupIndex - 1;
-
-	// We are at the last track in the last group so just return the current one
-
-	if (groupIndex < 0)
-		return currentTrack;
-
-	// Get the next group and select the first track in it
-
-	group = &trackData->groups[groupIndex];
-	trackIndex = group->folded ? 0 : group->trackCount - 1;
-
-	return group->tracks[trackIndex]->index;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Editor_create()
-{
-	int id;
-	Emgui_create();
-	id = Emgui_loadFontBitmap((char*)g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_LOCATION_MEMORY, 32, 128, g_minecraftiaFontLayout);
-
-	s_editorData.canDecodeMusic = 1;
-
-	if (!RemoteConnection_createListner())
-	{
-		Dialog_showError(TEXT("Unable to create listener. Make sure no other program is using port 1338"));
-	}
-
-    if (!BASS_Init(0, 44100, 0, 0, NULL))
-    {
-		Dialog_showError(TEXT("Unable to create init BASS. No music loading will be usable."));
-	    s_editorData.canDecodeMusic = 0;
+    if (!group->folded) {
+        if (track->groupIndex + 1 < group->trackCount)
+            return group->tracks[track->groupIndex + 1]->index;
     }
 
-	s_editorData.trackViewInfo.smallFontId = id;
-	s_editorData.trackData.startRow = 0;
-	s_editorData.trackData.endRow = 10000;
-	s_editorData.trackData.bpm = 125;
-	s_editorData.trackData.rowsPerBeat = 8;
-	s_editorData.trackData.isPlaying = false;
-	s_editorData.trackData.isLooping = false;
+    groupIndex = group->groupIndex;
+
+    // We are at the last track in the last group so just return the current one
+
+    if (groupIndex >= trackData->groupCount - 1)
+        return currentTrack;
+
+    // Get the next group and select the first track in it
+
+    group = &trackData->groups[groupIndex + 1];
+    return group->tracks[0]->index;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static int getPrevTrack() {
+    Group* group;
+    TrackData* trackData = getTrackData();
+    int trackIndex = 0;
+    int groupIndex = 0;
+    int currentTrack = getActiveTrack();
+
+    // Get the group for the currentTrack
+
+    Track* track = &trackData->tracks[currentTrack];
+    group = track->group;
+
+    // Check If next track is within the group
+
+    if (track->groupIndex - 1 >= 0)
+        return group->tracks[track->groupIndex - 1]->index;
+
+    groupIndex = group->groupIndex - 1;
+
+    // We are at the last track in the last group so just return the current one
+
+    if (groupIndex < 0)
+        return currentTrack;
+
+    // Get the next group and select the first track in it
+
+    group = &trackData->groups[groupIndex];
+    trackIndex = group->folded ? 0 : group->trackCount - 1;
+
+    return group->tracks[trackIndex]->index;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Editor_create() {
+    int id;
+    Emgui_create();
+    id = Emgui_loadFontBitmap((char*)g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_LOCATION_MEMORY, 32, 128,
+                              g_minecraftiaFontLayout);
+
+    s_editorData.canDecodeMusic = 1;
+
+    if (!RemoteConnection_createListner()) {
+        Dialog_showError(TEXT("Unable to create listener. Make sure no other program is using port 1338"));
+    }
+
+    if (!BASS_Init(0, 44100, 0, 0, NULL)) {
+        Dialog_showError(TEXT("Unable to create init BASS. No music loading will be usable."));
+        s_editorData.canDecodeMusic = 0;
+    }
+
+    s_editorData.trackViewInfo.smallFontId = id;
+    s_editorData.trackData.startRow = 0;
+    s_editorData.trackData.endRow = 10000;
+    s_editorData.trackData.bpm = 125;
+    s_editorData.trackData.rowsPerBeat = 8;
+    s_editorData.trackData.isPlaying = false;
+    s_editorData.trackData.isLooping = false;
 
     Music_init();
 
-	Emgui_setDefaultFont();
+    Emgui_setDefaultFont();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_setWindowSize(int x, int y)
-{
+void Editor_setWindowSize(int x, int y) {
     s_editorData.originalXSize = x;
     s_editorData.originalYSize = y;
 
-	s_editorData.trackViewInfo.windowSizeX = x - s_editorData.waveViewSize;
-	s_editorData.trackViewInfo.windowSizeY = y;
-	Editor_updateTrackScroll();
+    s_editorData.trackViewInfo.windowSizeX = x - s_editorData.waveViewSize;
+    s_editorData.trackViewInfo.windowSizeY = y;
+    Editor_updateTrackScroll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_init()
-{
+void Editor_init() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -356,414 +318,387 @@ static char s_rowsPerBeat[64] = "8";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int drawConnectionStatus(int posX, int sizeY)
-{
-	char* conStatus;
+static int drawConnectionStatus(int posX, int sizeY) {
+    char* conStatus;
 
-	RemoteConnection_getConnectionStatus(&conStatus);
+    RemoteConnection_getConnectionStatus(&conStatus);
 
-	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX, sizeY - 17, 200, 15);
-	Emgui_drawText(conStatus, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
+    Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX, sizeY - 17, 200, 15);
+    Emgui_drawText(conStatus, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
 
-	return posX + 200;
+    return posX + 200;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int drawCurrentValue(int posX, int sizeY)
-{
-	char valueText[256];
-	float value = 0.0f;
-	int active_track = 0;
-	int current_row = 0;
-	const char *str = "---";
-	struct sync_track** tracks = getTracks();
+static int drawCurrentValue(int posX, int sizeY) {
+    char valueText[256];
+    float value = 0.0f;
+    int active_track = 0;
+    int current_row = 0;
+    const char* str = "---";
+    struct sync_track** tracks = getTracks();
 
-	active_track = getActiveTrack();
-	current_row = getRowPos();
+    active_track = getActiveTrack();
+    current_row = getRowPos();
 
-	if (tracks)
-	{
-		const struct sync_track* track = tracks[active_track];
-		int idx = key_idx_floor(track, current_row);
+    if (tracks) {
+        const struct sync_track* track = tracks[active_track];
+        int idx = key_idx_floor(track, current_row);
 
-		if (idx >= 0)
-		{
-			switch (track->keys[idx].type)
-			{
-				case KEY_STEP:   str = "step"; break;
-				case KEY_LINEAR: str = "linear"; break;
-				case KEY_SMOOTH: str = "smooth"; break;
-				case KEY_RAMP:   str = "ramp"; break;
-				default: break;
-			}
-		}
+        if (idx >= 0) {
+            switch (track->keys[idx].type) {
+                case KEY_STEP:
+                    str = "step";
+                    break;
+                case KEY_LINEAR:
+                    str = "linear";
+                    break;
+                case KEY_SMOOTH:
+                    str = "smooth";
+                    break;
+                case KEY_RAMP:
+                    str = "ramp";
+                    break;
+                default:
+                    break;
+            }
+        }
 
-		value = (float)sync_get_val(track, current_row);
-	}
+        value = (float)sync_get_val(track, current_row);
+    }
 
-	my_ftoa(value, valueText, 256, 6);
-	Emgui_drawText(valueText, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
-	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX, sizeY - 17, 80, 15);
-	Emgui_drawText(str, posX + 85, sizeY - 15, Emgui_color32(160, 160, 160, 255));
-	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX + 80, sizeY - 17, 40, 15);
+    my_ftoa(value, valueText, 256, 6);
+    Emgui_drawText(valueText, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
+    Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX, sizeY - 17, 80, 15);
+    Emgui_drawText(str, posX + 85, sizeY - 15, Emgui_color32(160, 160, 160, 255));
+    Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX + 80, sizeY - 17, 40, 15);
 
-	return 130;
+    return 130;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int drawNameValue(char* name, int posX, int sizeY, int* value, int low, int high, char* buffer)
-{
-	int current_value;
-	int text_size = Emgui_getTextSize(name) & 0xffff;
+static int drawNameValue(char* name, int posX, int sizeY, int* value, int low, int high, char* buffer) {
+    int current_value;
+    int text_size = Emgui_getTextSize(name) & 0xffff;
 
-	Emgui_drawText(name, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
+    Emgui_drawText(name, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
 
-	current_value = atoi(buffer);
+    current_value = atoi(buffer);
 
-	if (current_value != *value)
-	{
-		if (buffer[0] != 0)
-			snprintf(buffer, 64, "%d", *value);
-	}
+    if (current_value != *value) {
+        if (buffer[0] != 0)
+            snprintf(buffer, 64, "%d", *value);
+    }
 
-	Emgui_editBoxXY(posX + text_size + 6, sizeY - 15, 50, 13, 64, buffer);
+    Emgui_editBoxXY(posX + text_size + 6, sizeY - 15, 50, 13, 64, buffer);
 
-	current_value = atoi(buffer);
+    current_value = atoi(buffer);
 
-	if (current_value != *value)
-	{
-		current_value = eclampi(current_value, low, high);
-		if (buffer[0] != 0)
-			snprintf(buffer, 64, "%d", current_value);
-		*value = current_value;
-	}
+    if (current_value != *value) {
+        current_value = eclampi(current_value, low, high);
+        if (buffer[0] != 0)
+            snprintf(buffer, 64, "%d", current_value);
+        *value = current_value;
+    }
 
-	return text_size + 56;
+    return text_size + 56;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void drawStatus()
-{
-	int size = 0;
-	const int sizeY = s_editorData.trackViewInfo.windowSizeY;
-	const int sizeX = s_editorData.trackViewInfo.windowSizeX + s_editorData.waveViewSize;
-	const int prevRow = getRowPos();
+static void drawStatus() {
+    int size = 0;
+    const int sizeY = s_editorData.trackViewInfo.windowSizeY;
+    const int sizeX = s_editorData.trackViewInfo.windowSizeX + s_editorData.waveViewSize;
+    const int prevRow = getRowPos();
 
-	Emgui_setFont(s_editorData.trackViewInfo.smallFontId);
+    Emgui_setFont(s_editorData.trackViewInfo.smallFontId);
 
-	Emgui_fill(Emgui_color32(20, 20, 20, 255), 2, sizeY - 15, sizeX - 3, 13);
-	Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), 0, sizeY - 17, sizeX - 2, 15);
+    Emgui_fill(Emgui_color32(20, 20, 20, 255), 2, sizeY - 15, sizeX - 3, 13);
+    Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), 0, sizeY - 17, sizeX - 2, 15);
 
-	size = drawConnectionStatus(0, sizeY);
-	size += drawCurrentValue(size, sizeY);
-	size += drawNameValue("Row", size, sizeY, &s_editorData.trackViewInfo.rowPos, 0, 20000 - 1, s_currentRow);
-	size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackData.startRow, 0, 10000000, s_startRow);
-	size += drawNameValue("End Row", size, sizeY, &s_editorData.trackData.endRow, 0, 10000000, s_endRow);
-	size += drawNameValue("BPM", size, sizeY, &s_editorData.trackData.bpm, 0, 10000, s_bpm);
-	size += drawNameValue("Rows/Beat", size, sizeY, &s_editorData.trackData.rowsPerBeat, 0, 256, s_rowsPerBeat);
+    size = drawConnectionStatus(0, sizeY);
+    size += drawCurrentValue(size, sizeY);
+    size += drawNameValue("Row", size, sizeY, &s_editorData.trackViewInfo.rowPos, 0, 20000 - 1, s_currentRow);
+    size += drawNameValue("Start Row", size, sizeY, &s_editorData.trackData.startRow, 0, 10000000, s_startRow);
+    size += drawNameValue("End Row", size, sizeY, &s_editorData.trackData.endRow, 0, 10000000, s_endRow);
+    size += drawNameValue("BPM", size, sizeY, &s_editorData.trackData.bpm, 0, 10000, s_bpm);
+    size += drawNameValue("Rows/Beat", size, sizeY, &s_editorData.trackData.rowsPerBeat, 0, 256, s_rowsPerBeat);
 
-	if (getRowPos() != prevRow)
-		RemoteConnection_sendSetRowCommand(getRowPos());
+    if (getRowPos() != prevRow)
+        RemoteConnection_sendSetRowCommand(getRowPos());
 
-	Emgui_setDefaultFont();
+    Emgui_setDefaultFont();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_updateTrackScroll()
-{
-	int track_start_offset, sel_track, total_track_width = 0;
-	int track_start_pixel = s_editorData.trackViewInfo.startPixel;
-	TrackData* track_data = getTrackData();
-	TrackViewInfo* view_info = getTrackViewInfo();
+void Editor_updateTrackScroll() {
+    int track_start_offset, sel_track, total_track_width = 0;
+    int track_start_pixel = s_editorData.trackViewInfo.startPixel;
+    TrackData* track_data = getTrackData();
+    TrackViewInfo* view_info = getTrackViewInfo();
 
-	total_track_width = TrackView_getWidth(getTrackViewInfo(), getTrackData());
-	track_start_offset = TrackView_getStartOffset();
+    total_track_width = TrackView_getWidth(getTrackViewInfo(), getTrackData());
+    track_start_offset = TrackView_getStartOffset();
 
-	track_start_pixel = eclampi(track_start_pixel, 0, emaxi(total_track_width - (view_info->windowSizeX / 2), 0));
+    track_start_pixel = eclampi(track_start_pixel, 0, emaxi(total_track_width - (view_info->windowSizeX / 2), 0));
 
-	sel_track = TrackView_getScrolledTrack(view_info, track_data, track_data->activeTrack,
-										   track_start_offset - track_start_pixel);
+    sel_track = TrackView_getScrolledTrack(view_info, track_data, track_data->activeTrack,
+                                           track_start_offset - track_start_pixel);
 
-	if (sel_track != track_data->activeTrack)
-		TrackData_setActiveTrack(track_data, sel_track);
+    if (sel_track != track_data->activeTrack)
+        TrackData_setActiveTrack(track_data, sel_track);
 
-	s_editorData.trackViewInfo.startPixel = track_start_pixel;
+    s_editorData.trackViewInfo.startPixel = track_start_pixel;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void drawHorizonalSlider()
-{
-	int large_val;
-	TrackViewInfo* info = getTrackViewInfo();
-	const int old_start = s_editorData.trackViewInfo.startPixel;
-	const int total_track_width = TrackView_getWidth(info, getTrackData()) - (info->windowSizeX / 2);
+static void drawHorizonalSlider() {
+    int large_val;
+    TrackViewInfo* info = getTrackViewInfo();
+    const int old_start = s_editorData.trackViewInfo.startPixel;
+    const int total_track_width = TrackView_getWidth(info, getTrackData()) - (info->windowSizeX / 2);
 
-	large_val = emaxi(total_track_width / 10, 1);
+    large_val = emaxi(total_track_width / 10, 1);
 
-	Emgui_slider(0, info->windowSizeY - 36, info->windowSizeX, 14, 0, total_track_width, large_val,
-				EMGUI_SLIDERDIR_HORIZONTAL, 1, &s_editorData.trackViewInfo.startPixel);
+    Emgui_slider(0, info->windowSizeY - 36, info->windowSizeX, 14, 0, total_track_width, large_val,
+                 EMGUI_SLIDERDIR_HORIZONTAL, 1, &s_editorData.trackViewInfo.startPixel);
 
-	if (old_start != s_editorData.trackViewInfo.startPixel)
-		Editor_updateTrackScroll();
+    if (old_start != s_editorData.trackViewInfo.startPixel)
+        Editor_updateTrackScroll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void drawVerticalSlider()
-{
-	int start_row = 0, end_row = 10000, width, large_val;
-	TrackData* trackData = getTrackData();
-	TrackViewInfo* info = getTrackViewInfo();
-	const int rowPos = getRowPos();
+static void drawVerticalSlider() {
+    int start_row = 0, end_row = 10000, width, large_val;
+    TrackData* trackData = getTrackData();
+    TrackViewInfo* info = getTrackViewInfo();
+    const int rowPos = getRowPos();
 
-	if (trackData)
-	{
-		start_row = trackData->startRow;
-		end_row = trackData->endRow;
-	}
+    if (trackData) {
+        start_row = trackData->startRow;
+        end_row = trackData->endRow;
+    }
 
-	width = end_row - start_row;
-	large_val = emaxi(width / 10, 1);
+    width = end_row - start_row;
+    large_val = emaxi(width / 10, 1);
 
-	Emgui_slider((info->windowSizeX + s_editorData.waveViewSize) - 26, 0, 20, info->windowSizeY, 0, width, large_val,
-				EMGUI_SLIDERDIR_VERTICAL, 1, &s_editorData.trackViewInfo.rowPos);
+    Emgui_slider((info->windowSizeX + s_editorData.waveViewSize) - 26, 0, 20, info->windowSizeY, 0, width, large_val,
+                 EMGUI_SLIDERDIR_VERTICAL, 1, &s_editorData.trackViewInfo.rowPos);
 
-	if (rowPos != getRowPos())
-		Editor_updateTrackScroll();
+    if (rowPos != getRowPos())
+        Editor_updateTrackScroll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // In some cases we need an extra update in case some controls has been re-arranged in such fashion so
 // the trackview will report back if that is needed (usually happens if tracks gets resized)
 
-static bool internalUpdate()
-{
-	int refresh;
+static bool internalUpdate() {
+    int refresh;
 
-	Emgui_begin();
+    Emgui_begin();
 
-	if (s_editorData.waveViewSize > 0) {
-        RenderAudio_render(&s_editorData.trackData,
-                           s_editorData.trackViewInfo.windowSizeX - 20, 5 * 8,
+    if (s_editorData.waveViewSize > 0) {
+        RenderAudio_render(&s_editorData.trackData, s_editorData.trackViewInfo.windowSizeX - 20, 5 * 8,
                            s_editorData.trackViewInfo.windowSizeY);
     }
 
-	drawStatus();
-	drawHorizonalSlider();
-	drawVerticalSlider();
+    drawStatus();
+    drawHorizonalSlider();
+    drawVerticalSlider();
 
-	//unsigned int* fftData = getTrackData()->musicData.fftData;
+    // unsigned int* fftData = getTrackData()->musicData.fftData;
 
-	refresh = TrackView_render(getTrackViewInfo(), getTrackData());
-	Emgui_end();
+    refresh = TrackView_render(getTrackViewInfo(), getTrackData());
+    Emgui_end();
 
-	return !!refresh;
+    return !!refresh;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_update()
-{
-	TrackData* trackData = getTrackData();
-	bool need_update = internalUpdate();
+void Editor_update() {
+    TrackData* trackData = getTrackData();
+    bool need_update = internalUpdate();
 
-	if (need_update)
-	{
-		Editor_updateTrackScroll();
-		internalUpdate();
-	}
+    if (need_update) {
+        Editor_updateTrackScroll();
+        internalUpdate();
+    }
 
-	// Update if we are playing with loop enabled
+    // Update if we are playing with loop enabled
 
-	if (trackData->isPlaying && trackData->isLooping)
-	{
-		const int row = getRowPos();
+    if (trackData->isPlaying && trackData->isLooping) {
+        const int row = getRowPos();
 
-		if (row >= trackData->endLoop)
-			setRowPos(trackData->startLoop);
-	}
+        if (row >= trackData->endLoop)
+            setRowPos(trackData->startLoop);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void copySelection(int row, int track, int selectLeft, int selectRight, int selectTop, int selectBottom)
-{
-	CopyEntry* entry = 0;
-	int copy_count = 0;
-	struct sync_track** tracks = getTracks();
+static void copySelection(int row, int track, int selectLeft, int selectRight, int selectTop, int selectBottom) {
+    CopyEntry* entry = 0;
+    int copy_count = 0;
+    struct sync_track** tracks = getTracks();
 
-	// Count how much we need to copy
+    // Count how much we need to copy
 
-	for (track = selectLeft; track <= selectRight; ++track)
-	{
-		struct sync_track* t = tracks[track];
-		for (row = selectTop; row <= selectBottom; ++row)
-		{
-			int idx = sync_find_key(t, row);
-			if (idx < 0)
-				continue;
+    for (track = selectLeft; track <= selectRight; ++track) {
+        struct sync_track* t = tracks[track];
+        for (row = selectTop; row <= selectBottom; ++row) {
+            int idx = sync_find_key(t, row);
+            if (idx < 0)
+                continue;
 
-			copy_count++;
-		}
-	}
+            copy_count++;
+        }
+    }
 
-	free(s_copyData.entries);
-	if (copy_count != 0)
-	{
-		entry = s_copyData.entries = malloc(sizeof(CopyEntry) * copy_count);
+    free(s_copyData.entries);
+    if (copy_count != 0) {
+        entry = s_copyData.entries = malloc(sizeof(CopyEntry) * copy_count);
 
-		for (track = selectLeft; track <= selectRight; ++track)
-		{
-			struct sync_track* t = tracks[track];
-			for (row = selectTop; row <= selectBottom; ++row)
-			{
-				int idx = sync_find_key(t, row);
-				if (idx < 0)
-					continue;
+        for (track = selectLeft; track <= selectRight; ++track) {
+            struct sync_track* t = tracks[track];
+            for (row = selectTop; row <= selectBottom; ++row) {
+                int idx = sync_find_key(t, row);
+                if (idx < 0)
+                    continue;
 
-				entry->track = track - selectLeft;
-				entry->keyFrame = t->keys[idx];
-				entry->keyFrame.row -= selectTop;
-				entry++;
-			}
-		}
-	}
+                entry->track = track - selectLeft;
+                entry->keyFrame = t->keys[idx];
+                entry->keyFrame.row -= selectTop;
+                entry++;
+            }
+        }
+    }
 
-	s_copyData.bufferWidth = selectRight - selectLeft + 1;
-	s_copyData.bufferHeight = selectBottom - selectTop + 1;
-	s_copyData.count = copy_count;
+    s_copyData.bufferWidth = selectRight - selectLeft + 1;
+    s_copyData.bufferHeight = selectBottom - selectTop + 1;
+    s_copyData.count = copy_count;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight, bool externalMulti)
-{
-	int i, j;
-	const int track_count = getTrackCount();
+static void deleteArea(int rowPos, int track, int bufferWidth, int bufferHeight, bool externalMulti) {
+    int i, j;
+    const int track_count = getTrackCount();
 
-	if (!externalMulti)
-		Commands_beginMulti("deleteArea");
+    if (!externalMulti)
+        Commands_beginMulti("deleteArea");
 
-	for (i = 0; i < bufferWidth; ++i)
-	{
-		int trackPos = track + i;
-		int trackIndex = trackPos;
+    for (i = 0; i < bufferWidth; ++i) {
+        int trackPos = track + i;
+        int trackIndex = trackPos;
 
-		if (trackPos >= track_count)
-			continue;
+        if (trackPos >= track_count)
+            continue;
 
-		for (j = 0; j < bufferHeight; ++j)
-		{
-			int row = rowPos + j;
+        for (j = 0; j < bufferHeight; ++j) {
+            int row = rowPos + j;
 
-			Commands_deleteKey(trackIndex, row);
-		}
-	}
+            Commands_deleteKey(trackIndex, row);
+        }
+    }
 
-	if (!externalMulti)
-	{
-		Commands_endMulti();
-		updateNeedsSaving();
-	}
+    if (!externalMulti) {
+        Commands_endMulti();
+        updateNeedsSaving();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef enum BiasOperation
-{
-	BiasOperation_Bias,
-	BiasOperation_Scale,
+typedef enum BiasOperation {
+    BiasOperation_Bias,
+    BiasOperation_Scale,
 } BiasOperation;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void scaleOrBiasSelection(float value, BiasOperation biasOp)
-{
-	int track, row;
-	struct sync_track** tracks = getTracks();
-	TrackData* trackData = getTrackData();
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+static void scaleOrBiasSelection(float value, BiasOperation biasOp) {
+    int track, row;
+    struct sync_track** tracks = getTracks();
+    TrackData* trackData = getTrackData();
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+    int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
-	// If we have no selection and no currenty key bias the previous key
+    // If we have no selection and no currenty key bias the previous key
 
-	if (selectLeft == selectRight && selectTop == selectBottom)
-	{
-		int idx;
-		struct sync_track* track;
-		struct sync_track** tracks = getTracks();
+    if (selectLeft == selectRight && selectTop == selectBottom) {
+        int idx;
+        struct sync_track* track;
+        struct sync_track** tracks = getTracks();
 
-		if (!tracks || !tracks[getActiveTrack()]->keys)
-			return;
+        if (!tracks || !tracks[getActiveTrack()]->keys)
+            return;
 
-		track = tracks[getActiveTrack()];
+        track = tracks[getActiveTrack()];
 
-		if (!canEditCurrentTrack())
-			return;
+        if (!canEditCurrentTrack())
+            return;
 
-		idx = sync_find_key(track, getRowPos());
+        idx = sync_find_key(track, getRowPos());
 
-		if (idx < 0)
-		{
-			idx = -idx - 1;
-			selectTop = selectBottom = track->keys[emaxi(idx - 1, 0)].row;
-		}
-	}
+        if (idx < 0) {
+            idx = -idx - 1;
+            selectTop = selectBottom = track->keys[emaxi(idx - 1, 0)].row;
+        }
+    }
 
-	if (biasOp == BiasOperation_Bias)
-		Commands_beginMulti("biasSelection");
-	else
-		Commands_beginMulti("scaleSelection");
+    if (biasOp == BiasOperation_Bias)
+        Commands_beginMulti("biasSelection");
+    else
+        Commands_beginMulti("scaleSelection");
 
-	for (track = selectLeft; track <= selectRight; ++track)
-	{
-		struct sync_track* t = tracks[track];
+    for (track = selectLeft; track <= selectRight; ++track) {
+        struct sync_track* t = tracks[track];
 
-		if (trackData->tracks[track].disabled)
-			continue;
+        if (trackData->tracks[track].disabled)
+            continue;
 
-		for (row = selectTop; row <= selectBottom; ++row)
-		{
-			struct track_key newKey;
-			int idx = sync_find_key(t, row);
-			if (idx < 0)
-				continue;
+        for (row = selectTop; row <= selectBottom; ++row) {
+            struct track_key newKey;
+            int idx = sync_find_key(t, row);
+            if (idx < 0)
+                continue;
 
-			newKey = t->keys[idx];
+            newKey = t->keys[idx];
 
-			if (biasOp == BiasOperation_Bias)
-				newKey.value += value;
-			else
-				newKey.value *= value;
+            if (biasOp == BiasOperation_Bias)
+                newKey.value += value;
+            else
+                newKey.value *= value;
 
-			Commands_updateKey(track, &newKey);
-		}
-	}
+            Commands_updateKey(track, &newKey);
+        }
+    }
 
-	Commands_endMulti();
-	updateNeedsSaving();
+    Commands_endMulti();
+    updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void biasSelection(float value)
-{
-	scaleOrBiasSelection(value, BiasOperation_Bias);
+static void biasSelection(float value) {
+    scaleOrBiasSelection(value, BiasOperation_Bias);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void scaleSelection(float value)
-{
-	scaleOrBiasSelection(value, BiasOperation_Scale);
+static void scaleSelection(float value) {
+    scaleOrBiasSelection(value, BiasOperation_Scale);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -772,173 +707,157 @@ static char s_editBuffer[512];
 static bool is_editing = false;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-static void doEdit(int track, int row_pos, float value)
-{
-	struct sync_track* t;
-	struct track_key key;
+static void doEdit(int track, int row_pos, float value) {
+    struct sync_track* t;
+    struct track_key key;
 
-	t = getTracks()[track];
+    t = getTracks()[track];
 
-	key.row = row_pos;
-	key.value = value;
-	key.type = 0;
+    key.row = row_pos;
+    key.value = value;
+    key.type = 0;
 
-	if (t->num_keys > 0)
-	{
-		int idx = sync_find_key(t, row_pos);
+    if (t->num_keys > 0) {
+        int idx = sync_find_key(t, row_pos);
 
-		if (idx > 0)
-		{
-			// exact match, keep current type
-			key.type = t->keys[emaxi(idx, 0)].type;
-		}
-		else
-		{
-			// no match, grab type from previous key
-			if (idx < 0)
-				idx = -idx - 1;
+        if (idx > 0) {
+            // exact match, keep current type
+            key.type = t->keys[emaxi(idx, 0)].type;
+        } else {
+            // no match, grab type from previous key
+            if (idx < 0)
+                idx = -idx - 1;
 
-			key.type = t->keys[emaxi(idx - 1, 0)].type;
-		}
-	}
+            key.type = t->keys[emaxi(idx - 1, 0)].type;
+        }
+    }
 
-	Commands_addOrUpdateKey(track, &key);
-	updateNeedsSaving();
+    Commands_addOrUpdateKey(track, &key);
+    updateNeedsSaving();
 }
 
-static void endEditing()
-{
-	if (!is_editing || !getTracks())
-		return;
+static void endEditing() {
+    if (!is_editing || !getTracks())
+        return;
 
-	if (strcmp(s_editBuffer, ""))
-		doEdit(getActiveTrack(), getRowPos(), (float)my_atof(s_editBuffer));
+    if (strcmp(s_editBuffer, ""))
+        doEdit(getActiveTrack(), getRowPos(), (float)my_atof(s_editBuffer));
 
-	is_editing = false;
-	s_editorData.trackData.editText = 0;
+    is_editing = false;
+    s_editorData.trackData.editText = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void cancelEditing()
-{
-	is_editing = false;
-	s_editorData.trackData.editText = 0;
+static void cancelEditing() {
+    is_editing = false;
+    s_editorData.trackData.editText = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_scroll(float deltaX, float deltaY, int flags)
-{
-	TrackData* trackData = getTrackData();
-	int current_row = s_editorData.trackViewInfo.rowPos;
-	int old_offset = s_editorData.trackViewInfo.startPixel;
-	int start_row = 0, end_row = 10000;
+void Editor_scroll(float deltaX, float deltaY, int flags) {
+    TrackData* trackData = getTrackData();
+    int current_row = s_editorData.trackViewInfo.rowPos;
+    int old_offset = s_editorData.trackViewInfo.startPixel;
+    int start_row = 0, end_row = 10000;
 
-	start_row = trackData->startRow;
-	end_row = trackData->endRow + 1;	// +1 as we count from 0
+    start_row = trackData->startRow;
+    end_row = trackData->endRow + 1;  // +1 as we count from 0
 
-	if (flags & EMGUI_KEY_ALT)
-	{
-		const float multiplier = flags & EMGUI_KEY_SHIFT ? 0.1f : 0.01f;
-		biasSelection(-deltaY * multiplier);
-		Editor_update();
-		return;
-	}
+    if (flags & EMGUI_KEY_ALT) {
+        const float multiplier = flags & EMGUI_KEY_SHIFT ? 0.1f : 0.01f;
+        biasSelection(-deltaY * multiplier);
+        Editor_update();
+        return;
+    }
 
-	current_row += (int)deltaY;
+    current_row += (int)deltaY;
 
-	if (current_row < start_row || current_row >= end_row)
-		return;
+    if (current_row < start_row || current_row >= end_row)
+        return;
 
-	s_editorData.trackViewInfo.startPixel += (int)(deltaX * 4.0f);
-	s_editorData.trackViewInfo.rowPos = eclampi(current_row, start_row, end_row);
+    s_editorData.trackViewInfo.startPixel += (int)(deltaX * 4.0f);
+    s_editorData.trackViewInfo.rowPos = eclampi(current_row, start_row, end_row);
 
-	RemoteConnection_sendSetRowCommand(s_editorData.trackViewInfo.rowPos);
+    RemoteConnection_sendSetRowCommand(s_editorData.trackViewInfo.rowPos);
 
-	if (old_offset != s_editorData.trackViewInfo.startPixel)
-		Editor_updateTrackScroll();
+    if (old_offset != s_editorData.trackViewInfo.startPixel)
+        Editor_updateTrackScroll();
 
-	Editor_update();
+    Editor_update();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void updateTrackStatus()
-{
-	int i, track_count = getTrackCount();
+static void updateTrackStatus() {
+    int i, track_count = getTrackCount();
 
-	if (RemoteConnection_connected())
-		return;
+    if (RemoteConnection_connected())
+        return;
 
-	if (reset_tracks)
-	{
-		for (i = 0; i < track_count; ++i)
-			s_editorData.trackData.tracks[i].active = false;
+    if (reset_tracks) {
+        for (i = 0; i < track_count; ++i)
+            s_editorData.trackData.tracks[i].active = false;
 
-		Editor_update();
+        Editor_update();
 
-		reset_tracks = false;
-	}
+        reset_tracks = false;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void setWindowTitle(const text_t* path, bool needsSave)
-{
-	text_t windowTitle[4096];
+static void setWindowTitle(const text_t* path, bool needsSave) {
+    text_t windowTitle[4096];
 #if defined(_WIN32)
-	if (needsSave)
-		swprintf_s(windowTitle, sizeof_array(windowTitle), L"RocketEditor" EDITOR_VERSION L"- (%s) *", path);
-	else
-		swprintf_s(windowTitle, sizeof_array(windowTitle), L"RocketEditor" EDITOR_VERSION L" - (%s)", path);
+    if (needsSave)
+        swprintf_s(windowTitle, sizeof_array(windowTitle), L"RocketEditor" EDITOR_VERSION L"- (%s) *", path);
+    else
+        swprintf_s(windowTitle, sizeof_array(windowTitle), L"RocketEditor" EDITOR_VERSION L" - (%s)", path);
 #else
-	if (needsSave)
-		sprintf(windowTitle, "RocketEditor" EDITOR_VERSION "- (%s) *", path);
-	else
-		sprintf(windowTitle, "RocketEditor" EDITOR_VERSION "- (%s)", path);
+    if (needsSave)
+        sprintf(windowTitle, "RocketEditor" EDITOR_VERSION "- (%s) *", path);
+    else
+        sprintf(windowTitle, "RocketEditor" EDITOR_VERSION "- (%s)", path);
 #endif
 
-	Window_setTitle(windowTitle);
+    Window_setTitle(windowTitle);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void updateNeedsSaving()
-{
-	int undoCount;
+void updateNeedsSaving() {
+    int undoCount;
 
-	if (!s_loadedFilename)
-		return;
+    if (!s_loadedFilename)
+        return;
 
-	undoCount = Commands_undoCount();
+    undoCount = Commands_undoCount();
 
-	if (s_undoLevel != undoCount)
-		setWindowTitle(s_loadedFilename, true);
-	else
-		setWindowTitle(s_loadedFilename, false);
+    if (s_undoLevel != undoCount)
+        setWindowTitle(s_loadedFilename, true);
+    else
+        setWindowTitle(s_loadedFilename, false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Editor_needsSave()
-{
-	return s_undoLevel != Commands_undoCount();
+bool Editor_needsSave() {
+    return s_undoLevel != Commands_undoCount();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void decodeMusic(text_t* path, int fromLoad)
-{
-    if (!Music_decode(path, &getTrackData()->musicData))
-    {
+static void decodeMusic(text_t* path, int fromLoad) {
+    if (!Music_decode(path, &getTrackData()->musicData)) {
         s_editorData.waveViewSize = 0;
         s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize;
         return;
     }
 
     if (!fromLoad)
-	    updateNeedsSaving();
+        updateNeedsSaving();
 
     s_editorData.waveViewSize = 128 + 20;
     s_editorData.trackViewInfo.windowSizeX = s_editorData.originalXSize - s_editorData.waveViewSize;
@@ -953,294 +872,263 @@ static void decodeMusic(text_t* path, int fromLoad)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onFinishedLoad(const text_t* path)
-{
-	Editor_update();
-	setWindowTitle(path, false);
-	setMostRecentFile(path);
-	s_undoLevel = Commands_undoCount();
+static void onFinishedLoad(const text_t* path) {
+    Editor_update();
+    setWindowTitle(path, false);
+    setMostRecentFile(path);
+    s_undoLevel = Commands_undoCount();
 
-	if (s_editorData.trackData.musicData.filename)
+    if (s_editorData.trackData.musicData.filename)
         decodeMusic(s_editorData.trackData.musicData.filename, 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_loadRecentFile(int id)
-{
-	text_t path[2048];
-	textCopy(path, s_recentFiles[id]);  // must be unique buffer when doing set mostRecent
+void Editor_loadRecentFile(int id) {
+    text_t path[2048];
+    textCopy(path, s_recentFiles[id]);  // must be unique buffer when doing set mostRecent
 
-	if (LoadSave_loadRocketXML(path, getTrackData()))
-		onFinishedLoad(path);
+    if (LoadSave_loadRocketXML(path, getTrackData()))
+        onFinishedLoad(path);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onOpen()
-{
-	text_t currentFile[2048];
+static void onOpen() {
+    text_t currentFile[2048];
 
-	if (LoadSave_loadRocketXMLDialog(currentFile, getTrackData()))
-		onFinishedLoad(currentFile);
+    if (LoadSave_loadRocketXMLDialog(currentFile, getTrackData()))
+        onFinishedLoad(currentFile);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onLoadMusic()
-{
-	text_t path[2048];
+static void onLoadMusic() {
+    text_t path[2048];
 
-	//printf("onLoadMusic\n");
+    // printf("onLoadMusic\n");
 
-    if (!s_editorData.canDecodeMusic)
-    {
-		Dialog_showError(TEXT("Unable to load music as BASS failed to init."));
-		return;
+    if (!s_editorData.canDecodeMusic) {
+        Dialog_showError(TEXT("Unable to load music as BASS failed to init."));
+        return;
     }
 
-	if (!Dialog_open(path))
-		return;
+    if (!Dialog_open(path))
+        return;
 
     decodeMusic(path, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static bool onSaveAs()
-{
-	text_t path[2048];
-	int ret;
+static bool onSaveAs() {
+    text_t path[2048];
+    int ret;
 
-	memset(path, 0, sizeof(path));
+    memset(path, 0, sizeof(path));
 
-	if (!(ret = LoadSave_saveRocketXMLDialog(path, getTrackData())))
-		return false;
+    if (!(ret = LoadSave_saveRocketXMLDialog(path, getTrackData())))
+        return false;
 
-	setMostRecentFile(path);
-	setWindowTitle(path, false);
-	s_undoLevel = Commands_undoCount();
+    setMostRecentFile(path);
+    setWindowTitle(path, false);
+    s_undoLevel = Commands_undoCount();
 
-	return true;
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onSave()
-{
-	if (!s_loadedFilename)
-		onSaveAs();
-	else
-		LoadSave_saveRocketXML(getMostRecentFile(), getTrackData());
+static void onSave() {
+    if (!s_loadedFilename)
+        onSaveAs();
+    else
+        LoadSave_saveRocketXML(getMostRecentFile(), getTrackData());
 
-	setWindowTitle(getMostRecentFile(), false);
-	s_undoLevel = Commands_undoCount();
+    setWindowTitle(getMostRecentFile(), false);
+    s_undoLevel = Commands_undoCount();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Editor_saveBeforeExit()
-{
-	if (s_loadedFilename)
-	{
-		onSave();
-		return true;
-	}
+bool Editor_saveBeforeExit() {
+    if (s_loadedFilename) {
+        onSave();
+        return true;
+    }
 
-	return onSaveAs();
+    return onSaveAs();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onUndo()
-{
-	Commands_undo();
-	updateNeedsSaving();
+static void onUndo() {
+    Commands_undo();
+    updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onRedo()
-{
-	Commands_undo();
-	updateNeedsSaving();
+static void onRedo() {
+    Commands_undo();
+    updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onCancelEdit()
-{
-	cancelEditing();
+static void onCancelEdit() {
+    cancelEditing();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onCutAndCopy(bool cut, bool externalMulti)
-{
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+static void onCutAndCopy(bool cut, bool externalMulti) {
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+    const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
-	if (!cut)
-	{
-		copySelection(getRowPos(), getActiveTrack(), selectLeft, selectRight, selectTop, selectBottom);
-	}
-	else
-	{
-		copySelection(getRowPos(), getActiveTrack(), selectLeft, selectRight, selectTop, selectBottom);
-		deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight, externalMulti);
-	}
+    if (!cut) {
+        copySelection(getRowPos(), getActiveTrack(), selectLeft, selectRight, selectTop, selectBottom);
+    } else {
+        copySelection(getRowPos(), getActiveTrack(), selectLeft, selectRight, selectTop, selectBottom);
+        deleteArea(selectTop, selectLeft, s_copyData.bufferWidth, s_copyData.bufferHeight, externalMulti);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onDeleteKey()
-{
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+static void onDeleteKey() {
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+    const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
-	if (selectLeft == selectRight && selectTop == selectBottom)
-		deleteArea(getRowPos(), getActiveTrack(), 1, 1, false);
-	else
-		onCutAndCopy(true, false);
+    if (selectLeft == selectRight && selectTop == selectBottom)
+        deleteArea(getRowPos(), getActiveTrack(), 1, 1, false);
+    else
+        onCutAndCopy(true, false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onPaste(bool externalMulti)
-{
-	const int buffer_width = s_copyData.bufferWidth;
-	const int buffer_height = s_copyData.bufferHeight;
-	const int buffer_size = s_copyData.count;
-	const int track_count = getTrackCount();
-	const int row_pos = getRowPos();
-	const int active_track = getActiveTrack();
-	int i, trackPos;
+static void onPaste(bool externalMulti) {
+    const int buffer_width = s_copyData.bufferWidth;
+    const int buffer_height = s_copyData.bufferHeight;
+    const int buffer_size = s_copyData.count;
+    const int track_count = getTrackCount();
+    const int row_pos = getRowPos();
+    const int active_track = getActiveTrack();
+    int i, trackPos;
 
-	if (!s_copyData.entries)
-		return;
+    if (!s_copyData.entries)
+        return;
 
-	// First clear the paste area
+    // First clear the paste area
 
-	deleteArea(row_pos, active_track, buffer_width, buffer_height, externalMulti);
+    deleteArea(row_pos, active_track, buffer_width, buffer_height, externalMulti);
 
-	if (!externalMulti)
-		Commands_beginMulti("pasteArea");
+    if (!externalMulti)
+        Commands_beginMulti("pasteArea");
 
-	for (i = 0; i < buffer_size; ++i)
-	{
-		const CopyEntry* ce = &s_copyData.entries[i];
+    for (i = 0; i < buffer_size; ++i) {
+        const CopyEntry* ce = &s_copyData.entries[i];
 
-		trackPos = active_track + ce->track;
-		if (trackPos < track_count)
-		{
-			size_t trackIndex = trackPos;
-			struct track_key key = ce->keyFrame;
-			key.row += row_pos;
+        trackPos = active_track + ce->track;
+        if (trackPos < track_count) {
+            size_t trackIndex = trackPos;
+            struct track_key key = ce->keyFrame;
+            key.row += row_pos;
 
-			Commands_addOrUpdateKey((int)trackIndex, &key);
-		}
-	}
+            Commands_addOrUpdateKey((int)trackIndex, &key);
+        }
+    }
 
-	if (!externalMulti)
-	{
-		Commands_endMulti();
-		updateNeedsSaving();
-	}
+    if (!externalMulti) {
+        Commands_endMulti();
+        updateNeedsSaving();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onMoveSelection(bool down)
-{
-	int buffer_width, track, row;
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	struct sync_track** tracks = getTracks();
-	int startTrack, stopTrack, startRow, stopRow;
-	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+static void onMoveSelection(bool down) {
+    int buffer_width, track, row;
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    struct sync_track** tracks = getTracks();
+    int startTrack, stopTrack, startRow, stopRow;
+    const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+    const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
-	// cut the selection
+    // cut the selection
 
-	Commands_beginMulti("moveSelection");
+    Commands_beginMulti("moveSelection");
 
-	// Delete at the bottom as we are about to move the selection down otherwise in the top
+    // Delete at the bottom as we are about to move the selection down otherwise in the top
 
-	for (track = selectLeft; track <= selectRight; ++track)
-	{
-		struct sync_track* t = tracks[track];
-		for (row = selectTop; row <= selectBottom; ++row)
-		{
-			struct track_key newKey;
+    for (track = selectLeft; track <= selectRight; ++track) {
+        struct sync_track* t = tracks[track];
+        for (row = selectTop; row <= selectBottom; ++row) {
+            struct track_key newKey;
 
-			int idx = sync_find_key(t, row);
-			if (idx < 0)
-				continue;
+            int idx = sync_find_key(t, row);
+            if (idx < 0)
+                continue;
 
-			newKey = t->keys[idx];
-			newKey.row = down ? newKey.row + 1 : newKey.row - 1;
+            newKey = t->keys[idx];
+            newKey.row = down ? newKey.row + 1 : newKey.row - 1;
 
-			Commands_deleteKey(track, row);
-			Commands_addKey(track, &newKey);
-		}
-	}
+            Commands_deleteKey(track, row);
+            Commands_addKey(track, &newKey);
+        }
+    }
 
-	buffer_width = (selectRight - selectLeft) + 1;
+    buffer_width = (selectRight - selectLeft) + 1;
 
-	startTrack = viewInfo->selectStartTrack;
-	stopTrack = viewInfo->selectStopTrack;
-	startRow = viewInfo->selectStartRow;
-	stopRow = viewInfo->selectStopRow;
+    startTrack = viewInfo->selectStartTrack;
+    stopTrack = viewInfo->selectStopTrack;
+    startRow = viewInfo->selectStartRow;
+    stopRow = viewInfo->selectStopRow;
 
-	// move the selection to the next position
+    // move the selection to the next position
 
-	if (down)
-	{
-		startRow++;
-		stopRow++;
-	}
-	else
-	{
-		// can't paste up here
+    if (down) {
+        startRow++;
+        stopRow++;
+    } else {
+        // can't paste up here
 
-		if (getRowPos() == 0)
-		{
-			//onPaste(true);
-			Commands_endMulti();
-			return;
-		}
+        if (getRowPos() == 0) {
+            // onPaste(true);
+            Commands_endMulti();
+            return;
+        }
 
-		startRow--;
-		stopRow--;
+        startRow--;
+        stopRow--;
 
-		stopRow = maxi(stopRow, 0);
-		startRow = maxi(startRow, 0);
-	}
+        stopRow = maxi(stopRow, 0);
+        startRow = maxi(startRow, 0);
+    }
 
-	Commands_setSelection(viewInfo, startTrack, stopTrack, startRow, stopRow);
+    Commands_setSelection(viewInfo, startTrack, stopTrack, startRow, stopRow);
 
-	if (startRow < stopRow)
-	{
-		deleteArea(startRow - 1, selectLeft, buffer_width, 1, true);
-		setRowPos(startRow);
-		deleteArea(stopRow + 1, selectLeft, buffer_width, 1, true);
-	}
-	else
-	{
-		deleteArea(stopRow - 1, selectLeft, buffer_width, 1, true);
-		setRowPos(stopRow);
-		deleteArea(startRow + 1, selectLeft, buffer_width, 1, true);
-	}
+    if (startRow < stopRow) {
+        deleteArea(startRow - 1, selectLeft, buffer_width, 1, true);
+        setRowPos(startRow);
+        deleteArea(stopRow + 1, selectLeft, buffer_width, 1, true);
+    } else {
+        deleteArea(stopRow - 1, selectLeft, buffer_width, 1, true);
+        setRowPos(stopRow);
+        deleteArea(startRow + 1, selectLeft, buffer_width, 1, true);
+    }
 
-	Commands_endMulti();
-	updateNeedsSaving();
+    Commands_endMulti();
+    updateNeedsSaving();
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -1256,717 +1144,800 @@ static void doOffsetTrack(int track, int nCount) {
     struct sync_track** tracks = getTracks();
     struct sync_track* t = tracks[track];
 
+    int nKeys = t->num_keys;
+    struct track_key* newKeys = (struct track_key*)malloc(sizeof(struct track_key) * nKeys);
 
-	int nKeys = t->num_keys;
-	struct track_key *newKeys = (struct track_key *)malloc(sizeof(struct track_key) * nKeys);
+    // Detele all keys, and create new ones in a temporary array
+    for (int i = 0; i < nKeys; i++) {
+        struct track_key newKey;
 
-	// Detele all keys, and create new ones in a temporary array
-	for (int i=0;i<nKeys;i++) {
-		struct track_key newKey;
+        int row = t->keys[i].row;
+        newKey = t->keys[i];
+        newKey.row = newKey.row + nCount;
 
-		int row = t->keys[i].row;
-		newKey = t->keys[i];
-		newKey.row = newKey.row + nCount;
+        newKeys[i] = newKey;
 
-		newKeys[i] = newKey;
+        Commands_deleteKey(track, row);
+    }
 
-		Commands_deleteKey(track, row);
-	}
+    // Add new keys back from temporary array  (they are already at the right offset)
+    for (int i = 0; i < nKeys; i++) {
+        Commands_addKey(track, &newKeys[i]);
+    }
 
-	// Add new keys back from temporary array  (they are already at the right offset)
-	for(int i=0;i<nKeys;i++) {
-		Commands_addKey(track, &newKeys[i]);
-	}
-
-	free(newKeys);
+    free(newKeys);
     Commands_endMulti();
 }
-
 
 // Offset group - same as for track but for all tracks in the current gourp
 // the current group is taken from the group of the currently active track!
 static void onOffsetGroup(int nCount) {
+    Group* group;
+    TrackData* trackData = getTrackData();
+    int currentTrack = getActiveTrack();
 
-	Group* group;
-	TrackData* trackData = getTrackData();
-	int currentTrack = getActiveTrack();
+    // Get the group for the currentTrack
+    Track* ptrTrack = &trackData->tracks[currentTrack];
+    group = ptrTrack->group;
 
-	// Get the group for the currentTrack
-	Track* ptrTrack = &trackData->tracks[currentTrack];
-	group = ptrTrack->group;
-
-	for(int j = 0; j < group->trackCount; j++) {		
-		int trackIndex = group->tracks[j]->index;
-		doOffsetTrack(trackIndex, nCount);
-	}
+    for (int j = 0; j < group->trackCount; j++) {
+        int trackIndex = group->tracks[j]->index;
+        doOffsetTrack(trackIndex, nCount);
+    }
 
     updateNeedsSaving();
 }
 
 static void onOffsetTrack(int nCount) {
+    int track = getActiveTrack();
 
-    int track = getActiveTrack();	
-
-	  doOffsetTrack(track, nCount);
+    doOffsetTrack(track, nCount);
 
     updateNeedsSaving();
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onSelectTrack()
-{
-	int activeTrack = getActiveTrack();
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	struct sync_track** tracks;
-	struct sync_track* track;
+static void onSelectTrack() {
+    int activeTrack = getActiveTrack();
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    struct sync_track** tracks;
+    struct sync_track* track;
 
-	if (!(tracks = getTracks()))
-		return;
+    if (!(tracks = getTracks()))
+        return;
 
-	track = tracks[activeTrack];
-	viewInfo->selectStartTrack = viewInfo->selectStopTrack = activeTrack;
+    track = tracks[activeTrack];
+    viewInfo->selectStartTrack = viewInfo->selectStopTrack = activeTrack;
 
-	if (track->keys)
-	{
-		viewInfo->selectStartRow = track->keys[0].row;
-		viewInfo->selectStopRow = track->keys[track->num_keys - 1].row;
-	}
-	else
-	{
-		viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
-	}
+    if (track->keys) {
+        viewInfo->selectStartRow = track->keys[0].row;
+        viewInfo->selectStopRow = track->keys[track->num_keys - 1].row;
+    } else {
+        viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onInterpolation()
-{
-	int idx;
-	struct track_key newKey;
-	struct sync_track* track;
-	struct sync_track** tracks = getTracks();
+static void onInterpolation() {
+    int idx;
+    struct track_key newKey;
+    struct sync_track* track;
+    struct sync_track** tracks = getTracks();
 
-	if (!tracks)
-		return;
+    if (!tracks)
+        return;
 
-	track = tracks[getActiveTrack()];
+    track = tracks[getActiveTrack()];
 
-	if (!canEditCurrentTrack())
-		return;
+    if (!canEditCurrentTrack())
+        return;
 
-	idx = key_idx_floor(track, getRowPos());
-	if (idx < 0)
-		return;
+    idx = key_idx_floor(track, getRowPos());
+    if (idx < 0)
+        return;
 
-	newKey = track->keys[idx];
-	newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
+    newKey = track->keys[idx];
+    newKey.type = ((newKey.type + 1) % KEY_TYPE_COUNT);
 
-	Commands_addOrUpdateKey(getActiveTrack(), &newKey);
-	updateNeedsSaving();
+    Commands_addOrUpdateKey(getActiveTrack(), &newKey);
+    updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onInvertSelection()
-{
-	int track, row, rowCount;
-	CopyEntry* entries;
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	struct sync_track** tracks = getTracks();
-	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
-	const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
+static void onInvertSelection() {
+    int track, row, rowCount;
+    CopyEntry* entries;
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    struct sync_track** tracks = getTracks();
+    const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    const int selectTop = mini(viewInfo->selectStartRow, viewInfo->selectStopRow);
+    const int selectBottom = maxi(viewInfo->selectStartRow, viewInfo->selectStopRow);
 
-	if (selectLeft == selectRight && selectTop == selectBottom)
-		return;
+    if (selectLeft == selectRight && selectTop == selectBottom)
+        return;
 
-	rowCount = (selectBottom - selectTop) + 1;
-	entries = malloc(rowCount * sizeof(CopyEntry));
+    rowCount = (selectBottom - selectTop) + 1;
+    entries = malloc(rowCount * sizeof(CopyEntry));
 
-	Commands_beginMulti("invertSelection");
+    Commands_beginMulti("invertSelection");
 
-	for (track = selectLeft; track <= selectRight; ++track)
-	{
-		int i = 0;
-		struct sync_track* t = tracks[track];
+    for (track = selectLeft; track <= selectRight; ++track) {
+        int i = 0;
+        struct sync_track* t = tracks[track];
 
-		memset(entries, 0, rowCount * sizeof(CopyEntry));
+        memset(entries, 0, rowCount * sizeof(CopyEntry));
 
-		// Take a copy of the data and delete the keys
+        // Take a copy of the data and delete the keys
 
-		for (i = 0, row = selectTop; row <= selectBottom; ++row, ++i)
-		{
-			int idx = sync_find_key(t, row);
-			if (idx < 0)
-				continue;
+        for (i = 0, row = selectTop; row <= selectBottom; ++row, ++i) {
+            int idx = sync_find_key(t, row);
+            if (idx < 0)
+                continue;
 
-			entries[i].track = 1; // just to mark that we should use it
-			entries[i].keyFrame = t->keys[idx];
+            entries[i].track = 1;  // just to mark that we should use it
+            entries[i].keyFrame = t->keys[idx];
 
-			Commands_deleteKey(track, row);
-		}
+            Commands_deleteKey(track, row);
+        }
 
-		// Add back the keys but in inverted order
+        // Add back the keys but in inverted order
 
-		for (i = 0, row = selectBottom; row >= selectTop; --row, ++i)
-		{
-			CopyEntry* entry = &entries[i];
+        for (i = 0, row = selectBottom; row >= selectTop; --row, ++i) {
+            CopyEntry* entry = &entries[i];
 
-			if (!entry->track)
-				continue;
+            if (!entry->track)
+                continue;
 
-			entry->keyFrame.row = row;
-			Commands_addOrUpdateKey(track, &entry->keyFrame);
-		}
-	}
+            entry->keyFrame.row = row;
+            Commands_addOrUpdateKey(track, &entry->keyFrame);
+        }
+    }
 
-	free(entries);
+    free(entries);
 
-	Commands_endMulti();
-	updateNeedsSaving();
+    Commands_endMulti();
+    updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void enterCurrentValue(struct sync_track* track, int activeTrack, int rowPos)
-{
-	struct track_key key;
-	int idx;
+static void enterCurrentValue(struct sync_track* track, int activeTrack, int rowPos) {
+    struct track_key key;
+    int idx;
 
-	if (!track->keys)
-	{
-		key.row = rowPos;
-		key.value = 0.0f;
-		key.type = 0;
+    if (!track->keys) {
+        key.row = rowPos;
+        key.value = 0.0f;
+        key.type = 0;
 
-		Commands_addOrUpdateKey(activeTrack, &key);
-		updateNeedsSaving();
+        Commands_addOrUpdateKey(activeTrack, &key);
+        updateNeedsSaving();
 
-		return;
-	}
+        return;
+    }
 
-	idx = sync_find_key(track, rowPos);
-	if (idx < 0)
-		idx = -idx - 1;
+    idx = sync_find_key(track, rowPos);
+    if (idx < 0)
+        idx = -idx - 1;
 
-	key.row = rowPos;
+    key.row = rowPos;
 
-	if (track->num_keys > 0)
-	{
-		key.value = (float)sync_get_val(track, rowPos);
-		key.type = track->keys[emaxi(idx - 1, 0)].type;
-	}
-	else
-	{
-		key.value = 0.0f;
-		key.type = 0;
-	}
+    if (track->num_keys > 0) {
+        key.value = (float)sync_get_val(track, rowPos);
+        key.type = track->keys[emaxi(idx - 1, 0)].type;
+    } else {
+        key.value = 0.0f;
+        key.type = 0;
+    }
 
-	Commands_addOrUpdateKey(activeTrack, &key);
-	updateNeedsSaving();
+    Commands_addOrUpdateKey(activeTrack, &key);
+    updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onEnterCurrentValue()
-{
-	int i;
-	struct sync_track** tracks = getTracks();
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	const int rowPos = getRowPos();
-	const int activeTrack = getActiveTrack();
-	const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
-	const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+static void onEnterCurrentValue() {
+    int i;
+    struct sync_track** tracks = getTracks();
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    const int rowPos = getRowPos();
+    const int activeTrack = getActiveTrack();
+    const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
+    const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
 
-	if (!tracks)
-		return;
+    if (!tracks)
+        return;
 
-	if (!canEditCurrentTrack())
-		return;
+    if (!canEditCurrentTrack())
+        return;
 
-	Commands_beginMulti("enterCurrentValues");
+    Commands_beginMulti("enterCurrentValues");
 
-	enterCurrentValue(tracks[activeTrack], activeTrack, rowPos);
+    enterCurrentValue(tracks[activeTrack], activeTrack, rowPos);
 
-	for (i = selectLeft; i < selectRight; ++i)
-		enterCurrentValue(tracks[i], i, rowPos);
+    for (i = selectLeft; i < selectRight; ++i)
+        enterCurrentValue(tracks[i], i, rowPos);
 
-	Commands_endMulti();
+    Commands_endMulti();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onMuteToggle()
-{
-	struct sync_track** tracks = getTracks();
-	const int activeTrack = getActiveTrack();
-	TrackData* trackData = getTrackData();
-	Track* t = &trackData->tracks[activeTrack];
+static void onMuteToggle() {
+    struct sync_track** tracks = getTracks();
+    const int activeTrack = getActiveTrack();
+    TrackData* trackData = getTrackData();
+    Track* t = &trackData->tracks[activeTrack];
 
-	if (!tracks)
-		return;
+    if (!tracks)
+        return;
 
-	if (tracks[activeTrack]->num_keys < 2 && !t->muteBackup)
-		return;
+    if (tracks[activeTrack]->num_keys < 2 && !t->muteBackup)
+        return;
 
-	Commands_toggleMute(t, tracks[activeTrack], getRowPos());
+    Commands_toggleMute(t, tracks[activeTrack], getRowPos());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onPlay()
-{
-	RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
-	getTrackData()->isPlaying = !RemoteConnection_isPaused();
-	getTrackData()->isLooping = false;
+static void onPlay() {
+    RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
+    getTrackData()->isPlaying = !RemoteConnection_isPaused();
+    getTrackData()->isLooping = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onPlayLoop()
-{
-	TrackData* trackData = getTrackData();
-	const int rowPos = getRowPos();
-	const int endLoop = TrackData_getNextLoopmark(trackData, rowPos);
-	const int startLoop = TrackData_getPrevLoopmark(trackData, rowPos);
+static void onPlayLoop() {
+    TrackData* trackData = getTrackData();
+    const int rowPos = getRowPos();
+    const int endLoop = TrackData_getNextLoopmark(trackData, rowPos);
+    const int startLoop = TrackData_getPrevLoopmark(trackData, rowPos);
 
-	// Make sure we have a range to loop within
+    // Make sure we have a range to loop within
 
-	if (startLoop == -1 || endLoop == -1)
-		return;
+    if (startLoop == -1 || endLoop == -1)
+        return;
 
-	trackData->startLoop = startLoop;
-	trackData->endLoop = endLoop;
+    trackData->startLoop = startLoop;
+    trackData->endLoop = endLoop;
 
-	RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
+    RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
 
-	trackData->isPlaying = !RemoteConnection_isPaused();
-	trackData->isLooping = true;
+    trackData->isPlaying = !RemoteConnection_isPaused();
+    trackData->isLooping = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum ArrowDirection
-{
-	ARROW_LEFT,
-	ARROW_RIGHT,
-	ARROW_UP,
-	ARROW_DOWN,
+enum ArrowDirection {
+    ARROW_LEFT,
+    ARROW_RIGHT,
+    ARROW_UP,
+    ARROW_DOWN,
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum Selection
-{
-	DO_SELECTION,
-	NO_SELECTION,
+enum Selection {
+    DO_SELECTION,
+    NO_SELECTION,
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onRowStep(int step, enum Selection selection)
-{
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	TrackData* trackData = getTrackData();
+static void onRowStep(int step, enum Selection selection) {
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    TrackData* trackData = getTrackData();
 
-	setRowPos(eclampi(getRowPos() + step, trackData->startRow, trackData->endRow));
+    setRowPos(eclampi(getRowPos() + step, trackData->startRow, trackData->endRow));
 
-	if (selection == DO_SELECTION)
-	{
-		viewInfo->selectStopRow = getRowPos();
-	}
-	else
-		viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
+    if (selection == DO_SELECTION) {
+        viewInfo->selectStopRow = getRowPos();
+    } else
+        viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection selection)
-{
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	TrackData* trackData = getTrackData();
-	const int trackCount = getTrackCount();
-	const int oldTrack = getActiveTrack();
-	Track* oldT = &trackData->tracks[oldTrack];
-	int track = 0;
+static void onTrackSide(enum ArrowDirection dir, bool startOrEnd, enum Selection selection) {
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    TrackData* trackData = getTrackData();
+    const int trackCount = getTrackCount();
+    const int oldTrack = getActiveTrack();
+    Track* oldT = &trackData->tracks[oldTrack];
+    int track = 0;
 
-	if (!oldT->group) {
-		// no tracks yet, doesn't make sense to act on them
-		return;
-	}
+    if (!oldT->group) {
+        // no tracks yet, doesn't make sense to act on them
+        return;
+    }
 
-	if (dir == ARROW_LEFT)
-		track = startOrEnd ? 0 : getPrevTrack();
-	else
-		track = startOrEnd ? trackCount - 1 : getNextTrack();
+    if (dir == ARROW_LEFT)
+        track = startOrEnd ? 0 : getPrevTrack();
+    else
+        track = startOrEnd ? trackCount - 1 : getNextTrack();
 
-	track = eclampi(track, 0, trackCount);
+    track = eclampi(track, 0, trackCount);
 
-	setActiveTrack(track);
+    setActiveTrack(track);
 
-	if (selection == DO_SELECTION)
-	{
-		Track* t = &trackData->tracks[track];
+    if (selection == DO_SELECTION) {
+        Track* t = &trackData->tracks[track];
 
-		// if this track has a folded group we can't select it so set back the selection to the old one
+        // if this track has a folded group we can't select it so set back the selection to the old one
 
-		if (t->group->folded)
-			setActiveTrack(oldTrack);
-		else
-		{
-			viewInfo->selectStopTrack = track;
-		}
-	}
-	else
-	{
-		viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
-		viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
-	}
+        if (t->group->folded)
+            setActiveTrack(oldTrack);
+        else {
+            viewInfo->selectStopTrack = track;
+        }
+    } else {
+        viewInfo->selectStartTrack = viewInfo->selectStopTrack = track;
+        viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
+    }
 
-	if (!TrackView_isSelectedTrackVisible(viewInfo, trackData, track))
-	{
-		int offset = TrackView_getTracksOffset(viewInfo, trackData, oldTrack, track);
+    if (!TrackView_isSelectedTrackVisible(viewInfo, trackData, track)) {
+        int offset = TrackView_getTracksOffset(viewInfo, trackData, oldTrack, track);
 
-		s_editorData.trackViewInfo.startPixel += offset;
-		Editor_updateTrackScroll();
-	}
+        s_editorData.trackViewInfo.startPixel += offset;
+        Editor_updateTrackScroll();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onBookmarkDir(enum ArrowDirection dir, enum Selection selection)
-{
-	TrackData* trackData = getTrackData();
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	int row = getRowPos();
+static void onBookmarkDir(enum ArrowDirection dir, enum Selection selection) {
+    TrackData* trackData = getTrackData();
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    int row = getRowPos();
 
-	if (dir == ARROW_UP)
-		row = TrackData_getPrevBookmark(trackData, row);
-	else
-		row = TrackData_getNextBookmark(trackData, row);
+    if (dir == ARROW_UP)
+        row = TrackData_getPrevBookmark(trackData, row);
+    else
+        row = TrackData_getNextBookmark(trackData, row);
 
-	if (selection == NO_SELECTION)
-		viewInfo->selectStartRow = viewInfo->selectStopRow = row;
-	else
-		viewInfo->selectStopRow = row;
+    if (selection == NO_SELECTION)
+        viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+    else
+        viewInfo->selectStopRow = row;
 
-	setRowPos(row);
+    setRowPos(row);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onPrevNextKey(bool prevKey, enum Selection selection)
-{
-	struct sync_track* track;
-	struct sync_track** tracks = getTracks();
-	TrackViewInfo* viewInfo = getTrackViewInfo();
+static void onPrevNextKey(bool prevKey, enum Selection selection) {
+    struct sync_track* track;
+    struct sync_track** tracks = getTracks();
+    TrackViewInfo* viewInfo = getTrackViewInfo();
 
-	if (!tracks || !tracks[getActiveTrack()]->keys)
-		return;
+    if (!tracks || !tracks[getActiveTrack()]->keys)
+        return;
 
-	track = tracks[getActiveTrack()];
+    track = tracks[getActiveTrack()];
 
-	if (prevKey)
-	{
-		int idx = sync_find_key(track, getRowPos());
-		if (idx < 0)
-			idx = -idx - 1;
+    if (prevKey) {
+        int idx = sync_find_key(track, getRowPos());
+        if (idx < 0)
+            idx = -idx - 1;
 
-		setRowPos(track->keys[emaxi(idx - 1, 0)].row);
+        setRowPos(track->keys[emaxi(idx - 1, 0)].row);
 
-		if (selection == DO_SELECTION)
-			viewInfo->selectStopRow = getRowPos();
-		else
-			viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
-	}
-	else
-	{
-		int row = 0;
+        if (selection == DO_SELECTION)
+            viewInfo->selectStopRow = getRowPos();
+        else
+            viewInfo->selectStartRow = viewInfo->selectStopRow = getRowPos();
+    } else {
+        int row = 0;
 
-		int idx = key_idx_floor(track, getRowPos());
+        int idx = key_idx_floor(track, getRowPos());
 
-		if (idx < 0)
-			row = track->keys[0].row;
-		else if (idx > track->num_keys - 2)
-			row = track->keys[track->num_keys - 1].row;
-		else
-			row = track->keys[idx + 1].row;
+        if (idx < 0)
+            row = track->keys[0].row;
+        else if (idx > track->num_keys - 2)
+            row = track->keys[track->num_keys - 1].row;
+        else
+            row = track->keys[idx + 1].row;
 
-		setRowPos(row);
+        setRowPos(row);
 
-		if (selection == DO_SELECTION)
-			viewInfo->selectStopRow = row;
-		else
-			viewInfo->selectStartRow = viewInfo->selectStopRow = row;
-	}
+        if (selection == DO_SELECTION)
+            viewInfo->selectStopRow = row;
+        else
+            viewInfo->selectStartRow = viewInfo->selectStopRow = row;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onScrollView(enum ArrowDirection direction)
-{
-	TrackViewInfo* viewInfo = getTrackViewInfo();
-	Track* t = &getTrackData()->tracks[getActiveTrack()];
-	int trackSize = Track_getSize(viewInfo, t);
+static void onScrollView(enum ArrowDirection direction) {
+    TrackViewInfo* viewInfo = getTrackViewInfo();
+    Track* t = &getTrackData()->tracks[getActiveTrack()];
+    int trackSize = Track_getSize(viewInfo, t);
 
-	if (direction == ARROW_RIGHT)
-		s_editorData.trackViewInfo.startPixel += trackSize;
-	else
-		s_editorData.trackViewInfo.startPixel -= trackSize;
+    if (direction == ARROW_RIGHT)
+        s_editorData.trackViewInfo.startPixel += trackSize;
+    else
+        s_editorData.trackViewInfo.startPixel -= trackSize;
 
-	Editor_updateTrackScroll();
+    Editor_updateTrackScroll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onFoldTrack(bool fold)
-{
-	Track* t = &getTrackData()->tracks[getActiveTrack()];
-	t->folded = fold;
-	Editor_updateTrackScroll();
+static void onFoldTrack(bool fold) {
+    Track* t = &getTrackData()->tracks[getActiveTrack()];
+    t->folded = fold;
+    Editor_updateTrackScroll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onFoldGroup(bool fold)
-{
-	Track* t = &getTrackData()->tracks[getActiveTrack()];
+static void onFoldGroup(bool fold) {
+    Track* t = &getTrackData()->tracks[getActiveTrack()];
 
-	if (t->group->trackCount > 1)
-	{
-		TrackViewInfo* viewInfo = getTrackViewInfo();
-		int firstTrackIndex = t->group->tracks[0]->index;
-		t->group->folded = fold;
-		setActiveTrack(firstTrackIndex);
-		viewInfo->selectStartTrack = viewInfo->selectStopTrack = firstTrackIndex;
-	}
+    if (t->group->trackCount > 1) {
+        TrackViewInfo* viewInfo = getTrackViewInfo();
+        int firstTrackIndex = t->group->tracks[0]->index;
+        t->group->folded = fold;
+        setActiveTrack(firstTrackIndex);
+        viewInfo->selectStartTrack = viewInfo->selectStopTrack = firstTrackIndex;
+    }
 
-	Editor_updateTrackScroll();
+    Editor_updateTrackScroll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onToggleBookmark()
-{
-	Commands_toggleBookmark(getTrackData(), getRowPos());
-	updateNeedsSaving();
+static void onToggleBookmark() {
+    Commands_toggleBookmark(getTrackData(), getRowPos());
+    updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onClearBookmarks()
-{
-	Commands_clearBookmarks(getTrackData());
-	updateNeedsSaving();
+static void onClearBookmarks() {
+    Commands_clearBookmarks(getTrackData());
+    updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onToggleLoopmark()
-{
-	Commands_toggleLoopmark(getTrackData(), getRowPos());
-	updateNeedsSaving();
+static void onToggleLoopmark() {
+    Commands_toggleLoopmark(getTrackData(), getRowPos());
+    updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onClearLoopmarks()
-{
-	Commands_clearLoopmarks(getTrackData());
-	updateNeedsSaving();
+static void onClearLoopmarks() {
+    Commands_clearLoopmarks(getTrackData());
+    updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onTab()
-{
-	Emgui_setFirstControlFocus();
+static void onTab() {
+    Emgui_setFirstControlFocus();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_menuEvent(int menuItem)
-{
-	int rowsPerBeat = getTrackData()->rowsPerBeat;
+void Editor_menuEvent(int menuItem) {
+    int rowsPerBeat = getTrackData()->rowsPerBeat;
 
-	if (menuItem == EDITOR_MENU_DELETE_KEY && is_editing)
-	{
-		doEditing(EMGUI_KEY_BACKSPACE);
-		Editor_update();
-		return;
-	}
+    if (menuItem == EDITOR_MENU_DELETE_KEY && is_editing) {
+        doEditing(EMGUI_KEY_BACKSPACE);
+        Editor_update();
+        return;
+    }
 
-	switch (menuItem)
-	{
-		case EDITOR_MENU_ENTER_CURRENT_V :
-		case EDITOR_MENU_ROWS_UP :
-		case EDITOR_MENU_ROWS_DOWN :
-		case EDITOR_MENU_PREV_BOOKMARK :
-		case EDITOR_MENU_NEXT_BOOKMARK :
-		case EDITOR_MENU_PREV_KEY :
-		case EDITOR_MENU_NEXT_KEY :
-		case EDITOR_MENU_PLAY :
-		case EDITOR_MENU_PLAY_LOOP :
-		{
-			endEditing();
-		}
-	}
+    switch (menuItem) {
+        case EDITOR_MENU_ENTER_CURRENT_V:
+        case EDITOR_MENU_ROWS_UP:
+        case EDITOR_MENU_ROWS_DOWN:
+        case EDITOR_MENU_PREV_BOOKMARK:
+        case EDITOR_MENU_NEXT_BOOKMARK:
+        case EDITOR_MENU_PREV_KEY:
+        case EDITOR_MENU_NEXT_KEY:
+        case EDITOR_MENU_PLAY:
+        case EDITOR_MENU_PLAY_LOOP: {
+            endEditing();
+        }
+    }
 
-	cancelEditing();
+    cancelEditing();
 
-	// If some internal control has focus we let it do its thing
+    // If some internal control has focus we let it do its thing
 
-	if (Emgui_hasKeyboardFocus())
-	{
-		Editor_update();
-		return;
-	}
+    if (Emgui_hasKeyboardFocus()) {
+        Editor_update();
+        return;
+    }
 
-	switch (menuItem)
-	{
-		// File
+    switch (menuItem) {
+            // File
 
-		case EDITOR_MENU_OPEN: onOpen(); break;
-		case EDITOR_MENU_SAVE: onSave(); break;
-		case EDITOR_MENU_SAVE_AS: onSaveAs(); break;
-		case EDITOR_MENU_REMOTE_EXPORT : RemoteConnection_sendSaveCommand(); break;
-		case EDITOR_MENU_LOAD_MUSIC: onLoadMusic(); break;
+        case EDITOR_MENU_OPEN:
+            onOpen();
+            break;
+        case EDITOR_MENU_SAVE:
+            onSave();
+            break;
+        case EDITOR_MENU_SAVE_AS:
+            onSaveAs();
+            break;
+        case EDITOR_MENU_REMOTE_EXPORT:
+            RemoteConnection_sendSaveCommand();
+            break;
+        case EDITOR_MENU_LOAD_MUSIC:
+            onLoadMusic();
+            break;
 
-		case EDITOR_MENU_RECENT_FILE_0:
-		case EDITOR_MENU_RECENT_FILE_1:
-		case EDITOR_MENU_RECENT_FILE_2:
-		case EDITOR_MENU_RECENT_FILE_3:
-		{
+        case EDITOR_MENU_RECENT_FILE_0:
+        case EDITOR_MENU_RECENT_FILE_1:
+        case EDITOR_MENU_RECENT_FILE_2:
+        case EDITOR_MENU_RECENT_FILE_3: {
+            Editor_loadRecentFile(menuItem - EDITOR_MENU_RECENT_FILE_0);
+            break;
+        }
 
-			Editor_loadRecentFile(menuItem - EDITOR_MENU_RECENT_FILE_0);
-			break;
-		}
+            // Edit
 
-		// Edit
+        case EDITOR_MENU_UNDO:
+            onUndo();
+            break;
+        case EDITOR_MENU_REDO:
+            onRedo();
+            break;
 
-		case EDITOR_MENU_UNDO : onUndo(); break;
-		case EDITOR_MENU_REDO : onRedo(); break;
+        case EDITOR_MENU_CANCEL_EDIT:
+            onCancelEdit();
+            break;
+        case EDITOR_MENU_DELETE_KEY:
+            onDeleteKey();
+            break;
 
-		case EDITOR_MENU_CANCEL_EDIT :  onCancelEdit(); break;
-		case EDITOR_MENU_DELETE_KEY  :  onDeleteKey(); break;
+        case EDITOR_MENU_CUT:
+            onCutAndCopy(true, false);
+            break;
+        case EDITOR_MENU_COPY:
+            onCutAndCopy(false, false);
+            break;
+        case EDITOR_MENU_PASTE:
+            onPaste(false);
+            break;
+        case EDITOR_MENU_MOVE_UP:
+            onMoveSelection(true);
+            break;
+        case EDITOR_MENU_MOVE_DOWN:
+            onMoveSelection(false);
+            break;
+        case EDITOR_MENU_OFS_UP_1:
+            onOffsetTrack(1);
+            break;
+        case EDITOR_MENU_OFS_UP_8:
+            onOffsetTrack(8);
+            break;
+        case EDITOR_MENU_OFS_DOWN_1:
+            onOffsetTrack(-1);
+            break;
+        case EDITOR_MENU_OFS_DOWN_8:
+            onOffsetTrack(-8);
+            break;
+        case EDITOR_MENU_OFS_GRP_UP_1:
+            onOffsetGroup(1);
+            break;
+        case EDITOR_MENU_OFS_GRP_UP_8:
+            onOffsetGroup(8);
+            break;
+        case EDITOR_MENU_OFS_GRP_DOWN_1:
+            onOffsetGroup(-1);
+            break;
+        case EDITOR_MENU_OFS_GRP_DOWN_8:
+            onOffsetGroup(-8);
+            break;
+        case EDITOR_MENU_SELECT_TRACK:
+            onSelectTrack();
+            break;
 
-		case EDITOR_MENU_CUT :          onCutAndCopy(true, false); break;
-		case EDITOR_MENU_COPY :         onCutAndCopy(false, false); break;
-		case EDITOR_MENU_PASTE :        onPaste(false); break;
-		case EDITOR_MENU_MOVE_UP :      onMoveSelection(true); break;
-		case EDITOR_MENU_MOVE_DOWN :    onMoveSelection(false); break;
-    case EDITOR_MENU_OFS_UP_1 :      onOffsetTrack(1); break;
-    case EDITOR_MENU_OFS_UP_8 :      onOffsetTrack(8); break;
-    case EDITOR_MENU_OFS_DOWN_1 :    onOffsetTrack(-1); break;
-    case EDITOR_MENU_OFS_DOWN_8 :    onOffsetTrack(-8); break;
-    case EDITOR_MENU_OFS_GRP_UP_1 :  onOffsetGroup(1); break;
-    case EDITOR_MENU_OFS_GRP_UP_8 :  onOffsetGroup(8); break;
-    case EDITOR_MENU_OFS_GRP_DOWN_1 : onOffsetGroup(-1); break;
-    case EDITOR_MENU_OFS_GRP_DOWN_8 : onOffsetGroup(-8); break;
-		case EDITOR_MENU_SELECT_TRACK : onSelectTrack(); break;
+        case EDITOR_MENU_BIAS_P_001:
+            biasSelection(0.01f);
+            break;
+        case EDITOR_MENU_BIAS_P_01:
+            biasSelection(0.1f);
+            break;
+        case EDITOR_MENU_BIAS_P_1:
+            biasSelection(1.0f);
+            break;
+        case EDITOR_MENU_BIAS_P_10:
+            biasSelection(10.0f);
+            break;
+        case EDITOR_MENU_BIAS_P_100:
+            biasSelection(100.0f);
+            break;
+        case EDITOR_MENU_BIAS_P_1000:
+            biasSelection(1000.0f);
+            break;
+        case EDITOR_MENU_BIAS_N_001:
+            biasSelection(-0.01f);
+            break;
+        case EDITOR_MENU_BIAS_N_01:
+            biasSelection(-0.1f);
+            break;
+        case EDITOR_MENU_BIAS_N_1:
+            biasSelection(-1.0f);
+            break;
+        case EDITOR_MENU_BIAS_N_10:
+            biasSelection(-10.0f);
+            break;
+        case EDITOR_MENU_BIAS_N_100:
+            biasSelection(-100.0f);
+            break;
+        case EDITOR_MENU_BIAS_N_1000:
+            biasSelection(-1000.0f);
+            break;
 
-		case EDITOR_MENU_BIAS_P_001 : biasSelection(0.01f); break;
-		case EDITOR_MENU_BIAS_P_01 :  biasSelection(0.1f); break;
-		case EDITOR_MENU_BIAS_P_1:    biasSelection(1.0f); break;
-		case EDITOR_MENU_BIAS_P_10:   biasSelection(10.0f); break;
-		case EDITOR_MENU_BIAS_P_100:  biasSelection(100.0f); break;
-		case EDITOR_MENU_BIAS_P_1000: biasSelection(1000.0f); break;
-		case EDITOR_MENU_BIAS_N_001:  biasSelection(-0.01f); break;
-		case EDITOR_MENU_BIAS_N_01:   biasSelection(-0.1f); break;
-		case EDITOR_MENU_BIAS_N_1:    biasSelection(-1.0f); break;
-		case EDITOR_MENU_BIAS_N_10:   biasSelection(-10.0f); break;
-		case EDITOR_MENU_BIAS_N_100 : biasSelection(-100.0f); break;
-		case EDITOR_MENU_BIAS_N_1000: biasSelection(-1000.0f); break;
+        case EDITOR_MENU_SCALE_101:
+            scaleSelection(1.01f);
+            break;
+        case EDITOR_MENU_SCALE_11:
+            scaleSelection(1.1f);
+            break;
+        case EDITOR_MENU_SCALE_12:
+            scaleSelection(1.2f);
+            break;
+        case EDITOR_MENU_SCALE_5:
+            scaleSelection(5.0f);
+            break;
+        case EDITOR_MENU_SCALE_100:
+            scaleSelection(10.01f);
+            break;
+        case EDITOR_MENU_SCALE_1000:
+            scaleSelection(100.01f);
+            break;
+        case EDITOR_MENU_SCALE_099:
+            scaleSelection(0.99f);
+            break;
+        case EDITOR_MENU_SCALE_09:
+            scaleSelection(0.9f);
+            break;
+        case EDITOR_MENU_SCALE_08:
+            scaleSelection(0.8f);
+            break;
+        case EDITOR_MENU_SCALE_05:
+            scaleSelection(0.5f);
+            break;
+        case EDITOR_MENU_SCALE_01:
+            scaleSelection(0.1f);
+            break;
+        case EDITOR_MENU_SCALE_001:
+            scaleSelection(0.01f);
+            break;
 
-		case EDITOR_MENU_SCALE_101: scaleSelection(1.01f); break;
-		case EDITOR_MENU_SCALE_11:	scaleSelection(1.1f); break;
-		case EDITOR_MENU_SCALE_12:	scaleSelection(1.2f); break;
-		case EDITOR_MENU_SCALE_5:	scaleSelection(5.0f); break;
-		case EDITOR_MENU_SCALE_100:	scaleSelection(10.01f); break;
-		case EDITOR_MENU_SCALE_1000: scaleSelection(100.01f); break;
-		case EDITOR_MENU_SCALE_099:	scaleSelection(0.99f); break;
-		case EDITOR_MENU_SCALE_09:	scaleSelection(0.9f); break;
-		case EDITOR_MENU_SCALE_08:	scaleSelection(0.8f); break;
-		case EDITOR_MENU_SCALE_05:	scaleSelection(0.5f); break;
-		case EDITOR_MENU_SCALE_01:	scaleSelection(0.1f); break;
-		case EDITOR_MENU_SCALE_001:	scaleSelection(0.01f); break;
+        case EDITOR_MENU_INTERPOLATION:
+            onInterpolation();
+            break;
+        case EDITOR_MENU_INVERT_SELECTION:
+            onInvertSelection();
+            break;
+        case EDITOR_MENU_ENTER_CURRENT_V:
+            onEnterCurrentValue();
+            break;
+        case EDITOR_MENU_MUTE_TRACK:
+            onMuteToggle();
+            break;
 
-		case EDITOR_MENU_INTERPOLATION : onInterpolation(); break;
-		case EDITOR_MENU_INVERT_SELECTION: onInvertSelection(); break;
-		case EDITOR_MENU_ENTER_CURRENT_V : onEnterCurrentValue(); break;
-		case EDITOR_MENU_MUTE_TRACK : onMuteToggle(); break;
+            // View
 
-		// View
+        case EDITOR_MENU_PLAY:
+            onPlay();
+            break;
+        case EDITOR_MENU_PLAY_LOOP:
+            onPlayLoop();
+            break;
+        case EDITOR_MENU_ROWS_UP:
+            onRowStep(-rowsPerBeat, NO_SELECTION);
+            break;
+        case EDITOR_MENU_ROWS_DOWN:
+            onRowStep(rowsPerBeat, NO_SELECTION);
+            break;
+        case EDITOR_MENU_ROWS_2X_UP:
+            onRowStep(-rowsPerBeat * 2, NO_SELECTION);
+            break;
+        case EDITOR_MENU_ROWS_2X_DOWN:
+            onRowStep(rowsPerBeat * 2, NO_SELECTION);
+            break;
+        case EDITOR_MENU_PREV_BOOKMARK:
+            onBookmarkDir(ARROW_UP, NO_SELECTION);
+            break;
+        case EDITOR_MENU_NEXT_BOOKMARK:
+            onBookmarkDir(ARROW_DOWN, NO_SELECTION);
+            break;
+        case EDITOR_MENU_SCROLL_LEFT:
+            onScrollView(ARROW_LEFT);
+            break;
+        case EDITOR_MENU_SCROLL_RIGHT:
+            onScrollView(ARROW_RIGHT);
+            break;
+        case EDITOR_MENU_PREV_KEY:
+            onPrevNextKey(true, NO_SELECTION);
+            break;
+        case EDITOR_MENU_NEXT_KEY:
+            onPrevNextKey(false, NO_SELECTION);
+            break;
+        case EDITOR_MENU_FOLD_TRACK:
+            onFoldTrack(true);
+            break;
+        case EDITOR_MENU_UNFOLD_TRACK:
+            onFoldTrack(false);
+            break;
+        case EDITOR_MENU_FOLD_GROUP:
+            onFoldGroup(true);
+            break;
+        case EDITOR_MENU_UNFOLD_GROUP:
+            onFoldGroup(false);
+            break;
+        case EDITOR_MENU_TOGGLE_BOOKMARK:
+            onToggleBookmark();
+            break;
+        case EDITOR_MENU_CLEAR_BOOKMARKS:
+            onClearBookmarks();
+            break;
+        case EDITOR_MENU_TOGGLE_LOOPMARK:
+            onToggleLoopmark();
+            break;
+        case EDITOR_MENU_CLEAR_LOOPMARKS:
+            onClearLoopmarks();
+            break;
+        case EDITOR_MENU_TAB:
+            onTab();
+            break;
+    }
 
-		case EDITOR_MENU_PLAY : onPlay(); break;
-		case EDITOR_MENU_PLAY_LOOP : onPlayLoop(); break;
-		case EDITOR_MENU_ROWS_UP : onRowStep(-rowsPerBeat , NO_SELECTION); break;
-		case EDITOR_MENU_ROWS_DOWN : onRowStep(rowsPerBeat , NO_SELECTION); break;
-		case EDITOR_MENU_ROWS_2X_UP : onRowStep(-rowsPerBeat * 2 , NO_SELECTION); break;
-		case EDITOR_MENU_ROWS_2X_DOWN : onRowStep(rowsPerBeat * 2 , NO_SELECTION); break;
-		case EDITOR_MENU_PREV_BOOKMARK : onBookmarkDir(ARROW_UP, NO_SELECTION); break;
-		case EDITOR_MENU_NEXT_BOOKMARK : onBookmarkDir(ARROW_DOWN, NO_SELECTION); break;
-		case EDITOR_MENU_SCROLL_LEFT : onScrollView(ARROW_LEFT); break;
-		case EDITOR_MENU_SCROLL_RIGHT : onScrollView(ARROW_RIGHT); break;
-		case EDITOR_MENU_PREV_KEY : onPrevNextKey(true, NO_SELECTION); break;
-		case EDITOR_MENU_NEXT_KEY : onPrevNextKey(false, NO_SELECTION); break;
-		case EDITOR_MENU_FOLD_TRACK : onFoldTrack(true); break;
-		case EDITOR_MENU_UNFOLD_TRACK : onFoldTrack(false); break;
-		case EDITOR_MENU_FOLD_GROUP : onFoldGroup(true); break;
-		case EDITOR_MENU_UNFOLD_GROUP : onFoldGroup(false); break;
-		case EDITOR_MENU_TOGGLE_BOOKMARK : onToggleBookmark(); break;
-		case EDITOR_MENU_CLEAR_BOOKMARKS : onClearBookmarks(); break;
-		case EDITOR_MENU_TOGGLE_LOOPMARK : onToggleLoopmark(); break;
-		case EDITOR_MENU_CLEAR_LOOPMARKS : onClearLoopmarks(); break;
-		case EDITOR_MENU_TAB : onTab(); break;
-	}
-
-	Editor_update();
+    Editor_update();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_destroy()
-{
+void Editor_destroy() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static bool doEditing(int key)
-{
-	if (!canEditCurrentTrack())
-	{
-		is_editing = false;
-		return false;
-	}
+static bool doEditing(int key) {
+    if (!canEditCurrentTrack()) {
+        is_editing = false;
+        return false;
+    }
 
-	// special case if '.' key (in case of dvorak) would clatch with the same key for biasing we do this special case
+    // special case if '.' key (in case of dvorak) would clatch with the same key for biasing we do this special case
 
-	if ((key == '.' || key == EMGUI_KEY_BACKSPACE) && !is_editing)
-		return false;
+    if ((key == '.' || key == EMGUI_KEY_BACKSPACE) && !is_editing)
+        return false;
 
-	if ((key >= '0' && key <= '9') || key == '.' || key == '-' || key == EMGUI_KEY_BACKSPACE)
-	{
-		if (!is_editing)
-		{
-			memset(s_editBuffer, 0, sizeof(s_editBuffer));
-			is_editing = true;
-		}
+    if ((key >= '0' && key <= '9') || key == '.' || key == '-' || key == EMGUI_KEY_BACKSPACE) {
+        if (!is_editing) {
+            memset(s_editBuffer, 0, sizeof(s_editBuffer));
+            is_editing = true;
+        }
 
-		if (key == EMGUI_KEY_BACKSPACE)
-			s_editBuffer[emaxi((int)strlen(s_editBuffer) - 1, 0)] = 0;
-		else
-			s_editBuffer[strlen(s_editBuffer)] = (char)key;
+        if (key == EMGUI_KEY_BACKSPACE)
+            s_editBuffer[emaxi((int)strlen(s_editBuffer) - 1, 0)] = 0;
+        else
+            s_editBuffer[strlen(s_editBuffer)] = (char)key;
 
-		s_editorData.trackData.editText = s_editBuffer;
+        s_editorData.trackData.editText = s_editBuffer;
 
-		return true;
-	}
+        return true;
+    }
 
-	return false;
+    return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1977,214 +1948,201 @@ static bool doEditing(int key)
 // Also we assume here that keys that has been assigned to accelerators has been handled before this code
 // as it reduces some checks an makes the configuration stay in Menu.h/Menu.c
 
-bool Editor_keyDown(int key, int keyCode, int modifiers)
-{
-	enum Selection selection = modifiers & EMGUI_KEY_SHIFT ? DO_SELECTION : NO_SELECTION;
-	int rowsPerBeat = getTrackData()->rowsPerBeat;
+bool Editor_keyDown(int key, int keyCode, int modifiers) {
+    enum Selection selection = modifiers & EMGUI_KEY_SHIFT ? DO_SELECTION : NO_SELECTION;
+    int rowsPerBeat = getTrackData()->rowsPerBeat;
 
-	if (Emgui_hasKeyboardFocus())
-	{
-		Editor_update();
-		return true;
-	}
+    if (Emgui_hasKeyboardFocus()) {
+        Editor_update();
+        return true;
+    }
 
-	// Update editing of values
+    // Update editing of values
 
-	if (doEditing(key))
-		return true;
+    if (doEditing(key))
+        return true;
 
-	switch (key)
-	{
-		case EMGUI_KEY_ARROW_UP :
-		case EMGUI_KEY_ARROW_DOWN :
-		case EMGUI_KEY_ARROW_LEFT :
-		case EMGUI_KEY_ARROW_RIGHT :
-		case EMGUI_KEY_TAB :
-		case EMGUI_KEY_ENTER :
-		{
-            if (is_editing)
-            {
+    switch (key) {
+        case EMGUI_KEY_ARROW_UP:
+        case EMGUI_KEY_ARROW_DOWN:
+        case EMGUI_KEY_ARROW_LEFT:
+        case EMGUI_KEY_ARROW_RIGHT:
+        case EMGUI_KEY_TAB:
+        case EMGUI_KEY_ENTER: {
+            if (is_editing) {
                 endEditing();
 
                 if (key == EMGUI_KEY_ENTER)
                     return true;
             }
 
-			break;
-		}
+            break;
+        }
 
-		case EMGUI_KEY_ESC :
-		{
-			cancelEditing();
-			break;
-		}
-	}
+        case EMGUI_KEY_ESC: {
+            cancelEditing();
+            break;
+        }
+    }
 
-	switch (key)
-	{
-		// this is a bit hacky but we don't want to have lots of combos in the menus
-		// of arrow keys so this makes it a bit easier
+    switch (key) {
+            // this is a bit hacky but we don't want to have lots of combos in the menus
+            // of arrow keys so this makes it a bit easier
 
-		case EMGUI_KEY_ARROW_UP :
-		{
-			if (modifiers & EMGUI_KEY_CTRL)
-				onPrevNextKey(true, selection);
-			else if (modifiers & EMGUI_KEY_COMMAND)
-				onBookmarkDir(ARROW_UP, selection);
-			else if (modifiers & EMGUI_KEY_ALT)
-				onRowStep(-rowsPerBeat , selection);
-			else
-				onRowStep(-1, selection);
+        case EMGUI_KEY_ARROW_UP: {
+            if (modifiers & EMGUI_KEY_CTRL)
+                onPrevNextKey(true, selection);
+            else if (modifiers & EMGUI_KEY_COMMAND)
+                onBookmarkDir(ARROW_UP, selection);
+            else if (modifiers & EMGUI_KEY_ALT)
+                onRowStep(-rowsPerBeat, selection);
+            else
+                onRowStep(-1, selection);
 
-			break;
-		}
+            break;
+        }
 
-		case EMGUI_KEY_ARROW_DOWN :
-		{
-			if (modifiers & EMGUI_KEY_CTRL)
-				onPrevNextKey(false, selection);
-			else if (modifiers & EMGUI_KEY_COMMAND)
-				onBookmarkDir(ARROW_DOWN, selection);
-			else if (modifiers & EMGUI_KEY_ALT)
-				onRowStep(rowsPerBeat, selection);
-			else
-				onRowStep(1, selection);
-			break;
-		}
+        case EMGUI_KEY_ARROW_DOWN: {
+            if (modifiers & EMGUI_KEY_CTRL)
+                onPrevNextKey(false, selection);
+            else if (modifiers & EMGUI_KEY_COMMAND)
+                onBookmarkDir(ARROW_DOWN, selection);
+            else if (modifiers & EMGUI_KEY_ALT)
+                onRowStep(rowsPerBeat, selection);
+            else
+                onRowStep(1, selection);
+            break;
+        }
 
-		case EMGUI_KEY_ARROW_LEFT : onTrackSide(ARROW_LEFT, false, selection); break;
-		case EMGUI_KEY_ARROW_RIGHT : onTrackSide(ARROW_RIGHT, false, selection); break;
-		case EMGUI_KEY_TAB : onTab(); break;
-		default : return false;
-	}
+        case EMGUI_KEY_ARROW_LEFT:
+            onTrackSide(ARROW_LEFT, false, selection);
+            break;
+        case EMGUI_KEY_ARROW_RIGHT:
+            onTrackSide(ARROW_RIGHT, false, selection);
+            break;
+        case EMGUI_KEY_TAB:
+            onTab();
+            break;
+        default:
+            return false;
+    }
 
-	return true;
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int processCommands()
-{
-	int strLen, newRow, serverIndex;
-	unsigned char cmd = 0;
-	int ret = 0;
-	TrackViewInfo* viewInfo = getTrackViewInfo();
+static int processCommands() {
+    int strLen, newRow, serverIndex;
+    unsigned char cmd = 0;
+    int ret = 0;
+    TrackViewInfo* viewInfo = getTrackViewInfo();
 
-	if (RemoteConnection_recv((char*)&cmd, 1, 0))
-	{
-		switch (cmd)
-		{
-			case GET_TRACK:
-			{
-				char trackName[4096];
+    if (RemoteConnection_recv((char*)&cmd, 1, 0)) {
+        switch (cmd) {
+            case GET_TRACK: {
+                char trackName[4096];
 
-				reset_tracks = true;
+                reset_tracks = true;
 
-				memset(trackName, 0, sizeof(trackName));
+                memset(trackName, 0, sizeof(trackName));
 
-				RemoteConnection_recv((char *)&strLen, sizeof(int), 0);
-				strLen = ntohl(strLen);
+                RemoteConnection_recv((char*)&strLen, sizeof(int), 0);
+                strLen = ntohl(strLen);
 
-				if (!RemoteConnection_connected())
-					return 0;
+                if (!RemoteConnection_connected())
+                    return 0;
 
-				if (!RemoteConnection_recv(trackName, strLen, 0))
-					return 0;
+                if (!RemoteConnection_recv(trackName, strLen, 0))
+                    return 0;
 
-				//rlog(R_INFO, "Got trackname %s (%d) from demo\n", trackName, strLen);
+                // rlog(R_INFO, "Got trackname %s (%d) from demo\n", trackName, strLen);
 
-				// find track
+                // find track
 
-				serverIndex = TrackData_createGetTrack(&s_editorData.trackData, trackName);
-				// if it's the first one we get, select it too
-				if (serverIndex == 0)
-					setActiveTrack(0);
+                serverIndex = TrackData_createGetTrack(&s_editorData.trackData, trackName);
+                // if it's the first one we get, select it too
+                if (serverIndex == 0)
+                    setActiveTrack(0);
 
-				// setup remap and send the keyframes to the demo
-				RemoteConnection_mapTrackName(trackName);
-				RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncTracks[serverIndex]);
-				TrackData_linkTrack(serverIndex, trackName, &s_editorData.trackData);
+                // setup remap and send the keyframes to the demo
+                RemoteConnection_mapTrackName(trackName);
+                RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncTracks[serverIndex]);
+                TrackData_linkTrack(serverIndex, trackName, &s_editorData.trackData);
 
-				s_editorData.trackData.tracks[serverIndex].active = true;
+                s_editorData.trackData.tracks[serverIndex].active = true;
 
-				ret = 1;
+                ret = 1;
 
-				break;
-			}
+                break;
+            }
 
-			case SET_ROW:
-			{
-				ret = RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
+            case SET_ROW: {
+                ret = RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
 
-				if (ret)
-				{
-					viewInfo->rowPos = htonl(newRow);
-					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
-					//rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
-				}
+                if (ret) {
+                    viewInfo->rowPos = htonl(newRow);
+                    viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
+                    // rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
+                }
 
-				ret = 1;
+                ret = 1;
 
-				break;
-			}
+                break;
+            }
 
-			case SET_KEY:
-			{
-				unsigned char type;
-				uint32_t track;
-				union {
-					float f;
-					uint32_t i;
-				} v;
+            case SET_KEY: {
+                unsigned char type;
+                uint32_t track;
+                union {
+                    float f;
+                    uint32_t i;
+                } v;
 
-				if (RemoteConnection_recv((char*)&track, sizeof(track), 0) &&
-				    RemoteConnection_recv((char*)&newRow, sizeof(newRow), 0) &&
-				    RemoteConnection_recv((char*)&v.i, sizeof(v.i), 0) &&
-				    RemoteConnection_recv((char*)&type, sizeof(type), 0)) {
+                if (RemoteConnection_recv((char*)&track, sizeof(track), 0) &&
+                    RemoteConnection_recv((char*)&newRow, sizeof(newRow), 0) &&
+                    RemoteConnection_recv((char*)&v.i, sizeof(v.i), 0) &&
+                    RemoteConnection_recv((char*)&type, sizeof(type), 0)) {
+                    v.i = ntohl(v.i);
+                    newRow = htonl(newRow);
+                    track = htonl(track);
 
-					v.i = ntohl(v.i);
-					newRow = htonl(newRow);
-					track = htonl(track);
+                    viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos = newRow;
 
-					viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos = newRow;
+                    doEdit(track, newRow, v.f);
+                }
 
-					doEdit(track, newRow, v.f);
-				}
+                ret = 1;
 
-				ret = 1;
+                break;
+            }
 
-				break;
-			}
+            case PAUSE: {
+                onPlay();
 
-			case PAUSE:
-			{
-				onPlay();
+                ret = 1;
 
-				ret = 1;
+                break;
+            }
+        }
+    }
 
-				break;
-			}
-		}
-	}
-
-	return ret;
+    return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_timedUpdate()
-{
-	int processed_commands = s_editorData.trackData.musicData.percentDone != 0;
+void Editor_timedUpdate() {
+    int processed_commands = s_editorData.trackData.musicData.percentDone != 0;
 
-	RemoteConnection_updateListner(getRowPos());
+    RemoteConnection_updateListner(getRowPos());
 
-	updateTrackStatus();
+    updateTrackStatus();
 
-	while (RemoteConnection_pollRead())
-		processed_commands |= processCommands();
+    while (RemoteConnection_pollRead())
+        processed_commands |= processCommands();
 
-	if (!RemoteConnection_isPaused() || processed_commands)
-	{
-		Editor_update();
-	}
+    if (!RemoteConnection_isPaused() || processed_commands) {
+        Editor_update();
+    }
 }

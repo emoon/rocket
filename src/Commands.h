@@ -28,9 +28,9 @@ void Commands_toggleBookmark(struct TrackData* trackData, int row);
 void Commands_clearBookmarks(struct TrackData* trackData);
 void Commands_toggleLoopmark(struct TrackData* trackData, int row);
 void Commands_clearLoopmarks(struct TrackData* trackData);
-void Commands_updateKey(int track, struct track_key* key); 
+void Commands_updateKey(int track, struct track_key* key);
 void Commands_setSelection(struct TrackViewInfo* viewInfo, int startTrack, int endTrack, int startRow, int endRow);
-void Commands_beginMulti(const char* name); // Used (for example) when changing many value at the same time
+void Commands_beginMulti(const char* name);  // Used (for example) when changing many value at the same time
 void Commands_endMulti();
 int Commands_undoCount();
 

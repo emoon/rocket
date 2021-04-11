@@ -18,7 +18,7 @@ void RemoteConnection_close();
 bool RemoteConnection_isPaused();
 bool RemoteConnection_connected();
 void RemoteConnection_disconnect();
-int  RemoteConnection_recv(char* buffer, size_t length, int flags);
+int RemoteConnection_recv(char* buffer, size_t length, int flags);
 bool RemoteConnection_send(const char* buffer, size_t length, int flags);
 bool RemoteConnection_pollRead();
 

@@ -1,10 +1,9 @@
 #pragma once
 
-enum
-{
-	R_DEBUG,
-	R_INFO,
-	R_ERROR,
+enum {
+    R_DEBUG,
+    R_INFO,
+    R_ERROR,
 };
 
 void rlog(int logLevel, const char* format, ...);

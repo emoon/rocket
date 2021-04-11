@@ -1,438 +1,384 @@
 #include "TrackData.h"
+#include <assert.h>
+#include <ctype.h>
+#include <stdint.h>
+#include <stdio.h>
 #include "Commands.h"
 #include "rlog.h"
-#include <stdio.h>
-#include <assert.h>
-#include <stdint.h>
-#include <ctype.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int sync_find_track(struct sync_track **tracks, size_t num_tracks, const char *name)
-{
-	int i;
+int sync_find_track(struct sync_track** tracks, size_t num_tracks, const char* name) {
+    int i;
 
-	for (i = 0; i < (int)num_tracks; ++i)
-		if (!strcmp(name, tracks[i]->name))
-			return i;
-	return -1; /* not found */
+    for (i = 0; i < (int)num_tracks; ++i)
+        if (!strcmp(name, tracks[i]->name))
+            return i;
+    return -1; /* not found */
 }
 
-int sync_create_track(struct sync_track ***tracksPtr, size_t *num_tracksPtr, const char *name)
-{
-	struct sync_track *t;
-	struct sync_track **tracks = *tracksPtr;
-	size_t num_tracks = *num_tracksPtr;
-	assert(sync_find_track(tracks, num_tracks, name) < 0);
+int sync_create_track(struct sync_track*** tracksPtr, size_t* num_tracksPtr, const char* name) {
+    struct sync_track* t;
+    struct sync_track** tracks = *tracksPtr;
+    size_t num_tracks = *num_tracksPtr;
+    assert(sync_find_track(tracks, num_tracks, name) < 0);
 
-	t = malloc(sizeof(*t));
-	t->name = strdup(name);
-	t->keys = NULL;
-	t->num_keys = 0;
+    t = malloc(sizeof(*t));
+    t->name = strdup(name);
+    t->keys = NULL;
+    t->num_keys = 0;
 
-	tracks = realloc(tracks, sizeof(tracks[0]) * (num_tracks+1));
-	tracks[num_tracks] = t;
+    tracks = realloc(tracks, sizeof(tracks[0]) * (num_tracks + 1));
+    tracks[num_tracks] = t;
 
-	*num_tracksPtr = num_tracks+1;
-	*tracksPtr = tracks;
+    *num_tracksPtr = num_tracks + 1;
+    *tracksPtr = tracks;
 
-	return (int)num_tracks;
+    return (int)num_tracks;
 }
 
-int TrackData_createGetTrack(TrackData* trackData, const char* name)
-{
-	int index = sync_find_track(trackData->syncTracks, trackData->num_syncTracks, name);
-	if (index < 0)
-	{
+int TrackData_createGetTrack(TrackData* trackData, const char* name) {
+    int index = sync_find_track(trackData->syncTracks, trackData->num_syncTracks, name);
+    if (index < 0) {
         index = sync_create_track(&trackData->syncTracks, &trackData->num_syncTracks, name);
-		memset(&trackData->tracks[index], 0, sizeof(Track));
-		trackData->tracks[index].index = index;
-		trackData->tracks[index].color = TrackData_getNextColor(trackData); 
-	}
+        memset(&trackData->tracks[index], 0, sizeof(Track));
+        trackData->tracks[index].index = index;
+        trackData->tracks[index].color = TrackData_getNextColor(trackData);
+    }
 
-	if (trackData->syncTracks)
-		Commands_init(trackData->syncTracks, trackData);
+    if (trackData->syncTracks)
+        Commands_init(trackData->syncTracks, trackData);
 
-	return index;
+    return index;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static uint32_t s_colors[] =
-{
-	0xffb27474,
-	0xffb28050,
-	0xffa9b250,
-	0xff60b250,
+static uint32_t s_colors[] = {
+    0xffb27474, 0xffb28050, 0xffa9b250, 0xff60b250,
 
-	0xff4fb292,
-	0xff4f71b2,
-	0xff8850b2,
-	0xffb25091,
+    0xff4fb292, 0xff4f71b2, 0xff8850b2, 0xffb25091,
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-uint32_t TrackData_getNextColor(TrackData* trackData)
-{
-	return s_colors[trackData->lastColor++ & 0x7];
+uint32_t TrackData_getNextColor(TrackData* trackData) {
+    return s_colors[trackData->lastColor++ & 0x7];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int findSeparator(const char* name)
-{
-	int i, len = (int)strlen(name);
+static int findSeparator(const char* name) {
+    int i, len = (int)strlen(name);
 
-	for (i = 0; i < len; ++i)
-	{
-		if (name[i] == ':' || name[i] == '#')
-			return i;
-	}
+    for (i = 0; i < len; ++i) {
+        if (name[i] == ':' || name[i] == '#')
+            return i;
+    }
 
-	return -1;
+    return -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static Group* findOrCreateGroup(const char* name, TrackData* trackData)
-{
-	Group* group;
-	int i, group_count = trackData->groupCount;
-	Group* groups = trackData->groups;
+static Group* findOrCreateGroup(const char* name, TrackData* trackData) {
+    Group* group;
+    int i, group_count = trackData->groupCount;
+    Group* groups = trackData->groups;
 
-	for (i = 0; i < group_count; ++i)
-	{
-		group = &groups[i];
+    for (i = 0; i < group_count; ++i) {
+        group = &groups[i];
 
-		if (!group->name)
-			continue;
+        if (!group->name)
+            continue;
 
-		if (!strcmp(name, group->name))
-			return &groups[i];
-	}
+        if (!strcmp(name, group->name))
+            return &groups[i];
+    }
 
-	group = &groups[trackData->groupCount++];
-	memset(group, 0, sizeof(Group));
+    group = &groups[trackData->groupCount++];
+    memset(group, 0, sizeof(Group));
 
-	group->type = GROUP_TYPE_GROUP;
-	group->name = strdup(name);
-	group->displayName = strdup(name);
-	group->displayName[strlen(name)-1] = 0;
-	group->groupIndex = trackData->groupCount - 1;
+    group->type = GROUP_TYPE_GROUP;
+    group->name = strdup(name);
+    group->displayName = strdup(name);
+    group->displayName[strlen(name) - 1] = 0;
+    group->groupIndex = trackData->groupCount - 1;
 
-	//printf("creating group %s\n", name);
+    // printf("creating group %s\n", name);
 
-	return group;
+    return group;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackData_linkTrack(int index, const char* name, TrackData* trackData)
-{
-	int found;
-	char group_name[256];
-	Group* group;
-	Group* groups = trackData->groups;
-	Track* track = &trackData->tracks[index];
+void TrackData_linkTrack(int index, const char* name, TrackData* trackData) {
+    int found;
+    char group_name[256];
+    Group* group;
+    Group* groups = trackData->groups;
+    Track* track = &trackData->tracks[index];
 
-	if (track->group)
-		return;
+    if (track->group)
+        return;
 
-	found = findSeparator(name);
+    found = findSeparator(name);
 
-	if (found == -1)
-	{
-		Group* group = &groups[trackData->groupCount++];
-		memset(group, 0, sizeof(Group));
-		
-		group->tracks = (Track**)malloc(sizeof(Track**));
-		group->tracks[0] = track;
-		group->type = GROUP_TYPE_TRACK;
-		group->trackCount = 1;
-		track->group = group;
-		track->displayName = strdup(name); 
-		group->groupIndex = trackData->groupCount - 1;
+    if (found == -1) {
+        Group* group = &groups[trackData->groupCount++];
+        memset(group, 0, sizeof(Group));
 
-		//printf("Linking track %s to group %s\n", name, name); 
+        group->tracks = (Track**)malloc(sizeof(Track**));
+        group->tracks[0] = track;
+        group->type = GROUP_TYPE_TRACK;
+        group->trackCount = 1;
+        track->group = group;
+        track->displayName = strdup(name);
+        group->groupIndex = trackData->groupCount - 1;
 
-		return;
-	}
+        // printf("Linking track %s to group %s\n", name, name);
 
-	memset(group_name, 0, sizeof(group_name));
-	memcpy(group_name, name, found + 1); 
+        return;
+    }
 
-	group = findOrCreateGroup(group_name, trackData); 
+    memset(group_name, 0, sizeof(group_name));
+    memcpy(group_name, name, found + 1);
 
-	if (group->trackCount == 0)
-		group->tracks = (Track**)malloc(sizeof(Track**));
-	else
-		group->tracks = (Track**)realloc(group->tracks, sizeof(Track**) * (group->trackCount + 1));
+    group = findOrCreateGroup(group_name, trackData);
 
-	//printf("Linking track %s to group %s\n", name, group_name); 
+    if (group->trackCount == 0)
+        group->tracks = (Track**)malloc(sizeof(Track**));
+    else
+        group->tracks = (Track**)realloc(group->tracks, sizeof(Track**) * (group->trackCount + 1));
 
-	track->groupIndex = group->trackCount;
-	group->tracks[group->trackCount++] = track;
+    // printf("Linking track %s to group %s\n", name, group_name);
 
-	track->group = group;
-	track->displayName = strdup(&name[found + 1]);
+    track->groupIndex = group->trackCount;
+    group->tracks[group->trackCount++] = track;
 
-	//printf("groupDisplayName %s\n", group->displayName);
+    track->group = group;
+    track->displayName = strdup(&name[found + 1]);
+
+    // printf("groupDisplayName %s\n", group->displayName);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackData_linkGroups(TrackData* trackData)
-{
-	int i, track_count;
+void TrackData_linkGroups(TrackData* trackData) {
+    int i, track_count;
 
-	for (i = 0, track_count = (int)trackData->num_syncTracks; i < track_count; ++i)
-		TrackData_linkTrack(i, trackData->syncTracks[i]->name, trackData);
+    for (i = 0, track_count = (int)trackData->num_syncTracks; i < track_count; ++i)
+        TrackData_linkTrack(i, trackData->syncTracks[i]->name, trackData);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackData_setActiveTrack(TrackData* trackData, int track)
-{
-	const int current_track = trackData->activeTrack;
-	trackData->tracks[current_track].selected = false;
-	trackData->tracks[track].selected = true;
-	trackData->activeTrack = track;
+void TrackData_setActiveTrack(TrackData* trackData, int track) {
+    const int current_track = trackData->activeTrack;
+    trackData->tracks[current_track].selected = false;
+    trackData->tracks[track].selected = true;
+    trackData->activeTrack = track;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static bool hasMark(int* marks, int count, int row)
-{
-	int middle, first, last;
+static bool hasMark(int* marks, int count, int row) {
+    int middle, first, last;
 
-	if (!marks)
-		return false;
+    if (!marks)
+        return false;
 
-	first = 0;
-	last = count - 1;
-	middle = (first + last) / 2;
+    first = 0;
+    last = count - 1;
+    middle = (first + last) / 2;
 
-	while (first <= last)
-	{
-		if (marks[middle] < row)
-			first = middle + 1;    
-		else if (marks[middle] == row) 
-			return true;
-		else
-			last = middle - 1;
+    while (first <= last) {
+        if (marks[middle] < row)
+            first = middle + 1;
+        else if (marks[middle] == row)
+            return true;
+        else
+            last = middle - 1;
 
-		middle = (first + last) / 2;
-	}
+        middle = (first + last) / 2;
+    }
 
-	return false;
+    return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int compare(const void* a, const void* b)
-{
-	return *(int*)a - *(int*)b;
+int compare(const void* a, const void* b) {
+    return *(int*)a - *(int*)b;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void sortArray(int* bookmarks, int count)
-{
-	qsort(bookmarks, count, sizeof(int), compare);
+static void sortArray(int* bookmarks, int count) {
+    qsort(bookmarks, count, sizeof(int), compare);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void toogleMark(int** marksPtr, int* countPtr, int row)
-{
-	int i;
-	int* marks = *marksPtr; 
-	int count = *countPtr;
+void toogleMark(int** marksPtr, int* countPtr, int row) {
+    int i;
+    int* marks = *marksPtr;
+    int count = *countPtr;
 
-	if (!marks)
-	{
-		*marksPtr = marks = malloc(sizeof(int));
-		*marks = row;
-		*countPtr = 1;
-		return;
-	}
+    if (!marks) {
+        *marksPtr = marks = malloc(sizeof(int));
+        *marks = row;
+        *countPtr = 1;
+        return;
+    }
 
-	for (i = 0; i < count; ++i)
-	{
-		if (marks[i] == row)
-		{
-			marks[i] = 0;
-			sortArray(marks, count);
-			return;
-		}
-	}
+    for (i = 0; i < count; ++i) {
+        if (marks[i] == row) {
+            marks[i] = 0;
+            sortArray(marks, count);
+            return;
+        }
+    }
 
-	// look for empty slot
+    // look for empty slot
 
-	for (i = 0; i < count; ++i)
-	{
-		if (marks[i] == 0)
-		{
-			marks[i] = row;
-			sortArray(marks, count);
-			return;
-		}
-	}
+    for (i = 0; i < count; ++i) {
+        if (marks[i] == 0) {
+            marks[i] = row;
+            sortArray(marks, count);
+            return;
+        }
+    }
 
-	// no slot found so we will resize the array and add the bookmark at the end
-	
-	*marksPtr = marks = realloc(marks, sizeof(int) * (count + 1));
-	marks[count] = row;
-	sortArray(marks, count + 1);
+    // no slot found so we will resize the array and add the bookmark at the end
 
-	*countPtr = count + 1;
+    *marksPtr = marks = realloc(marks, sizeof(int) * (count + 1));
+    marks[count] = row;
+    sortArray(marks, count + 1);
+
+    *countPtr = count + 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int getNextMark(const int* marks, int count, int row, int defValue)
-{
-	int i;
+static int getNextMark(const int* marks, int count, int row, int defValue) {
+    int i;
 
-	if (!marks)
-		return defValue;
+    if (!marks)
+        return defValue;
 
-	for (i = 0; i < count; ++i)
-	{
-		const int v = marks[i]; 
+    for (i = 0; i < count; ++i) {
+        const int v = marks[i];
 
-		if (v > row)
-			return v;
-	}
+        if (v > row)
+            return v;
+    }
 
-	return defValue;
+    return defValue;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int getPrevMark(const int* marks, int count, int row, int defValue)
-{
-	int i;
+static int getPrevMark(const int* marks, int count, int row, int defValue) {
+    int i;
 
-	if (!marks)
-		return defValue;
+    if (!marks)
+        return defValue;
 
-	for (i = count - 1; i >= 0; --i)
-	{
-		const int v = marks[i]; 
+    for (i = count - 1; i >= 0; --i) {
+        const int v = marks[i];
 
-		if (v < row)
-			return v;
-	}
+        if (v < row)
+            return v;
+    }
 
-	return defValue;
+    return defValue;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool TrackData_hasBookmark(TrackData* trackData, int row)
-{
-	return hasMark(trackData->bookmarks, trackData->bookmarkCount, row);
+bool TrackData_hasBookmark(TrackData* trackData, int row) {
+    return hasMark(trackData->bookmarks, trackData->bookmarkCount, row);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackData_toggleBookmark(TrackData* trackData, int row)
-{
-	toogleMark(&trackData->bookmarks, &trackData->bookmarkCount, row);
+void TrackData_toggleBookmark(TrackData* trackData, int row) {
+    toogleMark(&trackData->bookmarks, &trackData->bookmarkCount, row);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int TrackData_getNextBookmark(TrackData* trackData, int row)
-{
-	return getNextMark(trackData->bookmarks, trackData->bookmarkCount, row, trackData->endRow);
+int TrackData_getNextBookmark(TrackData* trackData, int row) {
+    return getNextMark(trackData->bookmarks, trackData->bookmarkCount, row, trackData->endRow);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int TrackData_getPrevBookmark(TrackData* trackData, int row)
-{
-	return getPrevMark(trackData->bookmarks, trackData->bookmarkCount, row, trackData->startRow);
+int TrackData_getPrevBookmark(TrackData* trackData, int row) {
+    return getPrevMark(trackData->bookmarks, trackData->bookmarkCount, row, trackData->startRow);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool TrackData_hasLoopmark(TrackData* trackData, int row)
-{
-	return hasMark(trackData->loopmarks, trackData->loopmarkCount, row);
+bool TrackData_hasLoopmark(TrackData* trackData, int row) {
+    return hasMark(trackData->loopmarks, trackData->loopmarkCount, row);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackData_toggleLoopmark(TrackData* trackData, int row)
-{
-	toogleMark(&trackData->loopmarks, &trackData->loopmarkCount, row);
+void TrackData_toggleLoopmark(TrackData* trackData, int row) {
+    toogleMark(&trackData->loopmarks, &trackData->loopmarkCount, row);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int TrackData_getNextLoopmark(TrackData* trackData, int row)
-{
-	return getNextMark(trackData->loopmarks, trackData->loopmarkCount, row, -1);
+int TrackData_getNextLoopmark(TrackData* trackData, int row) {
+    return getNextMark(trackData->loopmarks, trackData->loopmarkCount, row, -1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int TrackData_getPrevLoopmark(TrackData* trackData, int row)
-{
-	return getPrevMark(trackData->loopmarks, trackData->loopmarkCount, row, -1);
+int TrackData_getPrevLoopmark(TrackData* trackData, int row) {
+    return getPrevMark(trackData->loopmarks, trackData->loopmarkCount, row, -1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // (simplified) locale-independent atof() implementation
-double my_atof(const char* s)
-{
-	int64_t value = 0, radix = 0;
-	char first;
-	if (!s || !s[0])
-	{
-		return 0.0;
-	}
-	first = s[0];
-	if (first == '-')
-	{
-		++s;
-	}
-	while (*s)
-	{
-		if (isdigit(*s))
-		{
-			value = (value * 10) + (*s - '0');
-			radix *= 10;
-		}
-		else if ((*s == '.') || (*s == ','))
-		{
-			radix = 1;
-		}
-		else
-		{
-			break;
-		}
-		++s;
-	}
-	radix = radix ? radix : 1;
-	radix = (first == '-') ? -radix : radix;
-	return (double)value / (double)radix;
+double my_atof(const char* s) {
+    int64_t value = 0, radix = 0;
+    char first;
+    if (!s || !s[0]) {
+        return 0.0;
+    }
+    first = s[0];
+    if (first == '-') {
+        ++s;
+    }
+    while (*s) {
+        if (isdigit(*s)) {
+            value = (value * 10) + (*s - '0');
+            radix *= 10;
+        } else if ((*s == '.') || (*s == ',')) {
+            radix = 1;
+        } else {
+            break;
+        }
+        ++s;
+    }
+    radix = radix ? radix : 1;
+    radix = (first == '-') ? -radix : radix;
+    return (double)value / (double)radix;
 }
 
-void my_ftoa(float f, char* s, int n, int digits)
-{
-	char fmt[5] = "%.0f";
-	fmt[2] = (char)(digits + '0');
-	snprintf(s, n, fmt, f);
-	for (;  *s;  ++s)
-	{
-		if (*s == ',')
-		{
-			*s = '.';
-		}
-	}
+void my_ftoa(float f, char* s, int n, int digits) {
+    char fmt[5] = "%.0f";
+    fmt[2] = (char)(digits + '0');
+    snprintf(s, n, fmt, f);
+    for (; *s; ++s) {
+        if (*s == ',') {
+            *s = '.';
+        }
+    }
 }

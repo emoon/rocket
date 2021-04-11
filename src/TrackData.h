@@ -6,16 +6,14 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum
-{
-	EDITOR_MAX_TRACKS = 16 * 1024,
-	EDITOR_MAX_BOOKMARKS = 32 * 1024,
+enum {
+    EDITOR_MAX_TRACKS = 16 * 1024,
+    EDITOR_MAX_BOOKMARKS = 32 * 1024,
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef struct MusicData
-{
+typedef struct MusicData {
     text_t* filename;
     short* waveData;
     unsigned int* fftData;
@@ -25,79 +23,75 @@ typedef struct MusicData
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum GroupType
-{
-	GROUP_TYPE_TRACK,
-	GROUP_TYPE_GROUP,
+enum GroupType {
+    GROUP_TYPE_TRACK,
+    GROUP_TYPE_GROUP,
 };
 
 struct Group;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef struct Track
-{
-	char* displayName;
-	struct Group* group;
-	struct track_key* muteBackup;
-	uint32_t color;
+typedef struct Track {
+    char* displayName;
+    struct Group* group;
+    struct track_key* muteBackup;
+    uint32_t color;
 
-	int width;           // width in pixels of the track
-	int index;
-	int groupIndex;
-	int muteKeyCount;
-	int muteKeyIter;
-	bool disabled;
-	bool hidden;
-	bool folded;
-	bool selected;
-	bool active;
+    int width;  // width in pixels of the track
+    int index;
+    int groupIndex;
+    int muteKeyCount;
+    int muteKeyIter;
+    bool disabled;
+    bool hidden;
+    bool folded;
+    bool selected;
+    bool active;
 
 } Track;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Grouping (notice that even one track without group becomes it own group to keep the code easier)
 
-typedef struct Group
-{
-	const char* name;
-	char* displayName;
-	int width;
+typedef struct Group {
+    const char* name;
+    char* displayName;
+    int width;
 
-	Track** tracks;
+    Track** tracks;
 
-	enum GroupType type;
-	int trackCount;
-	int groupIndex;
-	bool folded;
+    enum GroupType type;
+    int trackCount;
+    int groupIndex;
+    bool folded;
 } Group;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef struct TrackData
-{
+typedef struct TrackData {
     MusicData musicData;
-	struct sync_track **syncTracks;
-	size_t num_syncTracks;
-	Track tracks[EDITOR_MAX_TRACKS];
-	Group groups[EDITOR_MAX_TRACKS];
-	int* loopmarks;
-	int* bookmarks;
-	int bookmarkCount;
-	int loopmarkCount;
-	int groupCount;
-	int activeTrack;
-	int lastColor;
-	int trackCount;
-	int startRow;
-	int endRow;
-	int bpm;
-	int rowsPerBeat;
-	char* editText;
-	bool isPlaying;
-	bool isLooping;
-	int startLoop;
-	int endLoop;
+    struct sync_track** syncTracks;
+    size_t num_syncTracks;
+    Track tracks[EDITOR_MAX_TRACKS];
+    Group groups[EDITOR_MAX_TRACKS];
+    int* loopmarks;
+    int* bookmarks;
+    int bookmarkCount;
+    int loopmarkCount;
+    int groupCount;
+    int activeTrack;
+    int lastColor;
+    int trackCount;
+    int startRow;
+    int endRow;
+    int bpm;
+    int rowsPerBeat;
+    char* editText;
+    bool isPlaying;
+    bool isLooping;
+    int startLoop;
+    int endLoop;
 } TrackData;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

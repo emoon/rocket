@@ -22,7 +22,7 @@ int curtime_ms = 0;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int row_to_ms_round(int row, float rps) 
+static int row_to_ms_round(int row, float rps)
 {
 	const float newtime = ((float)(row)) / rps;
 	return (int)(floor(newtime * 1000.0f + 0.5f));
@@ -30,7 +30,7 @@ static int row_to_ms_round(int row, float rps)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static float ms_to_row_f(int time_ms, float rps) 
+static float ms_to_row_f(int time_ms, float rps)
 {
 	const float row = rps * ((float)time_ms) * 1.0f/1000.0f;
 	return row;
@@ -38,7 +38,7 @@ static float ms_to_row_f(int time_ms, float rps)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int ms_to_row_round(int time_ms, float rps) 
+static int ms_to_row_round(int time_ms, float rps)
 {
 	const float r = ms_to_row_f(time_ms, rps);
 	return (int)(floor(r + 0.5f));
@@ -79,10 +79,10 @@ static int xis_playing(void* data)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int rocket_init(const char* prefix) 
+int rocket_init(const char* prefix)
 {
 	device = sync_create_device( prefix );
-	if (!device) 
+	if (!device)
 	{
 		printf("Unable to create rocketDevice\n");
 		return 0;
@@ -93,7 +93,7 @@ int rocket_init(const char* prefix)
 	cb.pause = xpause;
 	cb.set_row = xset_row;
 
-	if (sync_connect(device, "localhost", SYNC_DEFAULT_PORT)) 
+	if (sync_tcp_connect(device, "localhost", SYNC_DEFAULT_PORT))
 	{
 		printf("Rocket failed to connect\n");
 		return 0;
@@ -116,8 +116,8 @@ static int rocket_update()
 
 #if !defined( SYNC_PLAYER )
 	row = ms_to_row_round(curtime_ms, rps);
-	if (sync_update(device, row, &cb, 0)) 
-		sync_connect(device, "localhost", SYNC_DEFAULT_PORT);
+	if (sync_update(device, row, &cb, 0))
+		sync_tcp_connect(device, "localhost", SYNC_DEFAULT_PORT);
 #endif
 
 	return 1;
@@ -125,7 +125,7 @@ static int rocket_update()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static const char* s_trackNames[] = 
+static const char* s_trackNames[] =
 {
 	"group0#track0",
 	"group0#track1",

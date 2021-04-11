@@ -13,4 +13,3 @@ uint64_t EMGFXBackend_createTexture(void* imageBuffer, int w, int h, int comp);
 void EMGFXBackend_updateTexture(uint64_t texId, int w, int h, void* data);
 
 #endif
-

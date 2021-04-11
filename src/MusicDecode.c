@@ -1,10 +1,10 @@
-#include <emgui/Emgui.h>
 #include <bass.h>
-#include "Dialog.h"
+#include <emgui/Emgui.h>
 #include <math.h>
 #include <stdio.h>
-#include "TrackData.h"
 #include <tinycthread.h>
+#include "Dialog.h"
+#include "TrackData.h"
 
 static mtx_t s_mutex;
 
@@ -17,14 +17,13 @@ typedef struct ThreadFuncData {
 // https://github.com/framefield/tooll/blob/master/Tooll/Components/Helper/GenerateSoundImage.cs
 // Copyright (c) 2016 Framefield. All rights reserved.
 
-int decodeFunc(void* inData)
-{
+int decodeFunc(void* inData) {
     int a, b, r, g, i;
-    //short waveData[8 * 1024];
+    // short waveData[8 * 1024];
     unsigned int* fftPtr;
     unsigned int* fftOutput;
     float fftData[1024];
-    //double timeInSec = 0.0;
+    // double timeInSec = 0.0;
     const float maxIntensity = 500 * 2;
     const int COLOR_STEPS = 255;
     const int PALETTE_SIZE = 3 * COLOR_STEPS;
@@ -33,20 +32,20 @@ int decodeFunc(void* inData)
     unsigned int colors[255 * 3];
     int imageHeight = 128;
     HSTREAM chan = threadData->stream;
-	MusicData* data = threadData->data;
+    MusicData* data = threadData->data;
     float percentDone = 1.0f;
     float step = 0.0f;
 
     mtx_lock(&s_mutex);
 
-    const int SAMPLING_FREQUENCY = 100; //warning: in TimelineImage this samplingfrequency is assumed to be 100
+    const int SAMPLING_FREQUENCY = 100;  // warning: in TimelineImage this samplingfrequency is assumed to be 100
     const double SAMPLING_RESOLUTION = 1.0 / SAMPLING_FREQUENCY;
 
     QWORD sampleLength = BASS_ChannelSeconds2Bytes(chan, SAMPLING_RESOLUTION);
     int numSamples = (int)((double)BASS_ChannelGetLength(chan, BASS_POS_BYTE) / (double)sampleLength);
 
-    //printf("Num samples %d\n", (int)sampleLength);
-    //printf("Num samples %d\n", numSamples);
+    // printf("Num samples %d\n", (int)sampleLength);
+    // printf("Num samples %d\n", numSamples);
 
     BASS_ChannelPlay(chan, 0);
 
@@ -60,20 +59,19 @@ int decodeFunc(void* inData)
 
     fftPtr = fftOutput = (unsigned int*)malloc(128 * 4 * (numSamples + 1));
 
-    //const int spectrumLength = 1024;
-    //const int imageHeight = 256;
+    // const int spectrumLength = 1024;
+    // const int imageHeight = 256;
 
-    //var spectrumImage = new Bitmap((int)numSamples, imageHeight);
-    //var volumeImage = new Bitmap((int)numSamples, imageHeight);
+    // var spectrumImage = new Bitmap((int)numSamples, imageHeight);
+    // var volumeImage = new Bitmap((int)numSamples, imageHeight);
 
-    //s_editorData.waveViewSize = 128;
-	//s_editorData.trackViewInfo.windowSizeX -= s_editorData.waveViewSize;
+    // s_editorData.waveViewSize = 128;
+    // s_editorData.trackViewInfo.windowSizeX -= s_editorData.waveViewSize;
 
-    //timeInSec =(DWORD)BASS_ChannelBytes2Seconds(chan, len);
-    //printf(" %u:%02u\n", (int)timeInSec / 60, (int)timeInSec % 60);
+    // timeInSec =(DWORD)BASS_ChannelBytes2Seconds(chan, len);
+    // printf(" %u:%02u\n", (int)timeInSec / 60, (int)timeInSec % 60);
 
-    for (i = 0; i < PALETTE_SIZE; ++i)
-    {
+    for (i = 0; i < PALETTE_SIZE; ++i) {
         a = 255;
         if (i < PALETTE_SIZE * 0.666f)
             a = (int)(i * 255 / (PALETTE_SIZE * 0.666f));
@@ -102,8 +100,7 @@ int decodeFunc(void* inData)
 
     (void)f2;
 
-    for (int rowIndex = 0; rowIndex < imageHeight; ++rowIndex)
-    {
+    for (int rowIndex = 0; rowIndex < imageHeight; ++rowIndex) {
         int j_ = (int)(f * log(rowIndex + 1));
         int pj_ = (int)(rowIndex > 0 ? f * log(rowIndex - 1 + 1) : j_);
         int nj_ = (int)(rowIndex < imageHeight - 1 ? f * log(rowIndex + 1 + 1) : j_);
@@ -116,26 +113,24 @@ int decodeFunc(void* inData)
     step = (float)(99.0f / numSamples);
     percentDone = 1.0f;
 
-    for (int sampleIndex = 0; sampleIndex < numSamples; ++sampleIndex)
-    {
+    for (int sampleIndex = 0; sampleIndex < numSamples; ++sampleIndex) {
         BASS_ChannelSetPosition(chan, sampleIndex * sampleLength, BASS_POS_BYTE);
         BASS_ChannelGetData(chan, fftData, BASS_DATA_FFT2048);
 
         data->percentDone = (int)(percentDone);
 
-        //printf("%d/%d\n", sampleIndex, numSamples);
+        // printf("%d/%d\n", sampleIndex, numSamples);
 
-        for (int rowIndex = 0; rowIndex < imageHeight; ++rowIndex)
-        {
-            //int j_ = (int)(f * log(rowIndex + 1));
-            //int pj_ = (int)(rowIndex > 0 ? f * log(rowIndex - 1 + 1) : j_);
-            //int nj_ = (int)(rowIndex < imageHeight - 1 ? f * log(rowIndex + 1 + 1) : j_);
+        for (int rowIndex = 0; rowIndex < imageHeight; ++rowIndex) {
+            // int j_ = (int)(f * log(rowIndex + 1));
+            // int pj_ = (int)(rowIndex > 0 ? f * log(rowIndex - 1 + 1) : j_);
+            // int nj_ = (int)(rowIndex < imageHeight - 1 ? f * log(rowIndex + 1 + 1) : j_);
 
             int j_ = j_table[(imageHeight - rowIndex) - 1];
             int pj_ = pj_table[(imageHeight - rowIndex) - 1];
             int nj_ = nj_table[(imageHeight - rowIndex) - 1];
 
-            //printf("index %d - %d %d %d\n", rowIndex, j_, pj_, nj_);
+            // printf("index %d - %d %d %d\n", rowIndex, j_, pj_, nj_);
 
             float intensity = 125.0f * 4.0f * fftData[spectrumLength - pj_ - 1] +
                               750.0f * 4.0f * fftData[spectrumLength - j_ - 1] +
@@ -163,22 +158,20 @@ int decodeFunc(void* inData)
 
     mtx_unlock(&s_mutex);
 
-    //printf("thread done\n");
+    // printf("thread done\n");
 
     return 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Music_decode(text_t* path, MusicData* data)
-{
+int Music_decode(text_t* path, MusicData* data) {
     QWORD len;
     thrd_t id;
 
-    if (thrd_busy == mtx_trylock(&s_mutex))
-    {
-	    Dialog_showError(TEXT("Decoding of stream already in-progress. Re-open after it's been completed."));
-	    return 1;
+    if (thrd_busy == mtx_trylock(&s_mutex)) {
+        Dialog_showError(TEXT("Decoding of stream already in-progress. Re-open after it's been completed."));
+        return 1;
     }
 
     // now this will break if we already have a thread running.
@@ -186,26 +179,24 @@ int Music_decode(text_t* path, MusicData* data)
     free(data->fftData);
     data->fftData = 0;
 
-	int flags = BASS_STREAM_DECODE | BASS_SAMPLE_MONO | BASS_POS_SCAN;
+    int flags = BASS_STREAM_DECODE | BASS_SAMPLE_MONO | BASS_POS_SCAN;
 
 #ifdef _WIN32
-	flags |= BASS_UNICODE;
+    flags |= BASS_UNICODE;
 #endif
 
-	HSTREAM chan = BASS_StreamCreateFile(0, path, 0, 0, flags);
+    HSTREAM chan = BASS_StreamCreateFile(0, path, 0, 0, flags);
 
-	if (!chan)
-	{
-	    Dialog_showError(TEXT("Unable to open stream for decode. No music data will be available."));
-	    mtx_unlock(&s_mutex);
-	    return 0;
-	}
+    if (!chan) {
+        Dialog_showError(TEXT("Unable to open stream for decode. No music data will be available."));
+        mtx_unlock(&s_mutex);
+        return 0;
+    }
 
     len = BASS_ChannelGetLength(chan, BASS_POS_BYTE);
 
-    if (len == -1)
-    {
-	    Dialog_showError(TEXT("Stream has no length. No music data will be available."));
+    if (len == -1) {
+        Dialog_showError(TEXT("Stream has no length. No music data will be available."));
         BASS_StreamFree(chan);
         mtx_unlock(&s_mutex);
         return 0;
@@ -222,8 +213,7 @@ int Music_decode(text_t* path, MusicData* data)
     // this won't be a problem
     mtx_unlock(&s_mutex);
 
-    if (thrd_create(&id, decodeFunc, threadData) != thrd_success)
-    {
+    if (thrd_create(&id, decodeFunc, threadData) != thrd_success) {
         printf("Unable to create decode thread. Stalling main thread and running...\n");
         decodeFunc(threadData);
     }
@@ -233,7 +223,6 @@ int Music_decode(text_t* path, MusicData* data)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Music_init()
-{
+void Music_init() {
     mtx_init(&s_mutex, mtx_plain);
 }

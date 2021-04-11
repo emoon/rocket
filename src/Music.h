@@ -8,6 +8,6 @@ struct MusicData;
 void Music_init();
 void Music_deinit();
 
-int Music_decode(text_t* path, MusicData* data);
+int Music_decode(text_t* path, struct MusicData* data);
 
 #endif

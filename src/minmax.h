@@ -1,23 +1,21 @@
-#pragma once 
+#pragma once
 
 #include <emgui/Types.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static EMGUI_INLINE int maxi(int a, int b)
-{
-	if (a > b)
-		return a;
+static EMGUI_INLINE int maxi(int a, int b) {
+    if (a > b)
+        return a;
 
-	return b;
+    return b;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static EMGUI_INLINE int mini(int a, int b)
-{
-	if (a < b)
-		return a;
+static EMGUI_INLINE int mini(int a, int b) {
+    if (a < b)
+        return a;
 
-	return b;
+    return b;
 }
