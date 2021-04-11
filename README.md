@@ -79,8 +79,8 @@ If you want a VS solution instead you can run `scripts\win32_gen_vs_solution.cmd
 ```
 git clone --depth=1 --recursive https://github.com/emoon/rocket
 cd rocket
-"scripts/win32_build_debug.cmd"
-t2-output\win32-msvc-debug-default\editor.exe`
+scripts\win32_build_debug.cmd
+t2-output\win32-msvc-debug-default\editor.exe
 ```
 
 Linux
