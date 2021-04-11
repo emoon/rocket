@@ -15,8 +15,8 @@ Also the documentation hasn't been completed yet.
 
 Here are the links to the current version of the editor:
 
-* Mac: https://www.dropbox.com/s/toaiyfgzue9fm2v/RocketEditor1.2beta.zip?dl=0
-* Windows: https://www.dropbox.com/s/ounkv6bcou5pgwe/RocketEditor1.2beta-Win.zip?dl=0
+* macOS: https://www.dropbox.com/s/toaiyfgzue9fm2v/RocketEditor1.2beta.zip?dl=1
+* Windows: https://www.dropbox.com/s/ounkv6bcou5pgwe/RocketEditor1.2beta-Win.zip?dl=1
 
 About
 -----
@@ -31,7 +31,7 @@ The SDL-based linux support is written by Konsta 'sooda' Hölttä at https://git
 Motivation
 ----------
 
-About a year ago me and Heine 'bstrr' Gundersen (at Revision 2012) started to talk about that having an editor for GNU Rocket that worked on Mac OS X would be great as we both used Mac as our primary development platform.
+About a year ago me and Heine 'bstrr' Gundersen (at Revision 2012) started to talk about that having an editor for GNU Rocket that worked on macOS would be great as we both used Mac as our primary development platform.
 This was the start of this another version of the editor. I (Daniel 'emoon' Collin) also wanted some features that weren't in the old editor (such as folding of tracks, having it cross platform, etc)
 Some small work was started on the editor during spring and summer but not much happened. It was really during last autumn 2012 I started to work on it for real to get in the features I want to have.
 
@@ -53,42 +53,34 @@ Source Code
 
 Now uses a UI system called 'Emgui' which is an intermediate mode UI that was developed at the same time as the editor.
 Emui uses OpenGL as the rendering API for the UI making it possible to port to many platforms but using a diffrent backend is also very possible.
-The code is written in C and has currently been compiled with clang on Mac, Visual Studio 2012 (Express) on Windows, and gcc on Linux.
+The code is written in C and has currently been compiled with clang on macOS, Visual Studio 2019 (Community ed is fine) on Windows, and gcc on Linux.
 I have tried to keep the code as platform independent as possible and platform files are (mostly) in the src/macosx, src/windows and src/linux directories.
 Some parts of the code could need some cleanup but should hopefully be quite easy to follow and understand.
 
 Building the code
 -----------------
 
-All Mac, Windows and Linux versions use the Tundra build system (https://github.com/deplinenoise/tundra) so in order to build the code you need a tundra executable for your OS
-I have made two of the available here for your convenience if you don't want to build the code yourself.
+All macOS, Windows and Linux versions use the Tundra build system (https://github.com/deplinenoise/tundra) so in order to build the code you need a tundra executable for your OS.
+For macOS and Windows the binaries are included within the repo, but for Linux see the build instructions bellow.
 
-* Mac: https://dl.dropbox.com/u/5205843/tundra-mac.zip
-* Windows: https://dl.dropbox.com/u/5205843/tundra-win.zip
+macOS
+-----
 
-Mac
----
-
-To build on mac enter the rocket/ogl_rocket directory and run "tundra macosx-clang-debug" (or -release for release build) and in tundra-output you will find the app to run.
+To build on mac enter the rocket/ogl_rocket directory and run "bin/mac/tundra2 macosx-clang-debug" (or -release for release build) and in tundra-output you will find the app to run.
 To use Xcode to build (or code in) use the XCode3-GenerateProj.sh file (works with Xcode 4.x also) and open the generated project in xcode (it's inside the tundra-output directory)
 
 Windows
 -------
 
-Easiest is to run win32_gen_vs_solution.cmd and open the generated solution (it's in the tundra-output directory) in Visual Studio.
-Note that you will need to setup your paths/variables so cl is included and can be started from command line. VS2012 Express seems to do this automatically but it may different depending on your compiler.
-In that case run the "vsvars32.bat" included with Visual Studio from a command prompt and start Visual Studio from there.
-
-If you want to build from command line that works just as fine as well (just set vsvars32 (as seen above) and run "tundra win32-msvc-debug" for the debug build.
+To build the code run in debug run: `scripts\win32_build_debug.cmd` and run the executable in `t2-output\win32-msvc-debug-default\editor.exe` (Visual Studio 2019 required) 
+If you want a VS solution instead you can run `scripts\win32_gen_vs_solution.cmd` and `scripts\win32_launch_vs.cmd`
 
 
 ```
-git clone --depth=1 https://github.com/emoon/rocket
+git clone --depth=1 --recursive https://github.com/emoon/rocket
 cd rocket
-git submodule update --init --recursive
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars32.bat" x86
-"scripts/win32_gen_vs_solution.cmd"
-"scripts/win32_launch_vs.cmd"
+"scripts/win32_build_debug.cmd"
+t2-output\win32-msvc-debug-default\editor.exe`
 ```
 
 Linux
@@ -105,7 +97,7 @@ sudo apt-get install libsdl1.2-dev
 Install [tundra](https://github.com/deplinenoise/tundra):
 
 ```
-git clone --depth=1 https://github.com/deplinenoise/tundra
+git clone --depth=1 --recursive https://github.com/deplinenoise/tundra
 cd tundra
 make
 sudo checkinstall make install
@@ -114,9 +106,8 @@ sudo checkinstall make install
 Install **rocket**. No project files are generated - Tundra builds the editor straight away.
 
 ```
-git clone --depth=1 https://github.com/emoon/rocket
+git clone --depth=1 --retursive https://github.com/emoon/rocket
 cd rocket
-git submodule update --init --recursive
 ./linux-build.sh
 ```
 
