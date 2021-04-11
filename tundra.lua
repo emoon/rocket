@@ -21,6 +21,7 @@ local macosx = {
 
 local win32 = {
 	Env = {
+		CPPDEFS = { "EMGUI_WINDOWS" },
  		GENERATE_PDB = "1",
 		CCOPTS = {
 			"/W4", "/I.", "/WX", "/DUNICODE", "/FS", "/D_UNICODE", "/DWIN32", "/D_CRT_SECURE_NO_WARNINGS", "/wd4996", "/wd4389", "/Wv:18",
