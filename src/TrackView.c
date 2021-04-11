@@ -11,13 +11,15 @@
 #include "minmax.h"
 #include "rlog.h"
 
-#if defined(__APPLE__)
-#include <OpenGL/OpenGL.h>
-#include <OpenGL/gl.h>
-#elif !defined(EMGUI_UNIX)
+#if defined(EMGUI_UNIX)
 #define WIN32_LEAN_AND_MEAN
 #include <gl/gl.h>
 #include <windows.h>
+#endif
+
+#if defined(__APPLE__)
+#include <OpenGL/OpenGL.h>
+#include <OpenGL/gl.h>
 #endif
 
 #define font_size 8
