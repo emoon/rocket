@@ -151,7 +151,7 @@ Tips & tricks
 Keys
 ----
 
-### OSX:
+### macOS:
 
 #### Editing:
 
