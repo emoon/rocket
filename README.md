@@ -5,7 +5,7 @@ Beta Disclaimer
 ---------------
 
 First a screenshot of how it looks:
-![Rocket Opengl editor screenshot](https://dl.dropbox.com/u/5205843/RocketEditor.png)
+![screenshot](/bin/rocketeditor_screen.png)
 
 Regular disclaimer: Backup your stuff before using software :)
 
