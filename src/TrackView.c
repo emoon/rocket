@@ -11,11 +11,13 @@
 #include "minmax.h"
 #include "rlog.h"
 
+// clang-format off
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include <gl/gl.h>
 #include <windows.h>
+#include <gl/gl.h>
 #endif
+// clang-format on
 
 #if defined(__APPLE__)
 #include <OpenGL/OpenGL.h>
