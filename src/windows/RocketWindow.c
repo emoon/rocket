@@ -1,9 +1,12 @@
 #include <emgui/emgui.h>
 #include <emgui/gfxbackend.h>
-#include <gl/gl.h>
-#include <string.h>
+// these includes has to be in "correct" order
+// clang-format off
 #include <windows.h>
 #include <windowsx.h>
+#include <gl/gl.h>
+// clang-format on
+#include <string.h>
 #include "../Editor.h"
 #include "Menu.h"
 #include "afxres.h"

@@ -692,7 +692,7 @@ static void* readFileToMemory(const char* filename) {
         return false;
     }
 
-    int v = fread(fileBuffer, 1, size, file);
+    size_t v = fread(fileBuffer, 1, size, file);
     fclose(file);
     (void)v;
 
