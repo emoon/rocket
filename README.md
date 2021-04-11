@@ -7,7 +7,7 @@ Beta Disclaimer
 First a screenshot of how it looks:
 ![screenshot](/bin/rocketeditor_screen.png)
 
-Regular disclaimer: Backup your stuff before using software :)
+Regular disclaimer: Backup your stuff before using the software :)
 
 If you encounter any issues please try to report them at https://github.com/emoon/rocket/issues as
 this would make my life much easier and I will try to fix them given time. Hopefully the editor should be useful even if still not 100% finalized bug wise.
@@ -47,15 +47,6 @@ Features:
 * Cross platform. Read more about the code in the next section.
 * Navigation while play-backing. It's now possible to jump forward/backward when playing the demo (demo "scratching")
 * Fast way to insert a interpolated value by just pressing return on an empty row.
-
-Source Code
------------
-
-Now uses a UI system called 'Emgui' which is an intermediate mode UI that was developed at the same time as the editor.
-Emui uses OpenGL as the rendering API for the UI making it possible to port to many platforms but using a diffrent backend is also very possible.
-The code is written in C and has currently been compiled with clang on macOS, Visual Studio 2019 (Community ed is fine) on Windows, and gcc on Linux.
-I have tried to keep the code as platform independent as possible and platform files are (mostly) in the src/macosx, src/windows and src/linux directories.
-Some parts of the code could need some cleanup but should hopefully be quite easy to follow and understand.
 
 Building the code
 -----------------
@@ -103,7 +94,7 @@ make
 sudo checkinstall make install
 ```
 
-Install **rocket**. No project files are generated - Tundra builds the editor straight away.
+Install rocket No project files are generated - Tundra builds the editor straight away.
 
 ```
 git clone --depth=1 --retursive https://github.com/emoon/rocket
