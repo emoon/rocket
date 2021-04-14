@@ -1,6 +1,71 @@
 require "tundra.syntax.glob"
 require "tundra.syntax.osx-bundle"
 
+local GLFW_DIR = "external/glfw/"
+
+StaticLibrary {
+    Name = "glfw",
+
+    Env = {
+        CPPPATH = {
+            GLFW_DIR .. "src",
+            GLFW_DIR .. "include",
+        },
+
+        CPPDEFS = {
+            { "_GLFW_WIN32", "_GLFW_WGL", "WIN32"; Config = "win64-*-*" },
+            { "_GLFW_X11", "_GLFW_GFX", "LINUX"; Config = "linux-*-*" },
+            { "_GLFW_COCOA", "MACOSX"; Config = "macosx-*-*" },
+        },
+    },
+
+    Sources = {
+        GLFW_DIR .. "src/window.c",
+        GLFW_DIR .. "src/context.c",
+        GLFW_DIR .. "src/init.c",
+        GLFW_DIR .. "src/input.c",
+        GLFW_DIR .. "src/monitor.c",
+        GLFW_DIR .. "src/vulkan.c",
+        GLFW_DIR .. "src/osmesa_context.c",
+        GLFW_DIR .. "src/egl_context.c",
+
+        {
+            GLFW_DIR .. "src/cocoa_init.m",
+            GLFW_DIR .. "src/cocoa_joystick.m",
+            GLFW_DIR .. "src/cocoa_monitor.m",
+            GLFW_DIR .. "src/cocoa_time.c",
+            GLFW_DIR .. "src/cocoa_window.m",
+            GLFW_DIR .. "src/posix_thread.c",
+            GLFW_DIR .. "src/nsgl_context.h",
+            GLFW_DIR .. "src/nsgl_context.m" ; Config = "macosx-*-*"
+        },
+
+        {
+            GLFW_DIR .. "src/glx_context.c",
+            -- GLFW_DIR .. "src/wl_init.c",
+            --GLFW_DIR .. "src/wl_monitor.c",
+            --GLFW_DIR .. "src/wl_window.c",
+            GLFW_DIR .. "src/x11_init.c",
+            GLFW_DIR .. "src/x11_monitor.c",
+            GLFW_DIR .. "src/x11_window.c",
+            GLFW_DIR .. "src/linux_joystick.c",
+            GLFW_DIR .. "src/posix_thread.c",
+            GLFW_DIR .. "src/posix_time.c",
+            GLFW_DIR .. "src/xkb_unicode.c" ; Config = "linux-*-*",
+        },
+
+        {
+            GLFW_DIR .. "src/wgl_context.c",
+            GLFW_DIR .. "src/win32_init.c",
+            GLFW_DIR .. "src/win32_joystick.c",
+            GLFW_DIR .. "src/win32_monitor.c",
+            GLFW_DIR .. "src/win32_thread.c",
+            GLFW_DIR .. "src/win32_time.c",
+            GLFW_DIR .. "src/win32_window.c" ; Config = "win64-*-*",
+        },
+    },
+}
+
 StaticLibrary {
 	Name = "mxml",
 
@@ -26,6 +91,8 @@ StaticLibrary {
 		},
 	},
 }
+
+
 
 StaticLibrary {
 	Name = "tinycthread",
@@ -138,7 +205,7 @@ Program {
 		{ "data/windows/editor.rc" ; Config = { "win32-*-*", "win64-*-*" } },
 	},
 
-	Depends = { "sync", "mxml", "emgui", "tinycthread" },
+	Depends = { "sync", "mxml", "emgui", "tinycthread", "glfw" },
 
 	Libs = {
 		{ "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib",
