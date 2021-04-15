@@ -164,6 +164,10 @@ StaticLibrary {
 Program {
 	Name = "editor",
 
+	Includes = {
+        GLFW_DIR .. "include",
+	},
+
 	Env = {
 	    LIBPATH = {
 	        { "external/bass/win64"; Config = "win32-*-*" },
@@ -196,7 +200,7 @@ Program {
 			Dir = "src",
 			Extensions = { ".c", ".m", ".h" },
 			Filters = {
-				{ Pattern = "linux"; Config = "linux-*-*" },
+				-- { Pattern = "linux"; Config = "linux-*-*" },
 				{ Pattern = "macosx"; Config = "macosx-*-*" },
 				{ Pattern = "windows"; Config = { "win32-*-*", "win64-*-*" } },
 			},
@@ -210,7 +214,7 @@ Program {
 	Libs = {
 		{ "wsock32.lib", "opengl32.lib", "glu32.lib", "kernel32.lib",
 		   "user32.lib", "gdi32.lib", "Comdlg32.lib", "Advapi32.lib", "bass.lib" ; Config = "win32-*-*" },
-		{ "GL", "SDL2", "m", "bass"; Config = "linux-*-*" },
+		{ "X11", "dl", "GL", "m", "bass"; Config = "linux-*-*" },
 		{ "bass"; Config = "macosx-*-*" },
 	},
 
