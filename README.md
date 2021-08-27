@@ -94,15 +94,15 @@ make
 sudo checkinstall make install
 ```
 
-Install rocket No project files are generated - Tundra builds the editor straight away.
+Build rocket:
 
 ```
-git clone --depth=1 --retursive https://github.com/emoon/rocket
+git clone --depth=1 --recursive https://github.com/emoon/rocket
 cd rocket
-./linux-build.sh
+tundra2 linux-gcc-release
 ```
 
-Install `libbass.so` from the repo folder:
+(optional) Install `libbass.so` from the repo folder:
 
 ```
 sudo cp external/bass/linux/libbass.so /usr/local/lib/
@@ -110,17 +110,19 @@ sudo chmod a+rx /usr/local/lib/libbass.so
 sudo ldconfig
 ```
 
+
+
+Start rocket:
+
+```
+LD_LIBRARY_PATH=external/bass/linux/ ./t2-output/linux-gcc-release-default/editor 
+```
 Start the basic example:
 
 ```
 ./t2-output/linux-gcc-release-default/basic_example
 ```
 
-Start rocket:
-
-```
-./t2-output/linux-gcc-release-default/editor
-```
 
 Tips & tricks
 -------------
@@ -214,6 +216,8 @@ Ctrl+V              | Paste
 Ctrl+Z              | Undo
 Ctrl+Shift+Z        | Redo
 Delete              | Delete key
+Ctrl-I              | Invert selection
+M                   | Mute Track
 
 #### View:
 
