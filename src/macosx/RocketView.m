@@ -65,6 +65,8 @@ void Window_setTitle(const char* title);
 	g_context = oglContext;
 	g_window = [self window];
 
+	oglContext.view = self;
+	
 	EMGFXBackend_create();
 	Editor_create();
 	Editor_update();
