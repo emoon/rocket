@@ -428,11 +428,16 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData) {
 #if defined(_WIN32)
     _wfopen_s(&fp, path, L"wt");
 #else
-    fp = fopen(path, "wt");
+    fp = fopen(path, "w");
 #endif
 
-    mxmlSaveFile(xml, fp, whitespaceCallback);
-    fclose(fp);
+    if (fp != NULL) {
+        mxmlSaveFile(xml, fp, whitespaceCallback);
+        fclose(fp);
+    } else {
+        printf("Can not save %s\n", path);
+    }
+
 
     return true;
 }
