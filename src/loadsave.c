@@ -431,7 +431,7 @@ int LoadSave_saveRocketXML(const text_t* path, TrackData* trackData) {
     fp = fopen(path, "w");
 #endif
 
-    if (fp != NULL) {
+    if (fp) {
         mxmlSaveFile(xml, fp, whitespaceCallback);
         fclose(fp);
     } else {
