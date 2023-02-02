@@ -92,8 +92,8 @@ static inline int socket_poll(SOCKET socket) {
 }
 
 static int s_clientIndex;
-int s_socket = INVALID_SOCKET;
-int s_serverSocket = INVALID_SOCKET;
+static int s_socket = INVALID_SOCKET;
+static int s_serverSocket = INVALID_SOCKET;
 static bool s_paused = true;
 static char s_connectionName[256];
 
