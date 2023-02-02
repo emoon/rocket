@@ -91,7 +91,7 @@ static inline int socket_poll(SOCKET socket) {
     return select((int)socket + 1, &fds, NULL, NULL, &to) > 0;
 }
 
-static int s_clientIndex;
+static int s_trackMapIndex;
 static int s_socket = INVALID_SOCKET;
 static int s_serverSocket = INVALID_SOCKET;
 static bool s_paused = true;
@@ -154,7 +154,7 @@ void RemoteConnection_mapTrackName(const char* name) {
         return;
 
     s_nameLookup.hashes[count] = quickHash(name);
-    s_nameLookup.ids[count] = s_clientIndex++;
+    s_nameLookup.ids[count] = s_trackMapIndex++;
     s_nameLookup.count++;
 }
 
@@ -276,7 +276,7 @@ void RemoteConnection_updateListner(int currentRow) {
             snprintf(s_connectionName, sizeof(s_connectionName), "Connected to %s", inet_ntoa(client.sin_addr));
             // rlog(R_INFO, "%s\n", s_connectionName);
             s_socket = (int)clientSocket;
-            s_clientIndex = 0;
+            s_trackMapIndex = 0;
             RemoteConnection_sendPauseCommand(true);
             RemoteConnection_sendSetRowCommand(currentRow);
         } else {
