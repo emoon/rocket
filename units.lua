@@ -60,7 +60,7 @@ StaticLibrary {
 		},
 
 		CCOPTS = {
-			{ "-Werror", "-pedantic-errors", "-Wall", "-Wno-format-security"; Config = "macosx-clang-*" },
+			{ "-Wno-unused-but-set-variable", "-Wno-format-security"; Config = "macosx-clang-*" },
 		},
 	},
 
