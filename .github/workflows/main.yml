@@ -27,7 +27,7 @@ jobs:
 
     - name: Build Code
       run: |
-        tundra2 linux-gcc-release
+        tundra2 --verbose linux-gcc-release
 
 # Build macOS
   build_macOS:
@@ -38,7 +38,7 @@ jobs:
         submodules: 'true'
     - name: Build Code
       run: |
-        bin/macos/tundra2 macosx-clang-release
+        bin/macos/tundra2 --verbose macosx-clang-release
 
 # Build Windows
   build_windows:
@@ -50,4 +50,4 @@ jobs:
     - name: Build Code 
       shell: cmd
       run: |
-        bin\win32\tundra2.exe --unprotected win32-msvc-release
+        bin\win32\tundra2.exe --verbose --unprotected win32-msvc-release
