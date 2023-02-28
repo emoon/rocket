@@ -47,6 +47,7 @@ Features:
 * Cross platform. Read more about the code in the next section.
 * Navigation while play-backing. It's now possible to jump forward/backward when playing the demo (demo "scratching")
 * Fast way to insert a interpolated value by just pressing return on an empty row.
+* Experimental support for multiple Rocket clients for uses like synchronizing music trackers with RocketEditor (see https://github.com/schismtracker/schismtracker/pull/353)
 
 Building the code
 -----------------
