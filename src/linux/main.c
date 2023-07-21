@@ -67,7 +67,7 @@ int getFilename(text_t* path, int save) {
 #endif
 }
 
-int Dialog_open(text_t* path) {
+int Dialog_open(text_t* path, int pathSize) {
     return getFilename(path, 0);
 }
 

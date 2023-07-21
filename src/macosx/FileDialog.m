@@ -4,7 +4,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Dialog_open(char* dest)
+int Dialog_open(char* dest, int destSize)
 {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	NSOpenPanel* open = [NSOpenPanel openPanel];
