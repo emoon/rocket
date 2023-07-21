@@ -341,7 +341,7 @@ uint32_t Emgui_getTextSize(const char* text) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool Emgui_create() {
-    const uint32_t size = 1024 * 1024;
+    const uint32_t size = 10 * 1024 * 1024; /* FIXME: refactor LinearAllocator to be growable */
     LinearAllocator_create(&s_allocator, malloc(size), size);
     createDefaultFont();
     createStipplePattern();
