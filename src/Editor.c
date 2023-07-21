@@ -886,6 +886,8 @@ static void onFinishedLoad(const text_t* path) {
 
 void Editor_loadRecentFile(int id) {
     text_t path[2048];
+
+    memset(path, 0, sizeof(path));
     textCopy(path, s_recentFiles[id]);  // must be unique buffer when doing set mostRecent
 
     if (LoadSave_loadRocketXML(path, getTrackData()))
@@ -897,7 +899,8 @@ void Editor_loadRecentFile(int id) {
 static void onOpen() {
     text_t currentFile[2048];
 
-    if (LoadSave_loadRocketXMLDialog(currentFile, getTrackData()))
+    memset(currentFile, 0, sizeof(currentFile));
+    if (LoadSave_loadRocketXMLDialog(currentFile, sizeof(currentFile), getTrackData()))
         onFinishedLoad(currentFile);
 }
 
@@ -907,13 +910,14 @@ static void onLoadMusic() {
     text_t path[2048];
 
     // printf("onLoadMusic\n");
+    memset(path, 0, sizeof(path));
 
     if (!s_editorData.canDecodeMusic) {
         Dialog_showError(TEXT("Unable to load music as BASS failed to init."));
         return;
     }
 
-    if (!Dialog_open(path))
+    if (!Dialog_open(path, sizeof(path)))
         return;
 
     decodeMusic(path, 0);
@@ -927,7 +931,7 @@ static bool onSaveAs() {
 
     memset(path, 0, sizeof(path));
 
-    if (!(ret = LoadSave_saveRocketXMLDialog(path, getTrackData())))
+    if (!(ret = LoadSave_saveRocketXMLDialog(path, sizeof(path), getTrackData())))
         return false;
 
     setMostRecentFile(path);
