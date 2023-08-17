@@ -96,7 +96,7 @@ void Window_buildMenu();
 	[[NSUserDefaults standardUserDefaults] synchronize];
 
 	Editor_destroy();
-	RemoteConnection_close();
+	RemoteConnections_close();
 	[stringArray release];
 }
 

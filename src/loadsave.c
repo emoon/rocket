@@ -11,6 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static char* s_foldedGroupNames[16 * 1024];
+extern RemoteConnection* s_demo_connection;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -147,7 +148,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData) {
 
                     for (i = 0; i < track->num_keys; ++i) {
                         int row = track->keys[i].row;
-                        RemoteConnection_sendDeleteKeyCommand(track->name, row);
+                        RemoteConnection_sendDeleteKeyCommand(s_demo_connection, track->name, row);
                     }
 
                     free(track->keys);
@@ -164,7 +165,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData) {
 
                         sync_set_key(track, &k);
 
-                        RemoteConnection_sendSetKeyCommand(track->name, &k);
+                        RemoteConnection_sendSetKeyCommand(s_demo_connection, track->name, &k);
                     }
                 } else if (!strcmp("key", element_name)) {
                     struct sync_track* track = trackData->syncTracks[track_index];
@@ -188,7 +189,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData) {
                         assert(!is_key);
                         sync_set_key(track, &k);
 
-                        RemoteConnection_sendSetKeyCommand(track->name, &k);
+                        RemoteConnection_sendSetKeyCommand(s_demo_connection, track->name, &k);
                     }
                 }
             }

@@ -16,6 +16,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -60,6 +61,7 @@
 #else
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -73,29 +75,20 @@
 
 enum { SET_KEY = 0, DELETE_KEY = 1, GET_TRACK = 2, SET_ROW = 3, PAUSE = 4, SAVE_TRACKS = 5 };
 
-static inline int socket_poll(SOCKET socket) {
-    struct timeval to = {0, 0};
-    fd_set fds;
+#define MAX_CONNECTIONS 10
 
-    FD_ZERO(&fds);
+typedef struct RemoteConnection {
+    int s_socket;
+    char s_connectionName[256];
+} RemoteConnection;
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4127)
-#endif
-    FD_SET(socket, &fds);
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-    return select((int)socket + 1, &fds, NULL, NULL, &to) > 0;
-}
-
-static int s_clientIndex;
-int s_socket = INVALID_SOCKET;
-int s_serverSocket = INVALID_SOCKET;
+static int s_trackMapIndex;
+static RemoteConnection s_connections[MAX_CONNECTIONS];
+RemoteConnection* s_demo_connection = NULL; /* FIXME: icky global mostly because Editor.c open-codes cmd parsing, when that should really be in here */
+static int s_num_connections;
+static int s_serverSocket = INVALID_SOCKET;
 static bool s_paused = true;
-static char s_connectionName[256];
+static char s_connectionStatus[1024];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -147,22 +140,22 @@ int findTrack(const char* name) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_mapTrackName(const char* name) {
+void RemoteConnections_mapTrackName(const char* name) {
     int count = s_nameLookup.count;
 
     if (findTrack(name) != -1)
         return;
 
     s_nameLookup.hashes[count] = quickHash(name);
-    s_nameLookup.ids[count] = s_clientIndex++;
+    s_nameLookup.ids[count] = s_trackMapIndex++;
     s_nameLookup.count++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool RemoteConnection_createListner() {
+bool RemoteConnections_createListner() {
     struct sockaddr_in sin;
-    int yes = 1;
+    int yes = 1, i;
 
 #if defined(_WIN32)
     WSADATA wsaData;
@@ -195,15 +188,13 @@ bool RemoteConnection_createListner() {
     while (listen(s_serverSocket, SOMAXCONN) == -1)
         ;
 
+    for (i = 0; i < MAX_CONNECTIONS; i++)
+        s_connections[i].s_socket = INVALID_SOCKET;
+
+    s_num_connections = 0;
     // rlog(R_INFO, "Created listner\n");
 
     return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool RemoteConnection_connected() {
-    return INVALID_SOCKET != s_socket;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -229,6 +220,7 @@ static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host) {
     const char* expectedGreeting = CLIENT_GREET;
     const char* greeting = SERVER_GREET;
     unsigned int hostSize = sizeof(struct sockaddr_in);
+    int yes = 1;
 
     SOCKET clientSocket = accept(serverSocket, (struct sockaddr*)&hostTemp, (socklen_t*)&hostSize);
 
@@ -242,6 +234,9 @@ static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host) {
         return INVALID_SOCKET;
     }
 
+    if (setsockopt(clientSocket, IPPROTO_TCP, TCP_NODELAY, (void *)&yes, sizeof(yes)) == -1)
+        rlog(R_INFO, "failed to set TCP_NODELAY on client socket\n");
+
     send(clientSocket, greeting, (int)strlen(greeting), 0);
 
     if (NULL != host)
@@ -252,7 +247,7 @@ static SOCKET clientConnect(SOCKET serverSocket, struct sockaddr_in* host) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_updateListner(int currentRow) {
+void RemoteConnections_updateListner(int currentRow) {
     struct timeval timeout;
     struct sockaddr_in client;
     SOCKET clientSocket = INVALID_SOCKET;
@@ -264,21 +259,37 @@ void RemoteConnection_updateListner(int currentRow) {
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
 
-    if (RemoteConnection_connected())
-        return;
-
     // look for new clients
 
     if (select(s_serverSocket + 1, &fds, NULL, NULL, &timeout) > 0) {
         clientSocket = clientConnect(s_serverSocket, &client);
 
         if (INVALID_SOCKET != clientSocket) {
-            snprintf(s_connectionName, sizeof(s_connectionName), "Connected to %s", inet_ntoa(client.sin_addr));
-            // rlog(R_INFO, "%s\n", s_connectionName);
-            s_socket = (int)clientSocket;
-            s_clientIndex = 0;
-            RemoteConnection_sendPauseCommand(true);
-            RemoteConnection_sendSetRowCommand(currentRow);
+            RemoteConnection* conn = NULL;
+            int i;
+
+            if (s_num_connections >= MAX_CONNECTIONS) {
+                rlog(R_INFO, "MAX_CONNECTIONS exceeded!\n");
+                return;
+            }
+
+            for (i = 0; i < MAX_CONNECTIONS; i++) {
+                if (s_connections[i].s_socket == INVALID_SOCKET) {
+                    conn = &s_connections[i];
+                    break;
+                }
+            }
+
+            assert (conn && i < MAX_CONNECTIONS);
+
+            conn->s_socket = (int)clientSocket;
+            snprintf(conn->s_connectionName, sizeof(conn->s_connectionName), "%s", inet_ntoa(client.sin_addr));
+            // rlog(R_INFO, "Connected to %s\n", conn->s_connectionName);
+            RemoteConnection_sendPauseCommand(conn, s_paused);
+            RemoteConnection_sendSetRowCommand(conn, currentRow);
+            s_paused = true;
+
+            s_num_connections++;
         } else {
             //
         }
@@ -287,15 +298,57 @@ void RemoteConnection_updateListner(int currentRow) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_disconnect() {
-#if defined(_WIN32)
-    closesocket(s_socket);
-#else
-    close(s_socket);
-#endif
-    s_socket = INVALID_SOCKET;
+bool RemoteConnection_connected(RemoteConnection *conn) {
+    return !!(conn && INVALID_SOCKET != conn->s_socket);
+}
 
-    rlog(R_INFO, "disconnect!\n");
+bool RemoteConnections_connected() {
+    int i;
+
+    for (i = 0; i < MAX_CONNECTIONS; i++) {
+        if (RemoteConnection_connected(&s_connections[i]))
+            return true;
+    }
+
+    return false;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void RemoteConnection_disconnect(RemoteConnection *conn) {
+    if (!RemoteConnection_connected(conn))
+        return;
+
+    rlog(R_INFO, "disconnecting!\n");
+
+#if defined(_WIN32)
+    closesocket(conn->s_socket);
+#else
+    close(conn->s_socket);
+#endif
+    conn->s_socket = INVALID_SOCKET;
+
+    if (s_demo_connection == conn) {
+        rlog(R_INFO, "disconnected demo!\n");
+
+        s_demo_connection = NULL;
+        s_trackMapIndex = 0;
+        memset(s_nameLookup.ids, -1, sizeof(int) * s_nameLookup.count);
+        s_nameLookup.count = 0;
+    }
+
+    s_num_connections--;
+}
+
+void RemoteConnections_disconnect() {
+    int i;
+
+    rlog(R_INFO, "disconnect everyone!\n");
+
+    for (i = 0; i < MAX_CONNECTIONS; i++)
+            RemoteConnection_disconnect(&s_connections[i]);
+
+    s_num_connections = 0;
 
     s_paused = true;
 
@@ -304,17 +357,16 @@ void RemoteConnection_disconnect() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int RemoteConnection_recv(char* buffer, size_t length, int flags) {
+int RemoteConnection_recv(RemoteConnection *conn, char* buffer, size_t length, int flags) {
     int ret;
 
-    if (!RemoteConnection_connected())
+    if (!RemoteConnection_connected(conn))
         return false;
 
-    ret = recv_all(s_socket, buffer, length, flags);
+    ret = recv_all(conn->s_socket, buffer, length, flags);
 
     if (ret != length) {
-        RemoteConnection_disconnect();
+        RemoteConnection_disconnect(conn);
         return false;
     }
 
@@ -323,32 +375,72 @@ int RemoteConnection_recv(char* buffer, size_t length, int flags) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool RemoteConnection_send(const char* buffer, size_t length, int flags) {
+bool RemoteConnection_send(RemoteConnection *conn, const char* buffer, size_t length, int flags) {
     int ret;
 
-    if (!RemoteConnection_connected())
+    if (!RemoteConnection_connected(conn))
         return false;
 
-    if ((ret = send(s_socket, buffer, (int)length, flags)) != (int)length) {
-        RemoteConnection_disconnect();
+    if ((ret = send(conn->s_socket, buffer, (int)length, flags)) != (int)length) {
+        RemoteConnection_disconnect(conn);
         return false;
     }
 
     return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool RemoteConnections_send(const char* buffer, size_t length, int flags) {
+    bool ret = false;
+    int i;
 
-bool RemoteConnection_pollRead() {
-    if (!RemoteConnection_connected())
-        return false;
+    for (i = 0; i < MAX_CONNECTIONS; i++) {
+            if (RemoteConnection_send(&s_connections[i], buffer, length, flags))
+                ret = true;
+    }
 
-    return !!socket_poll(s_socket);
+    return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void sendSetKeyCommandIndex(uint32_t index, const struct track_key* key) {
+/* finds first readable conection in all connections, if any are ready return in *res_conn and returns true */
+bool RemoteConnections_pollRead(RemoteConnection **res_conn) {
+    int             i, maxfd = -1;
+    struct timeval  to = {0, 0};
+    fd_set          fds;
+
+    FD_ZERO(&fds);
+    for (i = 0; i < MAX_CONNECTIONS; i++) {
+        if (s_connections[i].s_socket != INVALID_SOCKET) {
+                FD_SET(s_connections[i].s_socket, &fds);
+                if (s_connections[i].s_socket > maxfd)
+                    maxfd = s_connections[i].s_socket;
+        }
+    }
+
+    if (maxfd == -1)
+        return false;
+
+    if (select((int)maxfd + 1, &fds, NULL, NULL, &to) > 0) {
+        for (i = 0; i < MAX_CONNECTIONS; i++) {
+            if (s_connections[i].s_socket == INVALID_SOCKET)
+                continue;
+
+            if (FD_ISSET(s_connections[i].s_socket, &fds)) {
+                if (res_conn)
+                    *res_conn = &s_connections[i];
+
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void sendSetKeyCommandIndex(RemoteConnection *conn, uint32_t index, const struct track_key* key) {
     uint32_t track, row;
     uint8_t cmd = SET_KEY;
 
@@ -365,119 +457,141 @@ static void sendSetKeyCommandIndex(uint32_t index, const struct track_key* key) 
 
     assert(key->type < KEY_TYPE_COUNT);
 
-    RemoteConnection_send((char*)&cmd, 1, 0);
-    RemoteConnection_send((char*)&track, sizeof(track), 0);
-    RemoteConnection_send((char*)&row, sizeof(row), 0);
-    RemoteConnection_send((char*)&v.i, sizeof(v.i), 0);
-    RemoteConnection_send((char*)&key->type, 1, 0);
+    RemoteConnection_send(conn, (char*)&cmd, 1, 0);
+    RemoteConnection_send(conn, (char*)&track, sizeof(track), 0);
+    RemoteConnection_send(conn, (char*)&row, sizeof(row), 0);
+    RemoteConnection_send(conn, (char*)&v.i, sizeof(v.i), 0);
+    RemoteConnection_send(conn, (char*)&key->type, 1, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_sendSetKeyCommand(const char* trackName, const struct track_key* key) {
+void RemoteConnection_sendSetKeyCommand(RemoteConnection *conn, const char* trackName, const struct track_key* key) {
     int track_id = findTrack(trackName);
 
-    if (!RemoteConnection_connected() || track_id == -1)
+    if (!RemoteConnection_connected(conn) || track_id == -1)
         return;
 
-    sendSetKeyCommandIndex((uint32_t)track_id, key);
+    sendSetKeyCommandIndex(conn, (uint32_t)track_id, key);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_sendDeleteKeyCommand(const char* trackName, int row) {
+void RemoteConnection_sendDeleteKeyCommand(RemoteConnection *conn, const char* trackName, int row) {
     uint32_t track;
     unsigned char cmd = DELETE_KEY;
     int track_id = findTrack(trackName);
 
-    if (!RemoteConnection_connected() || track_id == -1)
+    if (!RemoteConnection_connected(conn) || track_id == -1)
         return;
 
     track = htonl((uint32_t)track_id);
     row = htonl(row);
 
-    RemoteConnection_send((char*)&cmd, 1, 0);
-    RemoteConnection_send((char*)&track, sizeof(int), 0);
-    RemoteConnection_send((char*)&row, sizeof(int), 0);
+    RemoteConnection_send(conn, (char*)&cmd, 1, 0);
+    RemoteConnection_send(conn, (char*)&track, sizeof(int), 0);
+    RemoteConnection_send(conn, (char*)&row, sizeof(int), 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_sendSetRowCommand(int row) {
+void RemoteConnection_sendSetRowCommand(RemoteConnection *conn, int row) {
     unsigned char cmd = SET_ROW;
 
-    if (!RemoteConnection_connected())
+    if (!RemoteConnection_connected(conn))
         return;
 
     // printf("rom %d\n", row);
 
     row = htonl(row);
-    RemoteConnection_send((char*)&cmd, 1, 0);
-    RemoteConnection_send((char*)&row, sizeof(int), 0);
+    RemoteConnection_send(conn, (char*)&cmd, 1, 0);
+    RemoteConnection_send(conn, (char*)&row, sizeof(int), 0);
+}
+
+void RemoteConnections_sendSetRowCommand(int row, RemoteConnection* skip) {
+    int i;
+
+    for (i = 0; i < MAX_CONNECTIONS; i++) {
+        if (&s_connections[i] == skip)
+            continue;
+
+        RemoteConnection_sendSetRowCommand(&s_connections[i], row);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_sendPauseCommand(bool pause) {
+void RemoteConnection_sendPauseCommand(RemoteConnection *conn, bool pause) {
     unsigned char cmd = PAUSE, flag = pause;
 
-    if (!RemoteConnection_connected())
+    if (!RemoteConnection_connected(conn))
         return;
 
-    RemoteConnection_send((char*)&cmd, 1, 0);
-    RemoteConnection_send((char*)&flag, 1, 0);
+    RemoteConnection_send(conn, (char*)&cmd, 1, 0);
+    RemoteConnection_send(conn, (char*)&flag, 1, 0);
+}
+
+void RemoteConnections_sendPauseCommand(bool pause) {
+    int i;
+
+    for (i = 0; i < MAX_CONNECTIONS; i++)
+        RemoteConnection_sendPauseCommand(&s_connections[i], pause);
 
     s_paused = pause;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_sendSaveCommand() {
+void RemoteConnection_sendSaveCommand(RemoteConnection *conn) {
     unsigned char cmd = SAVE_TRACKS;
 
-    if (!RemoteConnection_connected())
+    if (!RemoteConnection_connected(conn))
         return;
 
-    RemoteConnection_send((char*)&cmd, 1, 0);
+    RemoteConnection_send(conn, (char*)&cmd, 1, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool RemoteConnection_isPaused() {
+bool RemoteConnections_isPaused() {
     return s_paused;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_getConnectionStatus(char** status) {
-    if (!RemoteConnection_connected()) {
-        *status = "Not Connected";
+void RemoteConnections_getConnectionStatus(char** status) {
+    if (!RemoteConnections_connected()) {
+        *status = "Disconnected";
         return;
     }
 
-    *status = s_connectionName;
+    if (!s_demo_connection || s_demo_connection->s_socket == INVALID_SOCKET) {
+        snprintf(s_connectionStatus, sizeof(s_connectionStatus), "No Demo Connected, +%i Client%s", s_num_connections, s_num_connections > 1 ? "s" : "");
+    } else if (s_num_connections == 1) {
+        snprintf(s_connectionStatus, sizeof(s_connectionStatus), "Demo @ %s", s_demo_connection->s_connectionName);
+    } else {
+        snprintf(s_connectionStatus, sizeof(s_connectionStatus), "Demo @ %s, +%i Client%s", s_demo_connection->s_connectionName, s_num_connections - 1, s_num_connections > 2 ? "s" : "");
+    }
+
+    *status = s_connectionStatus;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_sendKeyFrames(const char* name, struct sync_track* track) {
+void RemoteConnection_sendKeyFrames(RemoteConnection *conn, const char* name, struct sync_track* track) {
     int i, track_id = findTrack(name);
 
-    if (!RemoteConnection_connected() || track_id == -1)
+    if (!RemoteConnection_connected(conn) || track_id == -1)
         return;
 
     for (i = 0; i < track->num_keys; ++i)
-        sendSetKeyCommandIndex((uint32_t)track_id, &track->keys[i]);
+        sendSetKeyCommandIndex(conn, (uint32_t)track_id, &track->keys[i]);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnection_close() {
-    if (RemoteConnection_connected()) {
-        // rlog(R_INFO, "closing client socket %d\n", s_socket);
-        closesocket(s_socket);
-        s_socket = INVALID_SOCKET;
-    }
+void RemoteConnections_close() {
+    RemoteConnections_disconnect();
 
     // rlog(R_INFO, "closing socket %d\n", s_serverSocket);
 

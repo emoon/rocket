@@ -12,6 +12,7 @@
 
 static struct sync_track** s_syncTracks;
 static struct TrackData* s_trackData;
+extern RemoteConnection* s_demo_connection;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -167,7 +168,7 @@ static void execDeleteKey(void* userData) {
     data->oldKey = t->keys[idx];
     sync_del_key(t, data->row);
 
-    RemoteConnection_sendDeleteKeyCommand(t->name, data->row);
+    RemoteConnection_sendDeleteKeyCommand(s_demo_connection, t->name, data->row);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -181,7 +182,7 @@ static void undoDeleteKey(void* userData) {
 
     sync_set_key(t, &data->oldKey);
 
-    RemoteConnection_sendSetKeyCommand(t->name, &data->oldKey);
+    RemoteConnection_sendSetKeyCommand(s_demo_connection, t->name, &data->oldKey);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -228,7 +229,7 @@ static void execUpdateKey(void* userData) {
     data->oldKey = t->keys[idx];
     sync_set_key(t, &data->key);
 
-    RemoteConnection_sendSetKeyCommand(t->name, &data->key);
+    RemoteConnection_sendSetKeyCommand(s_demo_connection, t->name, &data->key);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -238,7 +239,7 @@ static void undoUpdateKey(void* userData) {
     struct sync_track* t = s_syncTracks[data->track];
     sync_set_key(t, &data->oldKey);
 
-    RemoteConnection_sendSetKeyCommand(t->name, &data->oldKey);
+    RemoteConnection_sendSetKeyCommand(s_demo_connection, t->name, &data->oldKey);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -332,7 +333,7 @@ static void execInsertKey(void* userData) {
     struct sync_track* t = s_syncTracks[data->track];
     sync_set_key(t, &data->key);
 
-    RemoteConnection_sendSetKeyCommand(t->name, &data->key);
+    RemoteConnection_sendSetKeyCommand(s_demo_connection, t->name, &data->key);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -342,7 +343,7 @@ static void undoInsertKey(void* userData) {
     struct sync_track* t = s_syncTracks[data->track];
     sync_del_key(t, data->key.row);
 
-    RemoteConnection_sendDeleteKeyCommand(t->name, data->key.row);
+    RemoteConnection_sendDeleteKeyCommand(s_demo_connection, t->name, data->key.row);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -515,13 +516,13 @@ static void toggleMute(void* userData) {
         int i;
 
         sync_del_key(data->syncTrack, 0);
-        RemoteConnection_sendDeleteKeyCommand(data->syncTrack->name, 0);
+        RemoteConnection_sendDeleteKeyCommand(s_demo_connection, data->syncTrack->name, 0);
 
         for (i = 0; i < data->track->muteKeyCount; ++i) {
             struct track_key* key = &data->track->muteBackup[i];
 
             sync_set_key(data->syncTrack, key);
-            RemoteConnection_sendSetKeyCommand(data->syncTrack->name, key);
+            RemoteConnection_sendSetKeyCommand(s_demo_connection, data->syncTrack->name, key);
         }
 
         data->track->disabled = false;
@@ -549,7 +550,7 @@ static void toggleMute(void* userData) {
             int row = data->track->muteBackup[i].row;
 
             sync_del_key(data->syncTrack, row);
-            RemoteConnection_sendDeleteKeyCommand(data->syncTrack->name, row);
+            RemoteConnection_sendDeleteKeyCommand(s_demo_connection, data->syncTrack->name, row);
         }
 
         defKey.row = 0;
@@ -559,7 +560,7 @@ static void toggleMute(void* userData) {
         // insert key with the current value
 
         sync_set_key(data->syncTrack, &defKey);
-        RemoteConnection_sendSetKeyCommand(data->syncTrack->name, &defKey);
+        RemoteConnection_sendSetKeyCommand(s_demo_connection, data->syncTrack->name, &defKey);
     }
 }
 

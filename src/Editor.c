@@ -73,6 +73,7 @@ static int s_undoLevel = 0;
 static bool reset_tracks = true;
 static text_t s_filenames[5][2048];
 static text_t* s_loadedFilename = 0;
+extern RemoteConnection* s_demo_connection;
 
 static text_t* s_recentFiles[] = {
     s_filenames[0], s_filenames[1], s_filenames[2], s_filenames[3], s_filenames[4],
@@ -190,7 +191,7 @@ static bool canEditCurrentTrack() {
 
 static inline void setRowPos(int pos) {
     s_editorData.trackViewInfo.rowPos = pos;
-    RemoteConnection_sendSetRowCommand(pos);
+    RemoteConnections_sendSetRowCommand(pos, NULL);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -270,7 +271,7 @@ void Editor_create() {
 
     s_editorData.canDecodeMusic = 1;
 
-    if (!RemoteConnection_createListner()) {
+    if (!RemoteConnections_createListner()) {
         Dialog_showError(TEXT("Unable to create listener. Make sure no other program is using port 1338"));
     }
 
@@ -321,7 +322,7 @@ static char s_rowsPerBeat[64] = "8";
 static int drawConnectionStatus(int posX, int sizeY) {
     char* conStatus;
 
-    RemoteConnection_getConnectionStatus(&conStatus);
+    RemoteConnections_getConnectionStatus(&conStatus);
 
     Emgui_drawBorder(Emgui_color32(10, 10, 10, 255), Emgui_color32(10, 10, 10, 255), posX, sizeY - 17, 200, 15);
     Emgui_drawText(conStatus, posX + 4, sizeY - 15, Emgui_color32(160, 160, 160, 255));
@@ -428,7 +429,7 @@ static void drawStatus() {
     size += drawNameValue("Rows/Beat", size, sizeY, &s_editorData.trackData.rowsPerBeat, 0, 256, s_rowsPerBeat);
 
     if (getRowPos() != prevRow)
-        RemoteConnection_sendSetRowCommand(getRowPos());
+        RemoteConnections_sendSetRowCommand(getRowPos(), NULL);
 
     Emgui_setDefaultFont();
 }
@@ -780,7 +781,7 @@ void Editor_scroll(float deltaX, float deltaY, int flags) {
     s_editorData.trackViewInfo.startPixel += (int)(deltaX * 4.0f);
     s_editorData.trackViewInfo.rowPos = eclampi(current_row, start_row, end_row);
 
-    RemoteConnection_sendSetRowCommand(s_editorData.trackViewInfo.rowPos);
+    RemoteConnections_sendSetRowCommand(s_editorData.trackViewInfo.rowPos, NULL);
 
     if (old_offset != s_editorData.trackViewInfo.startPixel)
         Editor_updateTrackScroll();
@@ -793,7 +794,7 @@ void Editor_scroll(float deltaX, float deltaY, int flags) {
 static void updateTrackStatus() {
     int i, track_count = getTrackCount();
 
-    if (RemoteConnection_connected())
+    if (RemoteConnection_connected(s_demo_connection))
         return;
 
     if (reset_tracks) {
@@ -1389,8 +1390,8 @@ static void onMuteToggle() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void onPlay() {
-    RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
-    getTrackData()->isPlaying = !RemoteConnection_isPaused();
+    RemoteConnections_sendPauseCommand(!RemoteConnections_isPaused());
+    getTrackData()->isPlaying = !RemoteConnections_isPaused();
     getTrackData()->isLooping = false;
 }
 
@@ -1410,9 +1411,9 @@ static void onPlayLoop() {
     trackData->startLoop = startLoop;
     trackData->endLoop = endLoop;
 
-    RemoteConnection_sendPauseCommand(!RemoteConnection_isPaused());
+    RemoteConnections_sendPauseCommand(!RemoteConnections_isPaused());
 
-    trackData->isPlaying = !RemoteConnection_isPaused();
+    trackData->isPlaying = !RemoteConnections_isPaused();
     trackData->isLooping = true;
 }
 
@@ -1677,7 +1678,7 @@ void Editor_menuEvent(int menuItem) {
             onSaveAs();
             break;
         case EDITOR_MENU_REMOTE_EXPORT:
-            RemoteConnection_sendSaveCommand();
+            RemoteConnection_sendSaveCommand(s_demo_connection);
             break;
         case EDITOR_MENU_LOAD_MUSIC:
             onLoadMusic();
@@ -2036,28 +2037,36 @@ bool Editor_keyDown(int key, int keyCode, int modifiers) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int processCommands() {
+static int processCommands(RemoteConnection *conn) {
     int strLen, newRow, serverIndex;
     unsigned char cmd = 0;
     int ret = 0;
     TrackViewInfo* viewInfo = getTrackViewInfo();
 
-    if (RemoteConnection_recv((char*)&cmd, 1, 0)) {
+    if (RemoteConnection_recv(conn, (char*)&cmd, 1, 0)) {
         switch (cmd) {
             case GET_TRACK: {
                 char trackName[4096];
+
+                if (s_demo_connection != conn && RemoteConnection_connected(s_demo_connection)) {
+
+                    RemoteConnection_disconnect(conn);
+                    rlog(R_ERROR, "Connecting multiple demos unsupported, disconnecting client\n");
+                    return 0;
+                }
+
+                s_demo_connection = conn;
 
                 reset_tracks = true;
 
                 memset(trackName, 0, sizeof(trackName));
 
-                RemoteConnection_recv((char*)&strLen, sizeof(int), 0);
-                strLen = ntohl(strLen);
-
-                if (!RemoteConnection_connected())
+                if (!RemoteConnection_recv(conn, (char*)&strLen, sizeof(int), 0))
                     return 0;
 
-                if (!RemoteConnection_recv(trackName, strLen, 0))
+                strLen = ntohl(strLen);
+
+                if (!RemoteConnection_recv(conn, trackName, strLen, 0))
                     return 0;
 
                 // rlog(R_INFO, "Got trackname %s (%d) from demo\n", trackName, strLen);
@@ -2070,8 +2079,8 @@ static int processCommands() {
                     setActiveTrack(0);
 
                 // setup remap and send the keyframes to the demo
-                RemoteConnection_mapTrackName(trackName);
-                RemoteConnection_sendKeyFrames(trackName, s_editorData.trackData.syncTracks[serverIndex]);
+                RemoteConnections_mapTrackName(trackName);
+                RemoteConnection_sendKeyFrames(conn, trackName, s_editorData.trackData.syncTracks[serverIndex]);
                 TrackData_linkTrack(serverIndex, trackName, &s_editorData.trackData);
 
                 s_editorData.trackData.tracks[serverIndex].active = true;
@@ -2082,12 +2091,21 @@ static int processCommands() {
             }
 
             case SET_ROW: {
-                ret = RemoteConnection_recv((char*)&newRow, sizeof(int), 0);
+                ret = RemoteConnection_recv(conn, (char*)&newRow, sizeof(int), 0);
 
                 if (ret) {
-                    viewInfo->rowPos = htonl(newRow);
-                    viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos;
+                    int oldRow = viewInfo->rowPos;
+                    int	nr = htonl(newRow);
+
+                    if (!getTrackData()->isPlaying ||
+                        nr > oldRow ||
+                        abs(nr - oldRow) >= ((double)s_editorData.trackData.rowsPerBeat * ((double)s_editorData.trackData.bpm / 60.0))) {
+
                     // rlog(R_INFO, "row from demo %d\n", s_editorData.trackViewInfo.rowPos);
+
+                        viewInfo->rowPos = nr;
+                        RemoteConnections_sendSetRowCommand(viewInfo->rowPos, conn);
+                    }
                 }
 
                 ret = 1;
@@ -2103,10 +2121,18 @@ static int processCommands() {
                     uint32_t i;
                 } v;
 
-                if (RemoteConnection_recv((char*)&track, sizeof(track), 0) &&
-                    RemoteConnection_recv((char*)&newRow, sizeof(newRow), 0) &&
-                    RemoteConnection_recv((char*)&v.i, sizeof(v.i), 0) &&
-                    RemoteConnection_recv((char*)&type, sizeof(type), 0)) {
+                if (conn != s_demo_connection) {
+                    RemoteConnection_disconnect(conn);
+                    rlog(R_ERROR, "SET_KEY must come from demo client, disconnected\n");
+                    return 0;
+                }
+
+                /* receive from specific connection for cmd,
+                 * broadcast keyframe to everyone else */
+                if (RemoteConnection_recv(conn, (char*)&track, sizeof(track), 0) &&
+                    RemoteConnection_recv(conn, (char*)&newRow, sizeof(newRow), 0) &&
+                    RemoteConnection_recv(conn, (char*)&v.i, sizeof(v.i), 0) &&
+                    RemoteConnection_recv(conn, (char*)&type, sizeof(type), 0)) {
                     v.i = ntohl(v.i);
                     newRow = htonl(newRow);
                     track = htonl(track);
@@ -2138,15 +2164,16 @@ static int processCommands() {
 
 void Editor_timedUpdate() {
     int processed_commands = s_editorData.trackData.musicData.percentDone != 0;
+    RemoteConnection *conn;
 
-    RemoteConnection_updateListner(getRowPos());
+    RemoteConnections_updateListner(getRowPos());
 
     updateTrackStatus();
 
-    while (RemoteConnection_pollRead())
-        processed_commands |= processCommands();
+    while (RemoteConnections_pollRead(&conn))
+        processed_commands |= processCommands(conn);
 
-    if (!RemoteConnection_isPaused() || processed_commands) {
+    if (!RemoteConnections_isPaused() || processed_commands) {
         Editor_update();
     }
 }
