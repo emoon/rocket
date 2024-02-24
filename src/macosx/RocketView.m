@@ -52,6 +52,8 @@ void Window_setTitle(const char* title);
 	if (self == nil)
 		return nil;
 
+	[self setWantsBestResolutionOpenGLSurface:NO];
+
 	NSOpenGLPixelFormatAttribute attributes[] = {
 			NSOpenGLPFADoubleBuffer,
 			0
