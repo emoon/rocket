@@ -737,6 +737,17 @@ static void doEdit(int track, int row_pos, float value) {
     updateNeedsSaving();
 }
 
+static void doEditRaw(int track, int row_pos, float value, unsigned char type) {
+    struct track_key key;
+
+    key.row = row_pos;
+    key.value = value;
+    key.type = type;
+
+    Commands_addOrUpdateKey(track, &key);
+    updateNeedsSaving();
+}
+
 static void endEditing() {
     if (!is_editing || !getTracks())
         return;
@@ -2139,7 +2150,7 @@ static int processCommands(RemoteConnection *conn) {
 
                     viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos = newRow;
 
-                    doEdit(track, newRow, v.f);
+                    doEditRaw(track, newRow, v.f, type);
                 }
 
                 ret = 1;
