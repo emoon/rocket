@@ -2148,8 +2148,6 @@ static int processCommands(RemoteConnection *conn) {
                     newRow = htonl(newRow);
                     track = htonl(track);
 
-                    viewInfo->selectStartRow = viewInfo->selectStopRow = viewInfo->rowPos = newRow;
-
                     doEditRaw(track, newRow, v.f, type);
                 }
 
