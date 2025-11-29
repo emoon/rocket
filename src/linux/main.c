@@ -3,6 +3,8 @@
 #include <emgui/Emgui.h>
 #include <emgui/GFXBackend.h>
 #include <stdio.h>
+#include <string.h>
+#include "loadsave.h"
 #include "Editor.h"
 #include "Menu.h"
 #ifdef HAVE_GTK
@@ -412,6 +414,10 @@ void loadRecents() {
 }
 
 int main(int argc, char* argv[]) {
+    // Store original argc/argv before GTK initialization
+    int original_argc = argc;
+    char** original_argv = argv;
+    
 #ifdef HAVE_GTK
     gtk_init(&argc, &argv);
 #endif
@@ -445,6 +451,29 @@ int main(int argc, char* argv[]) {
     Editor_create();
     EMGFXBackend_updateViewPort(800, 600);
     Editor_setWindowSize(800, 600);
+
+    // Check for rocket file argument and load it
+    if (original_argc > 1) {
+        text_t rocketFilePath[2048];
+        
+        // Convert command line argument to text_t format
+#if defined(_WIN32)
+        MultiByteToWideChar(CP_UTF8, 0, original_argv[1], -1, rocketFilePath, (int)(sizeof(rocketFilePath) / sizeof(rocketFilePath[0])));
+#else
+        strncpy(rocketFilePath, original_argv[1], sizeof(rocketFilePath) - 1);
+        rocketFilePath[sizeof(rocketFilePath) - 1] = '\0';
+#endif
+
+        // Load the rocket file
+        if (LoadSave_loadRocketXML(rocketFilePath, Editor_getTrackData())) {
+            // File loaded successfully - update recent files and window title
+            Editor_setLoadedFilename(rocketFilePath);
+        } else {
+            // Show error if file couldn't be loaded
+            Dialog_showError(TEXT("Failed to load rocket file"));
+            fprintf(stderr, "Failed to load rocket file: %s\n", original_argv[1]);
+        }
+    }
 
     run(window);
 

@@ -23,6 +23,14 @@
 #include "rlog.h"
 #if defined(_WIN32)
 #include <Windows.h>
+void Editor_setLoadedFilename(const text_t* filename) {
+    s_loadedFilename = (text_t*)filename;
+    setMostRecentFile(filename);
+}
+
+struct TrackData* Editor_getTrackData() {
+    return &s_editorData.trackData;
+}
 //#include <winsock2.h>
 #else
 #include <arpa/inet.h>
