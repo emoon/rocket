@@ -1,12 +1,4 @@
 #include "Editor.h"
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wstrict-prototypes"
-#endif
-#include <bass.h>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 #include <emgui/Emgui.h>
 #include <emgui/GFXBackend.h>
 #include <math.h>
@@ -280,11 +272,6 @@ void Editor_create(void) {
 
     if (!RemoteConnections_createListner()) {
         Dialog_showError(TEXT("Unable to create listener. Make sure no other program is using port 1338"));
-    }
-
-    if (!BASS_Init(0, 44100, 0, 0, NULL)) {
-        Dialog_showError(TEXT("Unable to create init BASS. No music loading will be usable."));
-        s_editorData.canDecodeMusic = 0;
     }
 
     s_editorData.trackViewInfo.smallFontId = id;
@@ -932,7 +919,7 @@ static void onLoadMusic(void) {
     memset(path, 0, sizeof(path));
 
     if (!s_editorData.canDecodeMusic) {
-        Dialog_showError(TEXT("Unable to load music as BASS failed to init."));
+        Dialog_showError(TEXT("Unable to load music: audio decoder not available."));
         return;
     }
 

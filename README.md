@@ -103,20 +103,10 @@ cd rocket
 tundra2 linux-gcc-release
 ```
 
-(optional) Install `libbass.so` from the repo folder:
-
-```
-sudo cp external/bass/linux/libbass.so /usr/local/lib/
-sudo chmod a+rx /usr/local/lib/libbass.so
-sudo ldconfig
-```
-
-
-
 Start rocket:
 
 ```
-LD_LIBRARY_PATH=external/bass/linux/ ./t2-output/linux-gcc-release-default/editor 
+./t2-output/linux-gcc-release-default/editor
 ```
 Start the basic example:
 

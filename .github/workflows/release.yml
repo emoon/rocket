@@ -49,7 +49,6 @@ jobs:
       run: |
         New-Item -ItemType Directory -Force -Path package
         Copy-Item build/Release/RocketEditor.exe package/
-        Copy-Item external/bass/win64/bass.dll package/
         Compress-Archive -Path package/* -DestinationPath RocketEditor-Windows.zip
 
     - name: Upload artifact
