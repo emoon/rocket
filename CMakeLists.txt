@@ -78,7 +78,11 @@ if (APPLE)
 elseif (UNIX)
 	set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/linux/libbass.so)
 elseif (MSVC)
-	set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/win32/bass.lib)
+	if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+		set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/win64/bass.lib)
+	else()
+		set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/win32/bass.lib)
+	endif()
 endif ()
 
 ##############################################################################
