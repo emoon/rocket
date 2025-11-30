@@ -4,22 +4,22 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_create();
-void Editor_destroy();
-void Editor_init();
-void Editor_update();
-void Editor_timedUpdate();
+void Editor_create(void);
+void Editor_destroy(void);
+void Editor_init(void);
+void Editor_update(void);
+void Editor_timedUpdate(void);
 bool Editor_keyDown(int key, int keyCode, int mod);
-void Editor_keyUp();
+void Editor_keyUp(void);
 void Editor_setWindowSize(int x, int y);
 void Editor_menuEvent(int menuItem);
 void Editor_scroll(float deltaX, float deltaY, int flags);
-void Editor_updateTrackScroll();
+void Editor_updateTrackScroll(void);
 void Editor_loadRecentFile(int file);
-bool Editor_saveBeforeExit();
-bool Editor_needsSave();
+bool Editor_saveBeforeExit(void);
+bool Editor_needsSave(void);
 
-text_t** Editor_getRecentFiles();
+text_t** Editor_getRecentFiles(void);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

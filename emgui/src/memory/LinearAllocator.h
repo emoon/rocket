@@ -79,7 +79,7 @@ static EMGUI_INLINE ptrdiff_t LinearAllocator_getCursor(const LinearAllocator* a
 // \brief Gets a "scratch" pad that the user can use to allocate temporary memory. Notice that its up to the user
 // to rewind the allocator back \linkLinearAllocator_getRewindPoint\endlink and \linkLinearAllocator_rewind\endlink 
 
-LinearAllocator* LinearAllocator_getScratchPad();
+LinearAllocator* LinearAllocator_getScratchPad(void);
 void LinearAllocator_setScratchPad(void* data, uint32_t size);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -9,15 +9,15 @@ typedef struct RemoteConnection RemoteConnection;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Listen for incoming connections
 
-bool RemoteConnections_createListner();
+bool RemoteConnections_createListner(void);
 void RemoteConnections_updateListner(int currentRow);
-void RemoteConnections_close();
+void RemoteConnections_close(void);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Talk with _all_ the remote connections
-bool RemoteConnections_isPaused();
-bool RemoteConnections_connected();
-void RemoteConnections_disconnect();
+bool RemoteConnections_isPaused(void);
+bool RemoteConnections_connected(void);
+void RemoteConnections_disconnect(void);
 
 bool RemoteConnections_send(const char* buffer, size_t length, int flags);
 bool RemoteConnections_pollRead(RemoteConnection **res_conn);

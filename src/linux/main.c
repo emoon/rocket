@@ -394,7 +394,10 @@ void loadRecents() {
 
     // printf("Recent files:\n");
     for (i = 0; i < 4; i++) {
-        fgets(recents[i], 2048, fh);  // size looked up in Editor.c
+        if (!fgets(recents[i], 2048, fh)) {  // size looked up in Editor.c
+            recents[i][0] = 0;
+            break;
+        }
 
         if (strlen(recents[i]) < 2 || recents[i][strlen(recents[i]) - 1] != '\n') {
             recents[i][0] = 0;

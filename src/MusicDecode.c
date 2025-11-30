@@ -1,4 +1,11 @@
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wstrict-prototypes"
+#endif
 #include <bass.h>
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #include <emgui/Emgui.h>
 #include <math.h>
 #include <stdio.h>
@@ -223,6 +230,6 @@ int Music_decode(text_t* path, MusicData* data) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Music_init() {
+void Music_init(void) {
     mtx_init(&s_mutex, mtx_plain);
 }
