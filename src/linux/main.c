@@ -396,7 +396,10 @@ void loadRecents() {
 
     // printf("Recent files:\n");
     for (i = 0; i < 4; i++) {
-        fgets(recents[i], 2048, fh);  // size looked up in Editor.c
+        if (!fgets(recents[i], 2048, fh)) {  // size looked up in Editor.c
+            recents[i][0] = 0;
+            break;
+        }
 
         if (strlen(recents[i]) < 2 || recents[i][strlen(recents[i]) - 1] != '\n') {
             recents[i][0] = 0;
@@ -470,7 +473,7 @@ int main(int argc, char* argv[]) {
             Editor_setLoadedFilename(rocketFilePath);
         } else {
             // Show error if file couldn't be loaded
-            Dialog_showError(TEXT("Failed to load rocket file"));
+            Dialog_showError("Failed to load rocket file");
             fprintf(stderr, "Failed to load rocket file: %s\n", original_argv[1]);
         }
     }

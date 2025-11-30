@@ -1,5 +1,4 @@
 #include "Editor.h"
-#include <bass.h>
 #include <emgui/Emgui.h>
 #include <emgui/GFXBackend.h>
 #include <math.h>
@@ -23,15 +22,6 @@
 #include "rlog.h"
 #if defined(_WIN32)
 #include <Windows.h>
-void Editor_setLoadedFilename(const text_t* filename) {
-    s_loadedFilename = (text_t*)filename;
-    setMostRecentFile(filename);
-}
-
-struct TrackData* Editor_getTrackData() {
-    return &s_editorData.trackData;
-}
-//#include <winsock2.h>
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -42,7 +32,7 @@ enum { SET_KEY = 0, DELETE_KEY = 1, GET_TRACK = 2, SET_ROW = 3, PAUSE = 4, SAVE_
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void updateNeedsSaving();
+static void updateNeedsSaving(void);
 static bool doEditing(int key);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -89,13 +79,13 @@ static text_t* s_recentFiles[] = {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-text_t** Editor_getRecentFiles() {
+text_t** Editor_getRecentFiles(void) {
     return (text_t**)s_recentFiles;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const text_t* getMostRecentFile() {
+static const text_t* getMostRecentFile(void) {
     return s_recentFiles[0];
 }
 
@@ -145,23 +135,36 @@ void setMostRecentFile(const text_t* filename) {
     Window_populateRecentList((const text_t**)s_recentFiles);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Editor_setLoadedFilename(const text_t* filename) {
+    s_loadedFilename = (text_t*)filename;
+    setMostRecentFile(filename);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct TrackData* Editor_getTrackData(void) {
+    return &s_editorData.trackData;
+}
+
 //
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline struct sync_track** getTracks() {
+static inline struct sync_track** getTracks(void) {
     return s_editorData.trackData.syncTracks;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline TrackViewInfo* getTrackViewInfo() {
+static inline TrackViewInfo* getTrackViewInfo(void) {
     return &s_editorData.trackViewInfo;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline TrackData* getTrackData() {
+static inline TrackData* getTrackData(void) {
     return &s_editorData.trackData;
 }
 
@@ -173,25 +176,25 @@ static inline void setActiveTrack(int track) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline int getActiveTrack() {
+static inline int getActiveTrack(void) {
     return s_editorData.trackData.activeTrack;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline int getTrackCount() {
+static inline int getTrackCount(void) {
     return (int)s_editorData.trackData.num_syncTracks;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline int getRowPos() {
+static inline int getRowPos(void) {
     return s_editorData.trackViewInfo.rowPos;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static bool canEditCurrentTrack() {
+static bool canEditCurrentTrack(void) {
     return !getTrackData()->tracks[getActiveTrack()].disabled;
 }
 
@@ -204,7 +207,7 @@ static inline void setRowPos(int pos) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int getNextTrack() {
+static int getNextTrack(void) {
     Group* group;
     TrackData* trackData = getTrackData();
     int groupIndex = 0;
@@ -237,7 +240,7 @@ static int getNextTrack() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static int getPrevTrack() {
+static int getPrevTrack(void) {
     Group* group;
     TrackData* trackData = getTrackData();
     int trackIndex = 0;
@@ -271,7 +274,7 @@ static int getPrevTrack() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_create() {
+void Editor_create(void) {
     int id;
     Emgui_create();
     id = Emgui_loadFontBitmap((char*)g_minecraftiaFont, g_minecraftiaFontSize, EMGUI_LOCATION_MEMORY, 32, 128,
@@ -281,11 +284,6 @@ void Editor_create() {
 
     if (!RemoteConnections_createListner()) {
         Dialog_showError(TEXT("Unable to create listener. Make sure no other program is using port 1338"));
-    }
-
-    if (!BASS_Init(0, 44100, 0, 0, NULL)) {
-        Dialog_showError(TEXT("Unable to create init BASS. No music loading will be usable."));
-        s_editorData.canDecodeMusic = 0;
     }
 
     s_editorData.trackViewInfo.smallFontId = id;
@@ -314,7 +312,7 @@ void Editor_setWindowSize(int x, int y) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_init() {
+void Editor_init(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -417,7 +415,7 @@ static int drawNameValue(char* name, int posX, int sizeY, int* value, int low, i
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void drawStatus() {
+static void drawStatus(void) {
     int size = 0;
     const int sizeY = s_editorData.trackViewInfo.windowSizeY;
     const int sizeX = s_editorData.trackViewInfo.windowSizeX + s_editorData.waveViewSize;
@@ -444,7 +442,7 @@ static void drawStatus() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_updateTrackScroll() {
+void Editor_updateTrackScroll(void) {
     int track_start_offset, sel_track, total_track_width = 0;
     int track_start_pixel = s_editorData.trackViewInfo.startPixel;
     TrackData* track_data = getTrackData();
@@ -466,7 +464,7 @@ void Editor_updateTrackScroll() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void drawHorizonalSlider() {
+static void drawHorizonalSlider(void) {
     int large_val;
     TrackViewInfo* info = getTrackViewInfo();
     const int old_start = s_editorData.trackViewInfo.startPixel;
@@ -483,7 +481,7 @@ static void drawHorizonalSlider() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void drawVerticalSlider() {
+static void drawVerticalSlider(void) {
     int start_row = 0, end_row = 10000, width, large_val;
     TrackData* trackData = getTrackData();
     TrackViewInfo* info = getTrackViewInfo();
@@ -508,7 +506,7 @@ static void drawVerticalSlider() {
 // In some cases we need an extra update in case some controls has been re-arranged in such fashion so
 // the trackview will report back if that is needed (usually happens if tracks gets resized)
 
-static bool internalUpdate() {
+static bool internalUpdate(void) {
     int refresh;
 
     Emgui_begin();
@@ -532,7 +530,7 @@ static bool internalUpdate() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_update() {
+void Editor_update(void) {
     TrackData* trackData = getTrackData();
     bool need_update = internalUpdate();
 
@@ -756,7 +754,7 @@ static void doEditRaw(int track, int row_pos, float value, unsigned char type) {
     updateNeedsSaving();
 }
 
-static void endEditing() {
+static void endEditing(void) {
     if (!is_editing || !getTracks())
         return;
 
@@ -769,7 +767,7 @@ static void endEditing() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void cancelEditing() {
+static void cancelEditing(void) {
     is_editing = false;
     s_editorData.trackData.editText = 0;
 }
@@ -810,7 +808,7 @@ void Editor_scroll(float deltaX, float deltaY, int flags) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void updateTrackStatus() {
+static void updateTrackStatus(void) {
     int i, track_count = getTrackCount();
 
     if (RemoteConnection_connected(s_demo_connection))
@@ -847,7 +845,7 @@ static void setWindowTitle(const text_t* path, bool needsSave) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void updateNeedsSaving() {
+void updateNeedsSaving(void) {
     int undoCount;
 
     if (!s_loadedFilename)
@@ -863,7 +861,7 @@ void updateNeedsSaving() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Editor_needsSave() {
+bool Editor_needsSave(void) {
     return s_undoLevel != Commands_undoCount();
 }
 
@@ -916,7 +914,7 @@ void Editor_loadRecentFile(int id) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onOpen() {
+static void onOpen(void) {
     text_t currentFile[2048];
 
     memset(currentFile, 0, sizeof(currentFile));
@@ -926,14 +924,14 @@ static void onOpen() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onLoadMusic() {
+static void onLoadMusic(void) {
     text_t path[2048];
 
     // printf("onLoadMusic\n");
     memset(path, 0, sizeof(path));
 
     if (!s_editorData.canDecodeMusic) {
-        Dialog_showError(TEXT("Unable to load music as BASS failed to init."));
+        Dialog_showError(TEXT("Unable to load music: audio decoder not available."));
         return;
     }
 
@@ -945,7 +943,7 @@ static void onLoadMusic() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static bool onSaveAs() {
+static bool onSaveAs(void) {
     text_t path[2048];
     int ret;
 
@@ -963,7 +961,7 @@ static bool onSaveAs() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onSave() {
+static void onSave(void) {
     if (!s_loadedFilename)
         onSaveAs();
     else
@@ -975,7 +973,7 @@ static void onSave() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Editor_saveBeforeExit() {
+bool Editor_saveBeforeExit(void) {
     if (s_loadedFilename) {
         onSave();
         return true;
@@ -986,21 +984,21 @@ bool Editor_saveBeforeExit() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onUndo() {
+static void onUndo(void) {
     Commands_undo();
     updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onRedo() {
+static void onRedo(void) {
     Commands_undo();
     updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onCancelEdit() {
+static void onCancelEdit(void) {
     cancelEditing();
 }
 
@@ -1023,7 +1021,7 @@ static void onCutAndCopy(bool cut, bool externalMulti) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onDeleteKey() {
+static void onDeleteKey(void) {
     TrackViewInfo* viewInfo = getTrackViewInfo();
     const int selectLeft = mini(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
     const int selectRight = maxi(viewInfo->selectStartTrack, viewInfo->selectStopTrack);
@@ -1222,7 +1220,7 @@ static void onOffsetTrack(int nCount) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onSelectTrack() {
+static void onSelectTrack(void) {
     int activeTrack = getActiveTrack();
     TrackViewInfo* viewInfo = getTrackViewInfo();
     struct sync_track** tracks;
@@ -1244,7 +1242,7 @@ static void onSelectTrack() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onInterpolation() {
+static void onInterpolation(void) {
     int idx;
     struct track_key newKey;
     struct sync_track* track;
@@ -1271,7 +1269,7 @@ static void onInterpolation() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onInvertSelection() {
+static void onInvertSelection(void) {
     int track, row, rowCount;
     CopyEntry* entries;
     TrackViewInfo* viewInfo = getTrackViewInfo();
@@ -1364,7 +1362,7 @@ static void enterCurrentValue(struct sync_track* track, int activeTrack, int row
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onEnterCurrentValue() {
+static void onEnterCurrentValue(void) {
     int i;
     struct sync_track** tracks = getTracks();
     TrackViewInfo* viewInfo = getTrackViewInfo();
@@ -1391,7 +1389,7 @@ static void onEnterCurrentValue() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onMuteToggle() {
+static void onMuteToggle(void) {
     struct sync_track** tracks = getTracks();
     const int activeTrack = getActiveTrack();
     TrackData* trackData = getTrackData();
@@ -1408,7 +1406,7 @@ static void onMuteToggle() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onPlay() {
+static void onPlay(void) {
     RemoteConnections_sendPauseCommand(!RemoteConnections_isPaused());
     getTrackData()->isPlaying = !RemoteConnections_isPaused();
     getTrackData()->isLooping = false;
@@ -1416,7 +1414,7 @@ static void onPlay() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onPlayLoop() {
+static void onPlayLoop(void) {
     TrackData* trackData = getTrackData();
     const int rowPos = getRowPos();
     const int endLoop = TrackData_getNextLoopmark(trackData, rowPos);
@@ -1618,35 +1616,35 @@ static void onFoldGroup(bool fold) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onToggleBookmark() {
+static void onToggleBookmark(void) {
     Commands_toggleBookmark(getTrackData(), getRowPos());
     updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onClearBookmarks() {
+static void onClearBookmarks(void) {
     Commands_clearBookmarks(getTrackData());
     updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onToggleLoopmark() {
+static void onToggleLoopmark(void) {
     Commands_toggleLoopmark(getTrackData(), getRowPos());
     updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onClearLoopmarks() {
+static void onClearLoopmarks(void) {
     Commands_clearLoopmarks(getTrackData());
     updateNeedsSaving();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void onTab() {
+static void onTab(void) {
     Emgui_setFirstControlFocus();
 }
 
@@ -1929,7 +1927,7 @@ void Editor_menuEvent(int menuItem) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_destroy() {
+void Editor_destroy(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2179,7 +2177,7 @@ static int processCommands(RemoteConnection *conn) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Editor_timedUpdate() {
+void Editor_timedUpdate(void) {
     int processed_commands = s_editorData.trackData.musicData.percentDone != 0;
     RemoteConnection *conn;
 

@@ -86,21 +86,21 @@ static EMGUI_INLINE uint32_t Emgui_color32_getB(uint32_t color)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Creation and state changes the application needs to call
 
-bool Emgui_create();
-void Emgui_destroy();
+bool Emgui_create(void);
+void Emgui_destroy(void);
 void Emgui_setMousePos(int posX, int posY);
 void Emgui_setMouseLmb(int state);
 
-void Emgui_begin();
-void Emgui_end();
+void Emgui_begin(void);
+void Emgui_end(void);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Emgui_beginVerticalPanelXY(int x, int y);
 void Emgui_beginHorizontalPanelXY(int x, int y);
 
-void Emgui_beginVerticalPanel();
-void Emgui_beginHorizontalPanel();
+void Emgui_beginVerticalPanel(void);
+void Emgui_beginHorizontalPanel(void);
 
 void Emgui_setLayer(int layer);
 void Emgui_setScissor(int x, int y, int w, int h);
@@ -110,7 +110,7 @@ void Emgui_setStipple(int enabled);
 // Font functions
 
 void Emgui_setFont(uint32_t fontId);
-void Emgui_setDefaultFont();
+void Emgui_setDefaultFont(void);
 bool Emgui_setFontByName(const char* ttfFontname);
 
 int Emgui_loadFontTTF(const char* ttfFontname, float fontHeight);
@@ -149,8 +149,8 @@ bool Emgui_buttonCoordsImage(const char* text, int x, int y);
 bool Emgui_button(const char* text);
 bool Emgui_buttonImage(const char* filename);
 
-void Emgui_setFirstControlFocus();
-bool Emgui_hasKeyboardFocus();
+void Emgui_setFirstControlFocus(void);
+bool Emgui_hasKeyboardFocus(void);
 
 void Emgui_radioButtonImage(void* image0, int size0, void* image1, int size1, enum EmguiMemoryLocation location,
 							uint32_t color, int x, int y, bool* stateIn);

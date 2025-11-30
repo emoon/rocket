@@ -1,8 +1,8 @@
 project(RocketEditor)
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.5...3.28)
 
-set(CMAKE_OSX_ARCHITECTURES x86_64)
+set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 
 set(RKT_EXE_NAME "RocketEditor")
 set(EXAMPLE_NAME "BasicExample")
@@ -12,6 +12,7 @@ set(VERSION_MINOR "1")
 set(VERSION_PATCH "0")
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
+
 
 if (APPLE)
 	add_definitions(-DMACOSX -DEMGUI_MACOSX)
@@ -71,15 +72,16 @@ set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/ext
 set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} rkt_tinycthread)
 
 ##############################################################################
-# BASS
-set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/bass)
-if (APPLE)
-	set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/mac/libbass.dylib)
-elseif (UNIX)
-	set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/linux/libbass.so)
-elseif (MSVC)
-	set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/win32/bass.lib)
-endif ()
+# AUDIO DECODING (minimp3+kissfft)
+
+# kissfft library
+add_library(rkt_kissfft ${CMAKE_SOURCE_DIR}/external/kissfft/kiss_fft.c)
+target_include_directories(rkt_kissfft PUBLIC ${CMAKE_SOURCE_DIR}/external/kissfft)
+set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} rkt_kissfft)
+
+# minimp3 is header-only
+set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/minimp3)
+set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/kissfft)
 
 ##############################################################################
 # EMGUI
@@ -92,11 +94,13 @@ target_include_directories(rkt_emgui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/emgui/sr
 if (APPLE)
 	target_compile_definitions(rkt_emgui PUBLIC -DEMGUI_MACOSX)
 	target_compile_options(rkt_emgui PUBLIC -Werror -pedantic-errors -Wall -Wno-format-security)
+	set_source_files_properties(emgui/src/External/stb_image.c PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable")
+	set_source_files_properties(emgui/src/External/stb_typetype.c PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable")
 elseif (UNIX)
 	target_compile_definitions(rkt_emgui PUBLIC -DEMGUI_UNIX)
 	target_compile_options(rkt_emgui PUBLIC -Werror -pedantic-errors -Wall -Wno-format-security)
 	set_source_files_properties(emgui/src/External/stb_image.c PROPERTIES COMPILE_FLAGS "-Wno-misleading-indentation -Wno-unused-but-set-variable")
-	set_source_files_properties(emgui/src/External/stb_typetype.c PROPERTIES COMPILE_FLAGS -Wno-unused-but-set-variable)
+	set_source_files_properties(emgui/src/External/stb_typetype.c PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable -Wno-maybe-uninitialized")
 elseif (MSVC)
 	target_compile_definitions(rkt_emgui PUBLIC -DEMGUI_WINDOWS)
 	set_target_properties(rkt_emgui PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
@@ -179,10 +183,6 @@ if (APPLE)
 
 	set_source_files_properties(${RKT_RESOURCES_DATA} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 
-	set(OSX_LIB_FILES ${CMAKE_SOURCE_DIR}/external/bass/mac/libbass.dylib)
-	set_source_files_properties(${OSX_LIB_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION MacOS)
-	set(RKT_PROJECT_SRCS ${RKT_PROJECT_SRCS} ${OSX_LIB_FILES})
-
 	set(RKT_PROJECT_SRCS ${GUI_TYPE} ${RKT_PROJECT_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/data/macosx/appnib.xib)
 
 	find_library(COCOA_FRAMEWORK Cocoa)
@@ -197,7 +197,7 @@ elseif (UNIX)
 		message(FATAL_ERROR "SDL2 not found!")
 	endif ()
 
-	set(PLATFORM_LIBS ${SDL2_LIBRARY} GL m)
+	set(PLATFORM_LIBS ${SDL2_LIBRARIES} GL m)
 	set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${SDL2_INCLUDE_DIR})
 elseif (MSVC)
 	set(PLATFORM_LIBS ws2_32 opengl32 glu32 kernel32 user32 gdi32 Comdlg32 Advapi32)
@@ -244,10 +244,6 @@ if (APPLE)
 						  COMMENT "Compiling appnib.xib")
 endif ()
 
-# move the bass dll close to the executable
-if (MSVC)
-	add_custom_command(TARGET ${RKT_EXE_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/external/bass/win32/bass.dll" $<TARGET_FILE_DIR:${RKT_EXE_NAME}>)
-endif ()
 
 
 ##############################################################################

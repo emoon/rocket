@@ -13,10 +13,10 @@ void Commands_init(struct sync_track** syncTracks, struct TrackData* trackData);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Commands_needsSave();
+int Commands_needsSave(void);
 
-void Commands_undo();
-void Commands_redo();
+void Commands_undo(void);
+void Commands_redo(void);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -31,7 +31,7 @@ void Commands_clearLoopmarks(struct TrackData* trackData);
 void Commands_updateKey(int track, struct track_key* key);
 void Commands_setSelection(struct TrackViewInfo* viewInfo, int startTrack, int endTrack, int startRow, int endRow);
 void Commands_beginMulti(const char* name);  // Used (for example) when changing many value at the same time
-void Commands_endMulti();
-int Commands_undoCount();
+void Commands_endMulti(void);
+int Commands_undoCount(void);
 
 #endif

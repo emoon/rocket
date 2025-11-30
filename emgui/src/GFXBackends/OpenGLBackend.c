@@ -40,7 +40,7 @@ static void setColor(uint32_t color)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool EMGFXBackend_create()
+bool EMGFXBackend_create(void)
 {
 	// set the background colour
 	glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -52,7 +52,7 @@ bool EMGFXBackend_create()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool EMGFXBackend_destroy()
+bool EMGFXBackend_destroy(void)
 {
 	return true;
 }
@@ -386,11 +386,11 @@ static void drawImage(struct DrawImageCommand* command)
 }
 
 extern struct RenderData s_renderData;
-extern void swapBuffers();
+extern void swapBuffers(void);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void EMGFXBackend_render()
+void EMGFXBackend_render(void)
 {
 	int i = 0, layerIter = 0;
 

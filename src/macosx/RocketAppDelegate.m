@@ -5,8 +5,7 @@
 #include "rlog.h"
 
 void Window_populateRecentList(char** files);
-void Window_buildMenu();
-@synthesize rocketFilePath;
+void Window_buildMenu(void);
 
 @implementation RocketAppDelegate
 
@@ -18,7 +17,7 @@ void Window_buildMenu();
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
 	NSUInteger exitcode = NSTerminateNow;
-	
+
 	if (!Editor_needsSave())
 		return exitcode;
 
@@ -46,60 +45,9 @@ void Window_buildMenu();
 	return exitcode;
 }
 
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification 
-{
-    char** recent_list = Editor_getRecentFiles();
-
-    NSUserDefaults* prefs = [NSUserDefaults standardUserDefaults];
-
-    for (int i = 0; i < 4; ++i)
-        recent_list[i][0] = 0;
-
-    if (prefs)
-    {
-        NSArray* stringArray = [prefs objectForKey:@"recentFiles"];
-        int recentIndex = 0;
-
-        for (int i = 0; i < 4; ++i)
-        {
-            NSString* name = [stringArray objectAtIndex:i];
-            const char* filename = [name cStringUsingEncoding:NSUTF8StringEncoding];
-            if (filename && filename[0] != 0)
-                strcpy(recent_list[recentIndex++], filename);
-        }
-    }
-
-    // Check for rocket file argument and load it
-    NSArray* arguments = [[NSProcessInfo processInfo] arguments];
-    if ([arguments count] > 1) {
-        NSString* rocketFile = [arguments objectAtIndex:1];
-        if ([rocketFile hasSuffix:@".rocket"] || [rocketFile hasSuffix:@".xml"]) {
-            const char* filePath = [rocketFile UTF8String];
-            text_t textFilePath[2048];
-            strncpy(textFilePath, filePath, sizeof(textFilePath) - 1);
-            textFilePath[sizeof(textFilePath) - 1] = '\0';
-            
-            if (LoadSave_loadRocketXML(textFilePath, Editor_getTrackData())) {
-                // File loaded successfully - update recent files and window title
-                Editor_setLoadedFilename(textFilePath);
-            } else {
-                // Show error if file couldn't be loaded
-                NSAlert* alert = [[NSAlert alloc] init];
-                [alert setMessageText:@"Failed to load rocket file"];
-                [alert setInformativeText:[NSString stringWithFormat:@"Could not load file: %@", rocketFile]];
-                [alert setAlertStyle:NSWarningAlertStyle];
-                [alert runModal];
-                [alert release];
-            }
-        }
-    }
-
-    Window_buildMenu();
-    Window_populateRecentList(recent_list);
-}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification 
+- (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
 	char** recent_list = Editor_getRecentFiles();
 
@@ -122,13 +70,36 @@ void Window_buildMenu();
 		}
 	}
 
+	// Check for rocket file argument and load it
+	NSArray* arguments = [[NSProcessInfo processInfo] arguments];
+	if ([arguments count] > 1) {
+		NSString* rocketFile = [arguments objectAtIndex:1];
+		if ([rocketFile hasSuffix:@".rocket"] || [rocketFile hasSuffix:@".xml"]) {
+			const char* filePath = [rocketFile UTF8String];
+			text_t textFilePath[2048];
+			strncpy(textFilePath, filePath, sizeof(textFilePath) - 1);
+			textFilePath[sizeof(textFilePath) - 1] = '\0';
+
+			if (LoadSave_loadRocketXML(textFilePath, Editor_getTrackData())) {
+				Editor_setLoadedFilename(textFilePath);
+			} else {
+				NSAlert* alert = [[NSAlert alloc] init];
+				[alert setMessageText:@"Failed to load rocket file"];
+				[alert setInformativeText:[NSString stringWithFormat:@"Could not load file: %@", rocketFile]];
+				[alert setAlertStyle:NSWarningAlertStyle];
+				[alert runModal];
+				[alert release];
+			}
+		}
+	}
+
 	Window_buildMenu();
 	Window_populateRecentList(recent_list);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (IBAction) buttonClicked:(id)sender 
+- (IBAction) buttonClicked:(id)sender
 {
 	Editor_menuEvent((int)((NSButton*)sender).tag);
 }

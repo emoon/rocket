@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:  # Allow manual trigger for testing
+
+jobs:
+  build_macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Configure
+      run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+
+    - name: Build
+      run: cmake --build build --parallel
+
+    - name: Verify universal binary
+      run: |
+        file build/RocketEditor.app/Contents/MacOS/RocketEditor
+        lipo -info build/RocketEditor.app/Contents/MacOS/RocketEditor
+
+    - name: Package
+      run: |
+        cd build
+        zip -r RocketEditor-macOS-universal.zip RocketEditor.app
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: RocketEditor-macOS
+        path: build/RocketEditor-macOS-universal.zip
+
+  build_windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Configure
+      run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build --config Release --parallel
+
+    - name: Package
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path package
+        Copy-Item build/Release/RocketEditor.exe package/
+        Compress-Archive -Path package/* -DestinationPath RocketEditor-Windows.zip
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: RocketEditor-Windows
+        path: RocketEditor-Windows.zip
+
+  release:
+    needs: [build_macos, build_windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+    - name: Download macOS artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: RocketEditor-macOS
+
+    - name: Download Windows artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: RocketEditor-Windows
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          RocketEditor-macOS-universal.zip
+          RocketEditor-Windows.zip
