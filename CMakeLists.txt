@@ -92,6 +92,8 @@ target_include_directories(rkt_emgui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/emgui/sr
 if (APPLE)
 	target_compile_definitions(rkt_emgui PUBLIC -DEMGUI_MACOSX)
 	target_compile_options(rkt_emgui PUBLIC -Werror -pedantic-errors -Wall -Wno-format-security)
+	set_source_files_properties(emgui/src/External/stb_image.c PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable")
+	set_source_files_properties(emgui/src/External/stb_typetype.c PROPERTIES COMPILE_FLAGS "-Wno-unused-but-set-variable")
 elseif (UNIX)
 	target_compile_definitions(rkt_emgui PUBLIC -DEMGUI_UNIX)
 	target_compile_options(rkt_emgui PUBLIC -Werror -pedantic-errors -Wall -Wno-format-security)

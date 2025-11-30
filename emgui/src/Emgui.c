@@ -190,7 +190,7 @@ uint64_t loadImage(int* width, int* height, void* image, int length, enum EmguiM
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void createDefaultFont() {
+static void createDefaultFont(void) {
     struct LoadedFont* loadedFont = &g_loadedFonts[0];
     uint8_t* tempColorData;
     uint8_t* colorData = tempColorData = (uint8_t*)malloc(128 * 128);
@@ -219,7 +219,7 @@ void createDefaultFont() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void createStipplePattern() {
+static void createStipplePattern(void) {
     static unsigned char pattern[32 * 34];
     static unsigned char tempData[32 * 34] = {0};
     int x, y, i, startX = 8, width = 16, t = 0;
@@ -340,7 +340,7 @@ uint32_t Emgui_getTextSize(const char* text) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Emgui_create() {
+bool Emgui_create(void) {
     const uint32_t size = 10 * 1024 * 1024; /* FIXME: refactor LinearAllocator to be growable */
     LinearAllocator_create(&s_allocator, malloc(size), size);
     createDefaultFont();
@@ -351,7 +351,7 @@ bool Emgui_create() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Emgui_begin() {
+void Emgui_begin(void) {
     g_controlId = 1;
     g_controls[0].type = EMGUI_DRAWTYPE_NONE;
 
@@ -390,7 +390,7 @@ static bool Emgui_regionHit(const EmguiControlInfo* control) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Emgui_reset() {
+void Emgui_reset(void) {
     g_emguiGuiState.mouse.x = -1;
     g_emguiGuiState.mouse.y = -1;
 }
@@ -743,7 +743,7 @@ void Emgui_setFont(uint32_t fontId) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Emgui_setDefaultFont() {
+void Emgui_setDefaultFont(void) {
     Emgui_setFont(0);
 }
 

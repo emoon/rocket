@@ -48,7 +48,7 @@ void LinearAllocator_setScratchPad(void* data, uint32_t size)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-LinearAllocator* LinearAllocator_getScratchPad()
+LinearAllocator* LinearAllocator_getScratchPad(void)
 {
 	return &g_scratchPad;
 }
