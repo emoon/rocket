@@ -13,10 +13,7 @@ If you encounter any issues please try to report them at https://github.com/emoo
 this would make my life much easier and I will try to fix them given time. Hopefully the editor should be useful even if still not 100% finalized bug wise.
 Also the documentation hasn't been completed yet.
 
-Here are the links to the current version of the editor:
-
-* macOS: https://www.dropbox.com/s/toaiyfgzue9fm2v/RocketEditor1.2beta.zip?dl=1
-* Windows: https://www.dropbox.com/s/ounkv6bcou5pgwe/RocketEditor1.2beta-Win.zip?dl=1
+Download the latest release from the [Releases page](https://github.com/emoon/rocket/releases).
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 
