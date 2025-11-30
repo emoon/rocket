@@ -1,6 +1,6 @@
 project(RocketEditor)
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.5...3.28)
 
 set(CMAKE_OSX_ARCHITECTURES x86_64)
 
@@ -197,7 +197,7 @@ elseif (UNIX)
 		message(FATAL_ERROR "SDL2 not found!")
 	endif ()
 
-	set(PLATFORM_LIBS ${SDL2_LIBRARY} GL m)
+	set(PLATFORM_LIBS ${SDL2_LIBRARIES} GL m)
 	set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${SDL2_INCLUDE_DIR})
 elseif (MSVC)
 	set(PLATFORM_LIBS ws2_32 opengl32 glu32 kernel32 user32 gdi32 Comdlg32 Advapi32)

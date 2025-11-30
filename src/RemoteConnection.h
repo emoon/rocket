@@ -32,7 +32,7 @@ void RemoteConnections_getConnectionStatus(char** status);
 
 /* these only operate on a single connection */
 bool RemoteConnection_connected(RemoteConnection *conn);
-void RemoteConnection_disconnect();
+void RemoteConnection_disconnect(RemoteConnection *conn);
 int RemoteConnection_recv(RemoteConnection *conn, char* buffer, size_t length, int flags);
 bool RemoteConnection_send(RemoteConnection *conn, const char* buffer, size_t length, int flags);
 void RemoteConnection_sendSetKeyCommand(RemoteConnection *conn, const char* trackName, const struct track_key* key);
