@@ -4,10 +4,14 @@
 // clang-format off
 #include <windows.h>
 #include <windowsx.h>
+#include <shellapi.h>
 #include <gl/gl.h>
 // clang-format on
 #include <string.h>
+#include "../args.h"
 #include "../Editor.h"
+#include "../loadsave.h"
+#include "../Dialog.h"
 #include "Menu.h"
 #include "afxres.h"
 #include "resource.h"
@@ -638,11 +642,38 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmndLine, i
     MSG msg;
     HACCEL accel;
     bool done = false;
+    int argc = 0;
+    wchar_t** argv = NULL;
+    Args args = {0};
+
+    (void)instance;
+    (void)prevInstance;
+    (void)cmndLine;
+    (void)show;
 
     memset(&msg, 0, sizeof(MSG));
 
-    if (!createWindow(L"RocketEditor" EDITOR_VERSION, 800, 600))
+    // Parse command line arguments
+    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (argv) {
+        Args_parse(&args, argc, (const text_t* const*)argv);
+    }
+
+    if (!createWindow(L"RocketEditor" EDITOR_VERSION, 800, 600)) {
+        if (argv) LocalFree(argv);
         return 0;
+    }
+
+    // Load file if specified on command line
+    if (args.loadFile) {
+        if (LoadSave_loadRocketXML(args.loadFile, Editor_getTrackData())) {
+            Editor_setLoadedFilename(args.loadFile);
+        } else {
+            Dialog_showError(L"Failed to load rocket file");
+        }
+    }
+
+    if (argv) LocalFree(argv);
 
     accel = CreateAcceleratorTable(s_accelTable, s_accelCount);
 

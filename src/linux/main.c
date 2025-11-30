@@ -4,6 +4,7 @@
 #include <emgui/GFXBackend.h>
 #include <stdio.h>
 #include <string.h>
+#include "args.h"
 #include "loadsave.h"
 #include "Editor.h"
 #include "Menu.h"
@@ -456,25 +457,17 @@ int main(int argc, char* argv[]) {
     Editor_setWindowSize(800, 600);
 
     // Check for rocket file argument and load it
-    if (original_argc > 1) {
-        text_t rocketFilePath[2048];
-        
-        // Convert command line argument to text_t format
-#if defined(_WIN32)
-        MultiByteToWideChar(CP_UTF8, 0, original_argv[1], -1, rocketFilePath, (int)(sizeof(rocketFilePath) / sizeof(rocketFilePath[0])));
-#else
-        strncpy(rocketFilePath, original_argv[1], sizeof(rocketFilePath) - 1);
-        rocketFilePath[sizeof(rocketFilePath) - 1] = '\0';
-#endif
+    {
+        Args args;
+        Args_parse(&args, original_argc, (const text_t* const*)original_argv);
 
-        // Load the rocket file
-        if (LoadSave_loadRocketXML(rocketFilePath, Editor_getTrackData())) {
-            // File loaded successfully - update recent files and window title
-            Editor_setLoadedFilename(rocketFilePath);
-        } else {
-            // Show error if file couldn't be loaded
-            Dialog_showError("Failed to load rocket file");
-            fprintf(stderr, "Failed to load rocket file: %s\n", original_argv[1]);
+        if (args.loadFile) {
+            if (LoadSave_loadRocketXML(args.loadFile, Editor_getTrackData())) {
+                Editor_setLoadedFilename(args.loadFile);
+            } else {
+                Dialog_showError("Failed to load rocket file");
+                fprintf(stderr, "Failed to load rocket file: %s\n", args.loadFile);
+            }
         }
     }
 

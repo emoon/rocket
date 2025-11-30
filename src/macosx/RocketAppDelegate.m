@@ -1,4 +1,5 @@
 #import "RocketAppDelegate.h"
+#include "../args.h"
 #include "../loadsave.h"
 #include "../Editor.h"
 #include "../RemoteConnection.h"
@@ -72,25 +73,32 @@ void Window_buildMenu(void);
 
 	// Check for rocket file argument and load it
 	NSArray* arguments = [[NSProcessInfo processInfo] arguments];
-	if ([arguments count] > 1) {
-		NSString* rocketFile = [arguments objectAtIndex:1];
-		if ([rocketFile hasSuffix:@".rocket"] || [rocketFile hasSuffix:@".xml"]) {
-			const char* filePath = [rocketFile UTF8String];
-			text_t textFilePath[2048];
-			strncpy(textFilePath, filePath, sizeof(textFilePath) - 1);
-			textFilePath[sizeof(textFilePath) - 1] = '\0';
+	NSUInteger argCount = [arguments count];
 
-			if (LoadSave_loadRocketXML(textFilePath, Editor_getTrackData())) {
-				Editor_setLoadedFilename(textFilePath);
+	if (argCount > 1) {
+		// Convert NSArray to C array for Args_parse
+		const char** argv = malloc(argCount * sizeof(char*));
+		for (NSUInteger i = 0; i < argCount; i++) {
+			argv[i] = [[arguments objectAtIndex:i] UTF8String];
+		}
+
+		Args args;
+		Args_parse(&args, (int)argCount, argv);
+
+		if (args.loadFile) {
+			if (LoadSave_loadRocketXML(args.loadFile, Editor_getTrackData())) {
+				Editor_setLoadedFilename(args.loadFile);
 			} else {
 				NSAlert* alert = [[NSAlert alloc] init];
 				[alert setMessageText:@"Failed to load rocket file"];
-				[alert setInformativeText:[NSString stringWithFormat:@"Could not load file: %@", rocketFile]];
+				[alert setInformativeText:[NSString stringWithFormat:@"Could not load file: %s", args.loadFile]];
 				[alert setAlertStyle:NSWarningAlertStyle];
 				[alert runModal];
 				[alert release];
 			}
 		}
+
+		free(argv);
 	}
 
 	Window_buildMenu();
