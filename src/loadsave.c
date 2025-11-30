@@ -17,7 +17,7 @@ extern RemoteConnection* s_demo_connection;
 
 static void parseXml(mxml_node_t* rootNode, TrackData* trackData) {
     struct track_key k;
-    int g, i, foldedGroupCount = 0, is_key, track_index = 0;
+    int g, i, foldedGroupCount = 0, track_index = 0;
     mxml_node_t* node = rootNode;
 
     free(trackData->bookmarks);
@@ -184,9 +184,7 @@ static void parseXml(mxml_node_t* rootNode, TrackData* trackData) {
                     if (t->muteKeyCount > 0) {
                         t->muteBackup[t->muteKeyIter++] = k;
                     } else {
-                        is_key = is_key_frame(track, k.row);
-
-                        assert(!is_key);
+                        assert(!is_key_frame(track, k.row));
                         sync_set_key(track, &k);
 
                         RemoteConnection_sendSetKeyCommand(s_demo_connection, track->name, &k);
