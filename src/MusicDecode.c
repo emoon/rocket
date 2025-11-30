@@ -1,179 +1,228 @@
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wstrict-prototypes"
-#endif
-#include <bass.h>
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
+/*
+ * Audio spectrum generation for RocketEditor
+ * Uses minimp3+kissfft for MP3 decoding and FFT
+ */
+
 #include <emgui/Emgui.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <tinycthread.h>
 #include "Dialog.h"
 #include "TrackData.h"
 
+#define MINIMP3_IMPLEMENTATION
+#define MINIMP3_FLOAT_OUTPUT
+#include "minimp3_ex.h"
+#include "kiss_fft.h"
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Common constants and types
+
+#define FFT_SIZE 2048
+#define SPECTRUM_LENGTH 1024
+#define IMAGE_HEIGHT 128
+#define SAMPLING_FREQUENCY 100
+#define COLOR_STEPS 255
+#define PALETTE_SIZE (3 * COLOR_STEPS)
+
 static mtx_t s_mutex;
 
-typedef struct ThreadFuncData {
-    HSTREAM stream;
-    MusicData* data;
-} ThreadFuncData;
+typedef struct SpectrumContext {
+    unsigned int colors[PALETTE_SIZE];
+    int j_table[IMAGE_HEIGHT];
+    int pj_table[IMAGE_HEIGHT];
+    int nj_table[IMAGE_HEIGHT];
+    float f2;
+    float maxIntensity;
+} SpectrumContext;
 
-// This code has in many parts been ported to C from this code under the MIT licence.
-// https://github.com/framefield/tooll/blob/master/Tooll/Components/Helper/GenerateSoundImage.cs
-// Copyright (c) 2016 Framefield. All rights reserved.
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Shared spectrum generation code
 
-int decodeFunc(void* inData) {
-    int a, b, r, g, i;
-    // short waveData[8 * 1024];
-    unsigned int* fftPtr;
-    unsigned int* fftOutput;
-    float fftData[1024];
-    // double timeInSec = 0.0;
-    const float maxIntensity = 500 * 2;
-    const int COLOR_STEPS = 255;
-    const int PALETTE_SIZE = 3 * COLOR_STEPS;
-    const int spectrumLength = 1024;
-    ThreadFuncData* threadData = (ThreadFuncData*)inData;
-    unsigned int colors[255 * 3];
-    int imageHeight = 128;
-    HSTREAM chan = threadData->stream;
-    MusicData* data = threadData->data;
-    float percentDone = 1.0f;
-    float step = 0.0f;
+static void init_spectrum_context(SpectrumContext* ctx) {
+    ctx->maxIntensity = 500 * 2;
+    ctx->f2 = (float)((PALETTE_SIZE - 1) / log(ctx->maxIntensity + 1));
 
-    mtx_lock(&s_mutex);
-
-    const int SAMPLING_FREQUENCY = 100;  // warning: in TimelineImage this samplingfrequency is assumed to be 100
-    const double SAMPLING_RESOLUTION = 1.0 / SAMPLING_FREQUENCY;
-
-    QWORD sampleLength = BASS_ChannelSeconds2Bytes(chan, SAMPLING_RESOLUTION);
-    int numSamples = (int)((double)BASS_ChannelGetLength(chan, BASS_POS_BYTE) / (double)sampleLength);
-
-    // printf("Num samples %d\n", (int)sampleLength);
-    // printf("Num samples %d\n", numSamples);
-
-    BASS_ChannelPlay(chan, 0);
-
-    int j_table[128];
-    int pj_table[128];
-    int nj_table[128];
-
-    // TODO: Size optimize?
-
-    data->sampleCount = numSamples;
-
-    fftPtr = fftOutput = (unsigned int*)malloc(128 * 4 * (numSamples + 1));
-
-    // const int spectrumLength = 1024;
-    // const int imageHeight = 256;
-
-    // var spectrumImage = new Bitmap((int)numSamples, imageHeight);
-    // var volumeImage = new Bitmap((int)numSamples, imageHeight);
-
-    // s_editorData.waveViewSize = 128;
-    // s_editorData.trackViewInfo.windowSizeX -= s_editorData.waveViewSize;
-
-    // timeInSec =(DWORD)BASS_ChannelBytes2Seconds(chan, len);
-    // printf(" %u:%02u\n", (int)timeInSec / 60, (int)timeInSec % 60);
-
-    for (i = 0; i < PALETTE_SIZE; ++i) {
-        a = 255;
+    // Build color palette
+    for (int i = 0; i < PALETTE_SIZE; ++i) {
+        int a = 255;
         if (i < PALETTE_SIZE * 0.666f)
             a = (int)(i * 255 / (PALETTE_SIZE * 0.666f));
 
-        b = 0;
+        int b = 0;
         if (i < PALETTE_SIZE * 0.333f)
             b = i;
         else if (i < PALETTE_SIZE * 0.666f)
             b = -i + 510;
 
-        r = 0;
+        int r = 0;
         if (i > PALETTE_SIZE * 0.666f)
             r = 255;
         else if (i > PALETTE_SIZE * 0.333f)
             r = i - 255;
 
-        g = 0;
+        int g = 0;
         if (i > PALETTE_SIZE * 0.666f)
             g = i - 510;
 
-        colors[i] = Emgui_color32((uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a);
+        ctx->colors[i] = Emgui_color32((uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a);
     }
 
-    float f = (float)(spectrumLength / log((float)(imageHeight + 1)));
-    float f2 = (float)((PALETTE_SIZE - 1) / log(maxIntensity + 1));
+    // Build log lookup tables
+    float f = (float)(SPECTRUM_LENGTH / log((float)(IMAGE_HEIGHT + 1)));
+    for (int i = 0; i < IMAGE_HEIGHT; ++i) {
+        int j_ = (int)(f * log(i + 1));
+        int pj_ = (int)(i > 0 ? f * log(i - 1 + 1) : j_);
+        int nj_ = (int)(i < IMAGE_HEIGHT - 1 ? f * log(i + 1 + 1) : j_);
 
-    (void)f2;
+        ctx->j_table[i] = j_;
+        ctx->pj_table[i] = pj_;
+        ctx->nj_table[i] = nj_;
+    }
+}
 
-    for (int rowIndex = 0; rowIndex < imageHeight; ++rowIndex) {
-        int j_ = (int)(f * log(rowIndex + 1));
-        int pj_ = (int)(rowIndex > 0 ? f * log(rowIndex - 1 + 1) : j_);
-        int nj_ = (int)(rowIndex < imageHeight - 1 ? f * log(rowIndex + 1 + 1) : j_);
+static void generate_spectrum_column(const SpectrumContext* ctx, const float* fftData, unsigned int* output) {
+    for (int row = 0; row < IMAGE_HEIGHT; ++row) {
+        int j_ = ctx->j_table[(IMAGE_HEIGHT - row) - 1];
+        int pj_ = ctx->pj_table[(IMAGE_HEIGHT - row) - 1];
+        int nj_ = ctx->nj_table[(IMAGE_HEIGHT - row) - 1];
 
-        j_table[rowIndex] = j_;
-        pj_table[rowIndex] = pj_;
-        nj_table[rowIndex] = nj_;
+        float intensity = 125.0f * 4.0f * fftData[SPECTRUM_LENGTH - pj_ - 1] +
+                          750.0f * 4.0f * fftData[SPECTRUM_LENGTH - j_ - 1] +
+                          125.0f * 4.0f * fftData[SPECTRUM_LENGTH - nj_ - 1];
+
+        if (intensity > ctx->maxIntensity)
+            intensity = ctx->maxIntensity;
+        if (intensity < 0.0f)
+            intensity = 0.0f;
+
+        int palettePos = (int)(ctx->f2 * log(intensity + 1));
+        output[row] = ctx->colors[palettePos];
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+typedef struct ThreadFuncData {
+    text_t* path;
+    MusicData* data;
+} ThreadFuncData;
+
+static void compute_fft(const float* input, float* output, int n, kiss_fft_cfg cfg) {
+    kiss_fft_cpx* fft_in = malloc(n * sizeof(kiss_fft_cpx));
+    kiss_fft_cpx* fft_out = malloc(n * sizeof(kiss_fft_cpx));
+
+    // Apply Hann window
+    for (int i = 0; i < n; i++) {
+        float window = 0.5f * (1.0f - cosf(2.0f * 3.14159265f * i / n));
+        fft_in[i].r = input[i] * window;
+        fft_in[i].i = 0.0f;
     }
 
-    step = (float)(99.0f / numSamples);
-    percentDone = 1.0f;
+    kiss_fft(cfg, fft_in, fft_out);
+
+    // Normalize FFT output to 0-1 range
+    float scale = 4.0f / n;
+    for (int i = 0; i < n / 2; i++) {
+        float mag = sqrtf(fft_out[i].r * fft_out[i].r + fft_out[i].i * fft_out[i].i);
+        output[i] = mag * scale;
+    }
+
+    free(fft_in);
+    free(fft_out);
+}
+
+int decodeFunc(void* inData) {
+    ThreadFuncData* threadData = (ThreadFuncData*)inData;
+    MusicData* data = threadData->data;
+
+    mtx_lock(&s_mutex);
+
+    // Open MP3 file
+    mp3dec_ex_t dec;
+#ifdef _WIN32
+    char utf8_path[2048];
+    WideCharToMultiByte(CP_UTF8, 0, threadData->path, -1, utf8_path, sizeof(utf8_path), NULL, NULL);
+    if (mp3dec_ex_open(&dec, utf8_path, MP3D_SEEK_TO_SAMPLE)) {
+#else
+    if (mp3dec_ex_open(&dec, threadData->path, MP3D_SEEK_TO_SAMPLE)) {
+#endif
+        Dialog_showError(TEXT("Unable to decode MP3 file. No music data will be available."));
+        free(threadData);
+        mtx_unlock(&s_mutex);
+        return 0;
+    }
+
+    int sample_rate = dec.info.hz;
+    int channels = dec.info.channels;
+    size_t total_samples = dec.samples;
+
+    // Decode entire file to mono
+    float* pcm = malloc((total_samples / channels) * sizeof(float));
+    mp3d_sample_t* temp = malloc(total_samples * sizeof(mp3d_sample_t));
+
+    size_t read = mp3dec_ex_read(&dec, temp, total_samples);
+    size_t mono_count = read / channels;
+
+    for (size_t s = 0; s < mono_count; s++) {
+        float sum = 0.0f;
+        for (int ch = 0; ch < channels; ch++) {
+            sum += temp[s * channels + ch];
+        }
+        pcm[s] = sum / channels;
+    }
+    free(temp);
+    mp3dec_ex_close(&dec);
+
+    int samples_per_window = sample_rate / SAMPLING_FREQUENCY;
+    double duration = (double)mono_count / sample_rate;
+    int numSamples = (int)(duration * SAMPLING_FREQUENCY);
+
+    data->sampleCount = numSamples;
+
+    // Initialize spectrum generation
+    SpectrumContext ctx;
+    init_spectrum_context(&ctx);
+
+    unsigned int* fftPtr = malloc(IMAGE_HEIGHT * 4 * (numSamples + 1));
+    unsigned int* fftOutput = fftPtr;
+    float fftData[SPECTRUM_LENGTH];
+    float* fft_input = malloc(FFT_SIZE * sizeof(float));
+    kiss_fft_cfg fft_cfg = kiss_fft_alloc(FFT_SIZE, 0, NULL, NULL);
+
+    float step = 99.0f / numSamples;
+    float percentDone = 1.0f;
 
     for (int sampleIndex = 0; sampleIndex < numSamples; ++sampleIndex) {
-        BASS_ChannelSetPosition(chan, sampleIndex * sampleLength, BASS_POS_BYTE);
-        BASS_ChannelGetData(chan, fftData, BASS_DATA_FFT2048);
+        size_t start = (size_t)sampleIndex * samples_per_window;
 
-        data->percentDone = (int)(percentDone);
-
-        // printf("%d/%d\n", sampleIndex, numSamples);
-
-        for (int rowIndex = 0; rowIndex < imageHeight; ++rowIndex) {
-            // int j_ = (int)(f * log(rowIndex + 1));
-            // int pj_ = (int)(rowIndex > 0 ? f * log(rowIndex - 1 + 1) : j_);
-            // int nj_ = (int)(rowIndex < imageHeight - 1 ? f * log(rowIndex + 1 + 1) : j_);
-
-            int j_ = j_table[(imageHeight - rowIndex) - 1];
-            int pj_ = pj_table[(imageHeight - rowIndex) - 1];
-            int nj_ = nj_table[(imageHeight - rowIndex) - 1];
-
-            // printf("index %d - %d %d %d\n", rowIndex, j_, pj_, nj_);
-
-            float intensity = 125.0f * 4.0f * fftData[spectrumLength - pj_ - 1] +
-                              750.0f * 4.0f * fftData[spectrumLength - j_ - 1] +
-                              125.0f * 4.0f * fftData[spectrumLength - nj_ - 1];
-            if (intensity > maxIntensity)
-                intensity = maxIntensity;
-
-            if (intensity < 0.0f)
-                intensity = 0.0f;
-
-            int palettePos = (int)(f2 * log(intensity + 1));
-
-            *fftOutput++ = colors[palettePos];
+        for (int j = 0; j < FFT_SIZE; j++) {
+            size_t idx = start + j;
+            fft_input[j] = (idx < mono_count) ? pcm[idx] : 0.0f;
         }
 
+        compute_fft(fft_input, fftData, FFT_SIZE, fft_cfg);
+        generate_spectrum_column(&ctx, fftData, fftOutput);
+        fftOutput += IMAGE_HEIGHT;
+
+        data->percentDone = (int)(percentDone);
         percentDone += step;
     }
 
-    BASS_StreamFree(chan);
-
+    kiss_fft_free(fft_cfg);
+    free(fft_input);
+    free(pcm);
     free(threadData);
 
     data->percentDone = 100;
     data->fftData = fftPtr;
 
     mtx_unlock(&s_mutex);
-
-    // printf("thread done\n");
-
     return 1;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int Music_decode(text_t* path, MusicData* data) {
-    QWORD len;
     thrd_t id;
 
     if (thrd_busy == mtx_trylock(&s_mutex)) {
@@ -181,43 +230,16 @@ int Music_decode(text_t* path, MusicData* data) {
         return 1;
     }
 
-    // now this will break if we already have a thread running.
-
     free(data->fftData);
     data->fftData = 0;
 
-    int flags = BASS_STREAM_DECODE | BASS_SAMPLE_MONO | BASS_POS_SCAN;
-
-#ifdef _WIN32
-    flags |= BASS_UNICODE;
-#endif
-
-    HSTREAM chan = BASS_StreamCreateFile(0, path, 0, 0, flags);
-
-    if (!chan) {
-        Dialog_showError(TEXT("Unable to open stream for decode. No music data will be available."));
-        mtx_unlock(&s_mutex);
-        return 0;
-    }
-
-    len = BASS_ChannelGetLength(chan, BASS_POS_BYTE);
-
-    if (len == -1) {
-        Dialog_showError(TEXT("Stream has no length. No music data will be available."));
-        BASS_StreamFree(chan);
-        mtx_unlock(&s_mutex);
-        return 0;
-    }
-
     ThreadFuncData* threadData = malloc(sizeof(ThreadFuncData));
-    threadData->stream = chan;
+    threadData->path = path;
     threadData->data = data;
 
     data->percentDone = 1;
     data->fftData = 0;
 
-    // So there is a race-condition here as the mutex is unclocked while the thread is crated but in practice
-    // this won't be a problem
     mtx_unlock(&s_mutex);
 
     if (thrd_create(&id, decodeFunc, threadData) != thrd_success) {

@@ -13,6 +13,7 @@ set(VERSION_PATCH "0")
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
+
 if (APPLE)
 	add_definitions(-DMACOSX -DEMGUI_MACOSX)
 	add_compile_options(-Wall -Wno-format-security -Wno-deprecated-declarations)
@@ -71,19 +72,16 @@ set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR}/ext
 set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} rkt_tinycthread)
 
 ##############################################################################
-# BASS
-set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/bass)
-if (APPLE)
-	set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/mac/libbass.dylib)
-elseif (UNIX)
-	set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/linux/libbass.so)
-elseif (MSVC)
-	if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-		set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/win64/bass.lib)
-	else()
-		set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} ${CMAKE_SOURCE_DIR}/external/bass/win32/bass.lib)
-	endif()
-endif ()
+# AUDIO DECODING (minimp3+kissfft)
+
+# kissfft library
+add_library(rkt_kissfft ${CMAKE_SOURCE_DIR}/external/kissfft/kiss_fft.c)
+target_include_directories(rkt_kissfft PUBLIC ${CMAKE_SOURCE_DIR}/external/kissfft)
+set(RKT_PROJECT_LIBS ${RKT_PROJECT_LIBS} rkt_kissfft)
+
+# minimp3 is header-only
+set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/minimp3)
+set(RKT_PROJECT_INCLUDES ${RKT_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/kissfft)
 
 ##############################################################################
 # EMGUI
@@ -185,10 +183,6 @@ if (APPLE)
 
 	set_source_files_properties(${RKT_RESOURCES_DATA} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 
-	set(OSX_LIB_FILES ${CMAKE_SOURCE_DIR}/external/bass/mac/libbass.dylib)
-	set_source_files_properties(${OSX_LIB_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION MacOS)
-	set(RKT_PROJECT_SRCS ${RKT_PROJECT_SRCS} ${OSX_LIB_FILES})
-
 	set(RKT_PROJECT_SRCS ${GUI_TYPE} ${RKT_PROJECT_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/data/macosx/appnib.xib)
 
 	find_library(COCOA_FRAMEWORK Cocoa)
@@ -250,10 +244,6 @@ if (APPLE)
 						  COMMENT "Compiling appnib.xib")
 endif ()
 
-# move the bass dll close to the executable
-if (MSVC)
-	add_custom_command(TARGET ${RKT_EXE_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/external/bass/win32/bass.dll" $<TARGET_FILE_DIR:${RKT_EXE_NAME}>)
-endif ()
 
 
 ##############################################################################
