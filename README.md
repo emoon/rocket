@@ -18,6 +18,8 @@ Here are the links to the current version of the editor:
 * macOS: https://www.dropbox.com/s/toaiyfgzue9fm2v/RocketEditor1.2beta.zip?dl=1
 * Windows: https://www.dropbox.com/s/ounkv6bcou5pgwe/RocketEditor1.2beta-Win.zip?dl=1
 
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
 About
 -----
 
