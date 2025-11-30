@@ -51,66 +51,64 @@ Features:
 Building the code
 -----------------
 
-All macOS, Windows and Linux versions use the Tundra build system (https://github.com/deplinenoise/tundra) so in order to build the code you need a tundra executable for your OS.
-For macOS and Windows the binaries are included within the repo, but for Linux see the build instructions bellow.
+RocketEditor uses CMake as its build system on all platforms.
 
 macOS
 -----
 
-To build on mac enter the rocket/ogl_rocket directory and run "bin/mac/tundra2 macosx-clang-debug" (or -release for release build) and in tundra-output you will find the app to run.
-To use Xcode to build (or code in) use the XCode3-GenerateProj.sh file (works with Xcode 4.x also) and open the generated project in xcode (it's inside the tundra-output directory)
+```bash
+git clone --recursive https://github.com/emoon/rocket
+cd rocket
+mkdir build && cd build
+cmake ..
+cmake --build .
+open RocketEditor.app
+```
+
+To generate an Xcode project:
+
+```bash
+cmake -G Xcode ..
+```
 
 Windows
 -------
 
-To build the code run in debug run: `scripts\win32_build_debug.cmd` and run the executable in `t2-output\win32-msvc-debug-default\editor.exe` (Visual Studio 2019 required) 
-If you want a VS solution instead you can run `scripts\win32_gen_vs_solution.cmd` and `scripts\win32_launch_vs.cmd`
+Using Visual Studio (2019 or later recommended):
 
-
-```
-git clone --depth=1 --recursive https://github.com/emoon/rocket
+```bash
+git clone --recursive https://github.com/emoon/rocket
 cd rocket
-scripts\win32_build_debug.cmd
-t2-output\win32-msvc-debug-default\editor.exe
+mkdir build && cd build
+cmake ..
+cmake --build . --config Release
+```
+
+Or open the generated solution in Visual Studio:
+
+```bash
+cmake -G "Visual Studio 17 2022" ..
+start RocketEditor.sln
 ```
 
 Linux
 -----
 
-The following was tested on Ubuntu 16.10 (yakkety).
+Install dependencies (Ubuntu/Debian):
 
-Install SDL-dev:
-
-```
-sudo apt-get install libsdl1.2-dev
+```bash
+sudo apt-get install libsdl2-dev libgtk-3-dev cmake build-essential
 ```
 
-Install [tundra](https://github.com/deplinenoise/tundra):
+Build:
 
-```
-git clone --depth=1 --recursive https://github.com/deplinenoise/tundra
-cd tundra
-make
-sudo checkinstall make install
-```
-
-Build rocket:
-
-```
-git clone --depth=1 --recursive https://github.com/emoon/rocket
+```bash
+git clone --recursive https://github.com/emoon/rocket
 cd rocket
-tundra2 linux-gcc-release
-```
-
-Start rocket:
-
-```
-./t2-output/linux-gcc-release-default/editor
-```
-Start the basic example:
-
-```
-./t2-output/linux-gcc-release-default/basic_example
+mkdir build && cd build
+cmake ..
+cmake --build .
+./RocketEditor
 ```
 
 
