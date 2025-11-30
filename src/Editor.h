@@ -1,8 +1,12 @@
 #pragma once
 
 #include <emgui/Types.h>
+#include "version.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Version string with padding for window title display
+#define EDITOR_VERSION _T(" " EDITOR_VERSION_STRING " ")
 
 void Editor_create(void);
 void Editor_destroy(void);
@@ -22,7 +26,3 @@ bool Editor_needsSave(void);
 void Editor_setLoadedFilename(const text_t* filename);
 struct TrackData* Editor_getTrackData(void);
 text_t** Editor_getRecentFiles(void);
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define EDITOR_VERSION _T(" 1.2 Beta 1 ")

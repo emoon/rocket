@@ -11,6 +11,41 @@ set(VERSION_MAJOR "1")
 set(VERSION_MINOR "1")
 set(VERSION_PATCH "0")
 
+# Determine version string from git
+# - If HEAD is exactly on a tag: use the tag (e.g., "v1.2.0")
+# - Otherwise: use "Development"
+find_package(Git QUIET)
+if(GIT_FOUND)
+    # Check if we're exactly on a tag
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --tags --exact-match
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_TAG
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE GIT_TAG_RESULT
+    )
+    if(GIT_TAG_RESULT EQUAL 0)
+        # We're on a tag - use it as version
+        set(EDITOR_VERSION_STRING "${GIT_TAG}")
+    else()
+        # Not on a tag - development build
+        set(EDITOR_VERSION_STRING "Development")
+    endif()
+else()
+    # Git not found - fallback
+    set(EDITOR_VERSION_STRING "Development")
+endif()
+
+message(STATUS "Editor version: ${EDITOR_VERSION_STRING}")
+
+# Generate version header
+configure_file(
+    ${CMAKE_SOURCE_DIR}/src/version.h.in
+    ${CMAKE_BINARY_DIR}/generated/version.h
+    @ONLY
+)
+
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
 
@@ -223,7 +258,7 @@ elseif (UNIX)
 elseif (MSVC)
 	target_compile_definitions(${RKT_EXE_NAME} PUBLIC -DEMGUI_WIN32)
 endif ()
-target_include_directories(${RKT_EXE_NAME} PUBLIC ${RKT_PROJECT_INCLUDES})
+target_include_directories(${RKT_EXE_NAME} PUBLIC ${RKT_PROJECT_INCLUDES} ${CMAKE_BINARY_DIR}/generated)
 target_link_libraries(${RKT_EXE_NAME} ${RKT_PROJECT_LIBS})
 
 # compile the nibs
