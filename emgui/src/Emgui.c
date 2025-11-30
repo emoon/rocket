@@ -919,7 +919,7 @@ void Emgui_radioButtonImage(void* image0, int size0, void* image1, int size1, en
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Emgui_end() {
+void Emgui_end(void) {
     if (g_emguiGuiState.mouse.down == 0) {
         g_emguiGuiState.activeItem = 0;
     } else {
@@ -1056,20 +1056,20 @@ void Emgui_setMouseLmb(int state) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool Emgui_hasKeyboardFocus() {
+bool Emgui_hasKeyboardFocus(void) {
     return g_emguiGuiState.kbdItem != -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Emgui_setFirstControlFocus() {
+void Emgui_setFirstControlFocus(void) {
     g_emguiGuiState.kbdItem = 1;
     g_emguiGuiState.keyCode = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Emgui_resetFocus() {
+void Emgui_resetFocus(void) {
     g_emguiGuiState.kbdItem = -1;
     g_emguiGuiState.keyCode = 0;
 }
