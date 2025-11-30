@@ -15,21 +15,26 @@ jobs:
         submodules: true
 
     - name: Configure
-      run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
 
     - name: Build
       run: cmake --build build --parallel
 
+    - name: Verify universal binary
+      run: |
+        file build/RocketEditor.app/Contents/MacOS/RocketEditor
+        lipo -info build/RocketEditor.app/Contents/MacOS/RocketEditor
+
     - name: Package
       run: |
         cd build
-        zip -r RocketEditor-macOS.zip RocketEditor.app
+        zip -r RocketEditor-macOS-universal.zip RocketEditor.app
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: RocketEditor-macOS
-        path: build/RocketEditor-macOS.zip
+        path: build/RocketEditor-macOS-universal.zip
 
   build_windows:
     runs-on: windows-latest
@@ -78,5 +83,5 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          RocketEditor-macOS.zip
+          RocketEditor-macOS-universal.zip
           RocketEditor-Windows.zip
