@@ -153,7 +153,7 @@ void RemoteConnections_mapTrackName(const char* name) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool RemoteConnections_createListner() {
+bool RemoteConnections_createListner(void) {
     struct sockaddr_in sin;
     int yes = 1, i;
 
@@ -302,7 +302,7 @@ bool RemoteConnection_connected(RemoteConnection *conn) {
     return !!(conn && INVALID_SOCKET != conn->s_socket);
 }
 
-bool RemoteConnections_connected() {
+bool RemoteConnections_connected(void) {
     int i;
 
     for (i = 0; i < MAX_CONNECTIONS; i++) {
@@ -340,7 +340,7 @@ void RemoteConnection_disconnect(RemoteConnection *conn) {
     s_num_connections--;
 }
 
-void RemoteConnections_disconnect() {
+void RemoteConnections_disconnect(void) {
     int i;
 
     rlog(R_INFO, "disconnect everyone!\n");
@@ -553,7 +553,7 @@ void RemoteConnection_sendSaveCommand(RemoteConnection *conn) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool RemoteConnections_isPaused() {
+bool RemoteConnections_isPaused(void) {
     return s_paused;
 }
 
@@ -590,7 +590,7 @@ void RemoteConnection_sendKeyFrames(RemoteConnection *conn, const char* name, st
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RemoteConnections_close() {
+void RemoteConnections_close(void) {
     RemoteConnections_disconnect();
 
     // rlog(R_INFO, "closing socket %d\n", s_serverSocket);

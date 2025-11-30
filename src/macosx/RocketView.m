@@ -458,7 +458,7 @@ void buildSubMenu(NSMenu* menu, MenuDescriptor menuDesc[])
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Window_buildMenu()
+void Window_buildMenu(void)
 {
  	NSMenu* fileMenu = [[[NSApp mainMenu] itemWithTitle:@"File"] submenu];
  	NSMenu* editMenu = [[[NSApp mainMenu] itemWithTitle:@"Edit"] submenu];
@@ -505,7 +505,7 @@ void Window_populateRecentList(const char** files)
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void swapBuffers()
+void swapBuffers(void)
 {
 	[g_context flushBuffer];
 }

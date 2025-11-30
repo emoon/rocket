@@ -32,11 +32,11 @@ int Track_getSize(TrackViewInfo* viewInfo, struct Track* track);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TrackView_init();
+void TrackView_init(void);
 bool TrackView_render(TrackViewInfo* viewInfo, struct TrackData* trackData);
 int TrackView_getWidth(TrackViewInfo* viewInfo, struct TrackData* trackData);
 int TrackView_getScrolledTrack(struct TrackViewInfo* viewInfo, struct TrackData* trackData, int activeTrack, int posX);
-int TrackView_getStartOffset();
+int TrackView_getStartOffset(void);
 int TrackView_getTracksOffset(struct TrackViewInfo* viewInfo, struct TrackData* trackData, int prevTrack,
                               int nextTrack);
 bool TrackView_isSelectedTrackVisible(struct TrackViewInfo* viewInfo, struct TrackData* trackData, int track);

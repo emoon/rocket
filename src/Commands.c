@@ -74,7 +74,7 @@ static int countEntriesInList(CommandList* list) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Commands_undoCount() {
+int Commands_undoCount(void) {
     return countEntriesInList(&s_undoStack);
 }
 
@@ -121,7 +121,7 @@ void Commands_beginMulti(const char* name) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Commands_endMulti() {
+void Commands_endMulti(void) {
     Command* command;
 
     // Check if any command was added during multi command
@@ -586,7 +586,7 @@ void Commands_toggleMute(struct Track* track, struct sync_track* syncTrack, int 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Commands_undo() {
+void Commands_undo(void) {
     Command* command;
 
     if (CommandList_isEmpty(&s_undoStack)) {
@@ -606,7 +606,7 @@ void Commands_undo() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Commands_redo() {
+void Commands_redo(void) {
     Command* command;
 
     if (CommandList_isEmpty(&s_redoStack))
