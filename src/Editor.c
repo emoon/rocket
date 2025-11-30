@@ -22,7 +22,6 @@
 #include "rlog.h"
 #if defined(_WIN32)
 #include <Windows.h>
-//#include <winsock2.h>
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -134,6 +133,19 @@ void setMostRecentFile(const text_t* filename) {
     }
 
     Window_populateRecentList((const text_t**)s_recentFiles);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Editor_setLoadedFilename(const text_t* filename) {
+    s_loadedFilename = (text_t*)filename;
+    setMostRecentFile(filename);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct TrackData* Editor_getTrackData(void) {
+    return &s_editorData.trackData;
 }
 
 //

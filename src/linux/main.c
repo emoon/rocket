@@ -3,6 +3,9 @@
 #include <emgui/Emgui.h>
 #include <emgui/GFXBackend.h>
 #include <stdio.h>
+#include <string.h>
+#include "args.h"
+#include "loadsave.h"
 #include "Editor.h"
 #include "Menu.h"
 #ifdef HAVE_GTK
@@ -415,6 +418,10 @@ void loadRecents() {
 }
 
 int main(int argc, char* argv[]) {
+    // Store original argc/argv before GTK initialization
+    int original_argc = argc;
+    char** original_argv = argv;
+    
 #ifdef HAVE_GTK
     gtk_init(&argc, &argv);
 #endif
@@ -448,6 +455,21 @@ int main(int argc, char* argv[]) {
     Editor_create();
     EMGFXBackend_updateViewPort(800, 600);
     Editor_setWindowSize(800, 600);
+
+    // Check for rocket file argument and load it
+    {
+        Args args;
+        Args_parse(&args, original_argc, (const text_t* const*)original_argv);
+
+        if (args.loadFile) {
+            if (LoadSave_loadRocketXML(args.loadFile, Editor_getTrackData())) {
+                Editor_setLoadedFilename(args.loadFile);
+            } else {
+                Dialog_showError("Failed to load rocket file");
+                fprintf(stderr, "Failed to load rocket file: %s\n", args.loadFile);
+            }
+        }
+    }
 
     run(window);
 

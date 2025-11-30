@@ -1,4 +1,6 @@
 #import "RocketAppDelegate.h"
+#include "../args.h"
+#include "../loadsave.h"
 #include "../Editor.h"
 #include "../RemoteConnection.h"
 #include "rlog.h"
@@ -16,7 +18,7 @@ void Window_buildMenu(void);
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
 	NSUInteger exitcode = NSTerminateNow;
-	
+
 	if (!Editor_needsSave())
 		return exitcode;
 
@@ -46,7 +48,7 @@ void Window_buildMenu(void);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification 
+- (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
 	char** recent_list = Editor_getRecentFiles();
 
@@ -69,13 +71,43 @@ void Window_buildMenu(void);
 		}
 	}
 
+	// Check for rocket file argument and load it
+	NSArray* arguments = [[NSProcessInfo processInfo] arguments];
+	NSUInteger argCount = [arguments count];
+
+	if (argCount > 1) {
+		// Convert NSArray to C array for Args_parse
+		const char** argv = malloc(argCount * sizeof(char*));
+		for (NSUInteger i = 0; i < argCount; i++) {
+			argv[i] = [[arguments objectAtIndex:i] UTF8String];
+		}
+
+		Args args;
+		Args_parse(&args, (int)argCount, argv);
+
+		if (args.loadFile) {
+			if (LoadSave_loadRocketXML(args.loadFile, Editor_getTrackData())) {
+				Editor_setLoadedFilename(args.loadFile);
+			} else {
+				NSAlert* alert = [[NSAlert alloc] init];
+				[alert setMessageText:@"Failed to load rocket file"];
+				[alert setInformativeText:[NSString stringWithFormat:@"Could not load file: %s", args.loadFile]];
+				[alert setAlertStyle:NSWarningAlertStyle];
+				[alert runModal];
+				[alert release];
+			}
+		}
+
+		free(argv);
+	}
+
 	Window_buildMenu();
 	Window_populateRecentList(recent_list);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (IBAction) buttonClicked:(id)sender 
+- (IBAction) buttonClicked:(id)sender
 {
 	Editor_menuEvent((int)((NSButton*)sender).tag);
 }

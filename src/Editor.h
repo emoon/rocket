@@ -19,6 +19,8 @@ void Editor_loadRecentFile(int file);
 bool Editor_saveBeforeExit(void);
 bool Editor_needsSave(void);
 
+void Editor_setLoadedFilename(const text_t* filename);
+struct TrackData* Editor_getTrackData(void);
 text_t** Editor_getRecentFiles(void);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
