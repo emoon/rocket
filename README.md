@@ -142,34 +142,50 @@ Key | Action
 Esc                 | Cancel edit
 QWERTY              | Bias selection +0.01, +0.1, +1, +10, +100, +1000
 ASDFGH              | Bias selection -0.01, -0.1, -1, -10, -100, -1000
+Shift+QWERTY        | Scale selection 1.01, 1.1, 1.2, 5.0, 10.0, 100.0
+Shift+ASDFGH        | Scale selection 0.99, 0.9, 0.8, 0.5, 0.1, 0.01
 Alt+Trackpad scroll | Bias selection +1/-1
 Shift+Alt+Trackpad  | Bias selection +10/-10
 I                   | Toggle interpolation (step/linear/smooth/ramp)
+Cmd+I               | Invert selection
 Return              | Insert current interpolated value
 Shift+Arrows        | Select
 Cmd+T               | Select all keys in track
 Cmd+X               | Cut
 Cmd+C               | Copy
 Cmd+V               | Paste
+C                   | Move selection up
+X                   | Move selection down
 Cmd+Z               | Undo
 Cmd+Shift+Z         | Redo
 Delete              | Delete key
+K                   | Offset track +1
+Cmd+K               | Offset track +8
+L                   | Offset track -1
+Cmd+L               | Offset track -8
+Shift+K             | Offset group +8
+Shift+L             | Offset group -8
+M                   | Mute/Unmute track
 
 #### View:
 
 Key | Action
 --- | ---
 Space               | Start/Stop
+Ctrl+Space          | Start Loop Playback
 Arrows              | Move cursor around
 Alt+Up/Down         | Jump 8 rows
+Page Up/Down        | Jump 16 rows
 Alt+Cmd+Up/Down     | Jump to StartRow/NextBookmark - PrevBookmark/EndRow
-Cmd+Left/Right      | Jump to first/last track
+Cmd+Left/Right      | Scroll view Left/Right
 Ctrl+Up/Down        | Jump to Previous/Next key in current track
 Alt+Left/Right      | Fold/Unfold track
 Ctrl+Alt+Left/Right | Fold/Unfold group
 Trackpad scroll     | Scroll
 B                   | Toggle Bookmark
 Cmd+B               | Clear all Bookmarks
+Z                   | Toggle Loopmark
+Shift+Z             | Clear all Loopmarks
 Tab                 | Jump between Row, Start Row, End Row, Track editing
 
 #### Files:
@@ -181,6 +197,7 @@ Cmd+S               | Quicksave
 Cmd+Shift+S         | Save as
 Cmd+1/2/3/4         | Quickload recent files
 Cmd+E               | Remote export
+Cmd+L               | Load Music
 
 ---------------------------------------------------------------------------------
 
@@ -194,34 +211,48 @@ Key | Action
 Esc                 | Cancel edit
 QWERTY              | Bias selection +0.01, +0.1, +1, +10, +100, +1000
 ASDFGH              | Bias selection -0.01, -0.1, -1, -10, -100, -1000
+Shift+QWERTY        | Scale selection 1.01, 1.1, 1.2, 5.0, 10.0, 100.0
+Shift+ASDFGH        | Scale selection 0.99, 0.9, 0.8, 0.5, 0.1, 0.01
 I                   | Toggle interpolation (step/linear/smooth/ramp)
+Ctrl+I              | Invert selection
 Return              | Insert current interpolated value
 Shift+Arrows        | Select
 Ctrl+T              | Select all keys in track
 Ctrl+X              | Cut
 Ctrl+C              | Copy
 Ctrl+V              | Paste
+C                   | Move selection up
+X                   | Move selection down
 Ctrl+Z              | Undo
 Ctrl+Shift+Z        | Redo
 Delete              | Delete key
-Ctrl-I              | Invert selection
-M                   | Mute Track
+K                   | Offset track +1
+Ctrl+K              | Offset track +8
+L                   | Offset track -1
+Ctrl+L              | Offset track -8
+Shift+K             | Offset group +8
+Shift+L             | Offset group -8
+M                   | Mute/Unmute track
 
 #### View:
 
 Key | Action
 --- | ---
 Space               | Start/Stop
+Ctrl+Space          | Start Loop Playback
 Arrows              | Move cursor around
 Alt+Up/Down         | Jump 8 rows
+Page Up/Down        | Jump 16 rows
 Ctrl+Alt+Up/Down    | Jump to StartRow/NextBookmark - PrevBookmark/EndRow
-Ctrl+Left/Right     | Jump to first/last track
+Ctrl+Left/Right     | Scroll view Left/Right
 Ctrl+Up/Down        | Jump to Previous/Next key in current track
 Alt+Left/Right      | Fold/Unfold track
 Ctrl+Alt+Left/Right | Fold/Unfold group
 Trackpad scroll     | Scroll
 B                   | Toggle Bookmark
 Ctrl+B              | Clear all Bookmarks
+Z                   | Toggle Loopmark
+Shift+Z             | Clear all Loopmarks
 Tab                 | Jump between Row, Start Row, End Row, Track editing
 
 #### Files:
@@ -233,4 +264,5 @@ Ctrl+S              | Quicksave
 Ctrl+Shift+S        | Save as
 Ctrl+1/2/3/4        | Quickload recent files
 Ctrl+E              | Remote export
+Ctrl+L              | Load Music
 
