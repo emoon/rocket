@@ -10,7 +10,7 @@ First a screenshot of how it looks:
 Regular disclaimer: Backup your stuff before using the software :)
 
 If you encounter any issues please try to report them at https://github.com/emoon/rocket/issues as
-this would make my life much easier and I will try to fix them given time. Hopefully the editor should be useful even if still not 100% finalized bug wise.
+this would make my life much easier and I will try to fix them given time. Hopefully the editor is useful even if still not 100% finalized bug wise.
 Also the documentation hasn't been completed yet.
 
 Download the latest release from the [Releases page](https://github.com/emoon/rocket/releases).
@@ -30,21 +30,21 @@ The SDL-based linux support is written by Konsta 'sooda' Hölttä at https://git
 Motivation
 ----------
 
-About a year ago me and Heine 'bstrr' Gundersen (at Revision 2012) started to talk about that having an editor for GNU Rocket that worked on macOS would be great as we both used Mac as our primary development platform.
-This was the start of this another version of the editor. I (Daniel 'emoon' Collin) also wanted some features that weren't in the old editor (such as folding of tracks, having it cross platform, etc)
-Some small work was started on the editor during spring and summer but not much happened. It was really during last autumn 2012 I started to work on it for real to get in the features I want to have.
+At Revision 2012, Heine 'bstrr' Gundersen and I started talking about how having an editor for GNU Rocket that worked on macOS would be great, as we both used Mac as our primary development platform.
+This was the start of another version of the editor. I (Daniel 'emoon' Collin) also wanted some features that weren't in the old editor (such as folding of tracks, having it cross platform, etc)
+Some small work was started on the editor during spring and summer of 2012 but not much happened. It was really during autumn 2012 that I started to work on it for real to get the features I wanted.
 
 Features:
 
 * Includes (or should at least :) all features from the old editor (except track re-arrangement)
 * More optimized for laptop keyboards (no usage of page up/down and similar keys)
-* Group support. It's now possible to group channels together that makes sense (maybe a group for each part) The syntax for this is to name the tracks "mygroup:mytrack"
-* Folding support for both groups and tracks. Something I found annoying in the old editor was that you had to scroll around quite a bit to get to channel you wanted. Now with folding you use the screen space better.
+* Group support. It's now possible to group tracks together that makes sense (maybe a group for each part). The syntax for this is to name the tracks "mygroup:mytrack"
+* Folding support for both groups and tracks. Something I found annoying in the old editor was that you had to scroll around quite a bit to get to the track you wanted. Now with folding you use the screen space better.
 * Faster navigation: Can jump between key values, jump in step of 8 and also with bookmarks.
 * Other features such as using more of the keyboard for biasing of values (see key layout below)
-* Trackpad support (OS X only, mouse wheel elsewhere) to scroll around (can only be used with biasing)
+* Trackpad support (macOS only, mouse wheel elsewhere) to scroll around (can only be used with biasing)
 * Cross platform. Read more about the code in the next section.
-* Navigation while play-backing. It's now possible to jump forward/backward when playing the demo (demo "scratching")
+* Navigation during playback. It's now possible to jump forward/backward when playing the demo (demo "scratching")
 * Fast way to insert a interpolated value by just pressing return on an empty row.
 * Experimental support for multiple Rocket clients for uses like synchronizing music trackers with RocketEditor (see https://github.com/schismtracker/schismtracker/pull/353)
 
@@ -119,7 +119,7 @@ Tips & tricks
 
 * Use Return to insert current interpolated value - also sets the interpolation type to what the previous key uses.
 
-* A good way of bundling parameters for effects is by naming your tracks 'groupname:trackname', as this will group them together, thus making better tracknames than "logo-x-pos", "logo-y-pos", "title-x-pos", "title-y-pos". Groups can also be folded, so they don't take up screen estate when you are working on a different part of the demo.
+* A good way of bundling parameters for effects is by naming your tracks 'groupname:trackname', as this will group them together, thus making better tracknames than "logo-x-pos", "logo-y-pos", "title-x-pos", "title-y-pos". Groups can also be folded, so they don't take up screen real estate when you are working on a different part of the demo.
 
 * Insert bookmarks using the B key to easily jump between parts in the demo.
 
